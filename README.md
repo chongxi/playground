@@ -29,7 +29,7 @@ To see this in a finer level we decompose it into 3 stages:
 2. Define `ephys variable` (`spiketag stream` contains ripple, spikes identity, theta etc. )
 3. Define `object variable` which is by default `Maze objects coordination` (reword location, cue location, wall location) 
 4. Define `rule` (A FSM receive inputs from `behave variable`, `ephys variable`, and `object variable` and issue `events`) 
-5. Define `events` (issued by `rule`) 
+5. Define `events` (issued by `rule` based on the interaction between `behave/ephys/object variables`) 
 6. Define `score` (convert `events` into measurement of animal's performance) 
 
 **Note:**
