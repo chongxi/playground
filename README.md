@@ -1,5 +1,5 @@
 # playground
-Control Console that integrate Jovian(Virtual Reality Platform) and Spiketag(Real-time Ephys) 
+Control Console that integrate Jovian (Virtual Reality Platform) and Spiketag (Real-time Ephys) 
 
 Mouse and Rats or even human play in playground 
 - It bidirectionally communicate with `Jovian` (through socket)
