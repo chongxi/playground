@@ -8,7 +8,7 @@ Mouse and Rats or even human play in playground
 
 
 ### Functionality and Time budget
-The `time budget` comes from the fact that the playground continuously receive VR stream from Jovian and feedback decision to Jovian every `frame`. If the frame rate is 60 then the time budget is 1/60=16.6ms. 
+The `time budget` comes from the fact that the `playground` continuously receive VR stream from Jovian and feedback decision to Jovian every `frame`. If the frame rate is 60 then the time budget is 1/60=16.6ms. 
 That means the following functionality needs to be done within this time budget
 1. Real-time GPU rendering for trajectory/events visualization  (Navigation View)
 2. User interaction (could be a script)   (A QT5 Console) 
