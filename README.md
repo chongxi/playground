@@ -2,9 +2,9 @@
 Control Console that integrate Jovian(Virtual Reality Platform) and Spiketag(Real-time Ephys) 
 
 Mouse and Rats or even human play in playground 
-It bidirectionally communicate with `Jovian` (through socket)
-It bidirectionally communicate `user` (through low-latency rendering and interaction)  
-It bidirectionally communicate `Spiketag` (through socket) 
+- It bidirectionally communicate with `Jovian` (through socket)
+- It bidirectionally communicate `user` (through low-latency rendering and interaction)  
+- It bidirectionally communicate `Spiketag` (through socket) 
 
 
 ### Functionality and Time budget
