@@ -8,10 +8,10 @@ It bidirectionally communicate with both Jovian/Spiketag and the player (You)
 ### Functionality and Time budget
 The `time budget` comes from the fact that the playground continuously receive VR stream from Jovian and feedback decision to Jovian every `frame`. If the frame rate is 60 then the time budget is 1/60=16.6ms. 
 That means the following functionality needs to be done within this time budget
-1. Real-time GPU rendering for trajectory/events visualization  
-2. User interaction (could be a script) 
-3. Real-time Ephys signal visualization/interaction 
-4. Behaviour protocol FSM that takes interaction/Ephys as input 
+1. Real-time GPU rendering for trajectory/events visualization  (Navigation View)
+2. User interaction (could be a script)   (A QT5 Console) 
+3. Real-time Ephys signal visualization/interaction  (Extension of spiketag) 
+4. Behaviour protocol FSM that takes interaction/Ephys as input  (Rule) 
 
 
 To see this in a finer level we decompose it into 3 stages:
