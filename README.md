@@ -19,7 +19,7 @@ That means the following functionality needs to be done within this time budget
 To see this in a finer level we decompose it into 3 stages:
 
 ### Pre-stage processing
-1. Parse the Maze into `Mesh` object that can be rendered in playground
+1. Parse the `Jovian` Maze created in `Blender` into `Mesh` object that can be rendered in playground
 2. Parse the `Maze objects coordination` which will be used by `behaviour protocol FSM` 
 
 
