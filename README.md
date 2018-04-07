@@ -37,6 +37,6 @@ To see this in a finer level we decompose it into 3 stages:
 
 
 ### Post-stage processing
-1. Save the trajectory file
-2. Save the event log 
-3. Save the measurement log 
+1. Save the `trajectory file`
+2. Save the `event log` 
+3. Save the `measurement log` 
