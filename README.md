@@ -27,9 +27,10 @@ To see this in a finer level we decompose it into 3 stages:
 ### Main Loop processing (constrained by time budget)
 1. Define `behave variable` (position, head direction, speed) 
 2. Define `object variable` which is by default `Maze objects coordination` (reword location, cue location, wall location) 
-3. Define `events` (issued by `rule`, triggered by `animal`[Jovian], `user`[You], and `ephys`[Spiketag]) 
-4. Define `rule` (Which is a FSM receive input from `animal, `user and `ephys` and issue `events`) 
-5. Define `score` (convert `events` into measurement of animal's performance) 
+3. Define `ephys variable` which is ripple, spikes, theta etc. from `spiketag`
+4. Define `events` (issued by `rule`, triggered by `animal`[Jovian], `user`[You], and `ephys`[Spiketag]) 
+5. Define `rule` (Which is a FSM receive input from `animal, `user and `ephys` and issue `events`) 
+6. Define `score` (convert `events` into measurement of animal's performance) 
 
 **Note:**
 - `behave variable` and `object variable` interact to generate `events`
