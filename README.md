@@ -2,7 +2,9 @@
 Control Console that integrate Jovian(Virtual Reality Platform) and Spiketag(Real-time Ephys) 
 
 Mouse and Rats or even human play in playground 
-It bidirectionally communicate with both Jovian/Spiketag and the player (You) 
+It bidirectionally communicate with `Jovian` (through socket)
+It bidirectionally communicate `user` (through low-latency rendering and interaction)  
+It bidirectionally communicate `Spiketag` (through socket) 
 
 
 ### Functionality and Time budget
@@ -25,7 +27,7 @@ To see this in a finer level we decompose it into 3 stages:
 ### Main Loop processing (constrained by time budget)
 1. Define `behave variable` (position, head direction, speed) 
 2. Define `object variable` which is by default `Maze objects coordination` (reword location, cue location, wall location) 
-3. Define `events` (issued by `rule`, triggered by `animal`, `user`, and `ephys`) 
+3. Define `events` (issued by `rule`, triggered by `animal`[Jovian], `user`[You], and `ephys`[Spiketag]) 
 4. Define `rule` (Which is a FSM receive input from `animal, `user and `ephys` and issue `events`) 
 5. Define `score` (convert `events` into measurement of animal's performance) 
 
