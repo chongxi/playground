@@ -13,7 +13,8 @@ That means the following functionality needs to be done within this time budget
 1. Real-time GPU rendering for trajectory/events visualization  (Navigation View)
 2. User interaction (could be a script)   (A QT5 Console) 
 3. Real-time Ephys signal visualization/interaction  (Extension of spiketag) 
-4. Behaviour protocol FSM that takes interaction/Ephys as input  (Rule) 
+4. Behaviour protocol `FSM` that takes `behavour/Ephys` as input and output `events` (Rule) 
+5. User interaction can overwrite the `FSM` to send command to Jovian (Interaction)
 
 
 To see this in a finer level we decompose it into 3 stages:
@@ -23,8 +24,7 @@ To see this in a finer level we decompose it into 3 stages:
 2. Parse the `Maze objects coordination` which will be used by `behaviour protocol FSM` 
 
 
-
-### Main Loop processing (constrained by time budget)
+### FSM Loop processing (FSM loop constrained by time budget)
 1. Define `behave variable` (`Jovian stream` contains position, head direction, speed) 
 2. Define `ephys variable` (`spiketag stream` contains ripple, spikes identity, theta etc. )
 3. Define `object variable` which is by default `Maze objects coordination` (reword location, cue location, wall location) 
@@ -37,6 +37,14 @@ To see this in a finer level we decompose it into 3 stages:
 - `events` and `rule` interact to generate `measurement`
 - `measurement` can influence `rule` to make it dynamic 
 - `user` can top-down control `behave variable`, `object variable`, `rule` but not `events` and `score`
+
+### GUI Loop (interaction/visualization loop constrained by time budget)
+1. Define `button` and `keymapping` for setting `states` of GUI
+2. `states` of GUI such as: reading `behave variable`; reading `ephys variable`; operating `FSM`; feeding back `events` to Jovian; view states etc..
+2. `navigation view` for low-latency rendering `variable`, `trajectory` and `events`
+3. Define `key+mouse event` in `navigation view` to mimic `FSM loop` output true `events`
+4. List `FSM state` and `events` log online 
+5. Save File Options 
 
 
 
