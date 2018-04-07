@@ -31,6 +31,7 @@ To see this in a finer level we decompose it into 3 stages:
 4. Define `rule` (Which is a FSM receive input from `animal, `user and `ephys` and issue `events`) 
 5. Define `score` (convert `events` into measurement of animal's performance) 
 
+**Note:**
 - `behave variable` and `object variable` interact to generate `events`
 - `events` and `rule` interact to generate `measurement`
 - `measurement` can influence `rule` to make it dynamic 
