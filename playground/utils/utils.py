@@ -1,5 +1,6 @@
 import numpy as np
 import collections
+import time
 
 #------------------------------------------------------------------------------
 # Compare the content of two list/array in a orderless manner
@@ -222,3 +223,29 @@ class EventEmitter(object):
                 res.append(callback(*args, **kwargs))
         return res
 
+
+#------------------------------------------------------------------------------
+# Simple Timer for performance test
+#------------------------------------------------------------------------------
+class Timer(object):
+    '''
+    For any chunk of code A:
+    with Timer('task'):
+        A
+    '''
+    def __init__(self, task, verbose=True):
+        self.verbose = verbose
+        self.task = task
+
+    def __enter__(self):
+        self.tic = time.time()
+        return self
+
+    def __exit__(self, *args):
+        self.toc = time.time()
+        self.msecs = (self.toc - self.tic) * 1e3
+        if self.verbose:
+            if self.task is not '':
+                print('{0}: {1}'.format(self.task, self.msecs))
+            else:
+                print('{}'.format(self.msecs))
