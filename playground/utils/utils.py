@@ -1,7 +1,123 @@
+import numpy as np
+import collections
+
+#------------------------------------------------------------------------------
+# Compare the content of two list/array in a orderless manner
+#------------------------------------------------------------------------------
+compare = lambda x, y: collections.Counter(x) == collections.Counter(y)
+
+#------------------------------------------------------------------------------
+# Convert rgb to gray
+#------------------------------------------------------------------------------
+def rgb2gray(rgb_color, absolute_value=True):
+    """rgt_color is a n by 3 matrix. three column array [r; g; b]
+    """
+    gray_transform_mat = np.repeat(np.array([0.5989, 0.6870, 0.4140]), 3).reshape(-1,3)
+    gray_color = rgb_color.dot(gray_transform_mat)
+    if absolute_value:
+        return abs(gray_color)
+    else:
+        return gray_color
+
+
+#------------------------------------------------------------------------------
+# get the normal vector from a camera
+#------------------------------------------------------------------------------
+def normal_vector(cam):
+    """cam contains azimuth and elevation, we use that to get the normal_vector
+    of the rendered view plane. This is the basis of ray tracing
+    """
+    alpha, belta = np.array([cam.azimuth, cam.elevation]) * np.pi / 180
+    a = np.sin(alpha) * np.cos(belta)
+    b = np.cos(alpha) * np.cos(belta)
+    c = np.sin(belta)
+    return np.array([a,b,c])
+
+
+#------------------------------------------------------------------------------
+# Generate a line array in 3D space from a Vector and a Point
+#------------------------------------------------------------------------------
+def generate_line(u0, A):
+    '''
+    line function:
+    u = u0 + At
+    '''
+    u0 = np.array(u0).astype(np.float32)
+    A  = np.array(A).astype(np.float32)
+    t = np.linspace(-10000,10000,1000)
+    u0 = u0.reshape(-1,1)
+    A  = A.reshape(-1,1)
+    u = u0 + A*t
+    u = u.T
+    return u
+
+#------------------------------------------------------------------------------
+# Project a vector to xy plane (z=0)
+#------------------------------------------------------------------------------
+def proj_to_xyplane(p0, A):
+    '''
+    xy plane is z=0
+    p1 is a point (x,y,0) in plane xy
+    p1 + At = p0
+    '''
+    (x0,y0,z0) = p0
+    (a, b, c ) = A
+    t = -z0/c
+    p1 = p0 + A*t
+    return p1
+
+
+#------------------------------------------------------------------------------
+# Line Plane Intersection
+#------------------------------------------------------------------------------
+def line_plane_intersection(rayDirection, rayPoint, planeNormal, planePoint, epsilon=1e-6):
+    """The camera view is like ray. The view is the plane which has normal vector as ray direction
+    This function calculate the intersecion coordination of a line (defined by rayDirection and rayPoint) 
+    and a plane (defined by planeNormal and planePoint)
+    https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
+    """
+    rayDirection = np.array(rayDirection)
+    rayPoint = np.array(rayPoint)
+    planeNormal = np.array(planeNormal)
+    planePoint = np.array(planePoint)
+    angle = np.dot(planeNormal, rayDirection) 
+    if abs(angle) < epsilon:
+        print("no intersection")
+    v = rayPoint - planePoint
+    s = -np.dot(planeNormal, v) / angle
+    point = s * rayDirection + v + planePoint
+    return point
+
+
+#------------------------------------------------------------------------------
+# 2d mouse event to 3d coordinate
+#------------------------------------------------------------------------------
+def pos2d_to_pos3d(pos, cam):
+    """Convert mouse event pos:(x, y) into x, y, z translations"""
+    """dist is the distance between (x,y) and (cx, cy) of cam"""
+    center = get_center_of_view(cam)
+    dist = pos - center
+    dist[1] *= -1
+    rae = np.array([cam.azimuth, cam.elevation]) * np.pi / 180
+    saz, sel = np.sin(rae)
+    caz, cel = np.cos(rae)
+    dx = (+ dist[0] * (1 * caz)
+          + dist[1] * (- 1 * sel * saz))
+    dy = (+ dist[0] * (1 * saz)
+          + dist[1] * (+ 1 * sel * caz))
+    dz = (+ dist[1] * 1 * cel)
+
+    # Black magic part 2: take up-vector and flipping into account
+    ff = cam._flip_factors
+    up, forward, right = cam._get_dim_vectors()
+    dx, dy, dz = right * dx + forward * dy + up * dz
+    dx, dy, dz = ff[0] * dx, ff[1] * dy, ff[2] * dz
+    return dx, dy, dz
+
+
 #------------------------------------------------------------------------------
 # Event system
 #------------------------------------------------------------------------------
-
 class EventEmitter(object):
     """Class that emits events and accepts registered callbacks.
     Derive from this class to emit events and let other classes know
@@ -105,3 +221,4 @@ class EventEmitter(object):
             with Timer('[Event] emit -- {}'.format(callback.__module__), verbose=conf.ENABLE_PROFILER):
                 res.append(callback(*args, **kwargs))
         return res
+
