@@ -28,18 +28,14 @@ from playground.base import Jovian
 from playground.view import maze_view
 
 
-def vr_stream_in(pipe, jov):
-    tic = time.time()
+def jovian_process(pipe, jov):
     while True:
-        for line in jov.readbuffer():
-            print line
-            toc = time.time()
-            print((toc-tic)*1e3)
-            _line = line.split(',')
-            _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
-            _coord = [_x, _y]
-            z = (_x-100)**2 + (_y-100)**2
-            pipe.send((_t, _coord))
+        tic = time.time()
+        _t, _coord = jov.readline().parse()
+        toc = time.time()
+        print((toc-tic)*1e3)
+        print(_t, _coord)
+        pipe.send((_t, _coord))
 
 
 class BehavGUI(QWidget):
@@ -130,10 +126,7 @@ class BehavGUI(QWidget):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.pipe_timer.start()
-        # self.dataCollectionThread = DataCaptureThread(self.pipe_gui_side)
-        # self.dataCollectionThread.start()
-        # self.vr_stream_process = Process(target=vr_stream_in, args=(self.pipe_socket_side, 'pynq', '2222'))
-        self.vr_stream_process = Process(target=vr_stream_in, args=(self.pipe_socket_side, self.jov))
+        self.vr_stream_process = Process(target=jovian_process, args=(self.pipe_socket_side, self.jov))
         self.vr_stream_process.daemon = True
         self.vr_stream_process.start()
         self.ac_tag = 1
@@ -153,7 +146,7 @@ class BehavGUI(QWidget):
         # with Timer('parsing_protocol', verbose=False):
         # tic = time.time()
         ts, coord = self.pipe_gui_side.recv()
-        print(ts, coord)
+        # print(ts, coord)
         # toc = time.time()
         # elapse = (toc - tic)*1e3
         # if elapse>40:
