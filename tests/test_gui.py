@@ -26,16 +26,15 @@ from torch.multiprocessing import Process, Pipe
 #---------new module---------
 from playground.base import Jovian
 from playground.view import maze_view
+from playground.utils import Timer
 
 
-def jovian_process(pipe, jov):
+def _jovian_process(pipe, jov):
     while True:
-        tic = time.time()
-        _t, _coord = jov.readline().parse()
-        toc = time.time()
-        print((toc-tic)*1e3)
+        with Timer('', verbose=True):
+            _t, _coord = jov.readline().parse()
+            pipe.send((_t, _coord))
         print(_t, _coord)
-        pipe.send((_t, _coord))
 
 
 class BehavGUI(QWidget):
@@ -49,7 +48,7 @@ class BehavGUI(QWidget):
         self.pos = np.array([])
         self.event_log = {}
 
-        self.pipe_socket_side, self.pipe_gui_side = Pipe()
+        self.pipe_jovian_side, self.pipe_gui_side = Pipe()
         self.pipe_timer = QtCore.QTimer(self)
         self.pipe_timer.timeout.connect(self.vr_parsing_protocol)
         self.jov = Jovian()
@@ -85,7 +84,7 @@ class BehavGUI(QWidget):
         self.vrBtn = QPushButton("VR Stream Off",self)
         self.vrBtn.setCheckable(True)
         self.vrBtn.setStyleSheet("background-color: white")
-        self.vrBtn.toggled.connect(self.vr_stream_toggle)
+        self.vrBtn.toggled.connect(self.jovian_process_toggle)
 
         BtnLayout = QGridLayout()
         BtnLayout.addWidget(self.vrBtn,0,0)
@@ -116,44 +115,36 @@ class BehavGUI(QWidget):
 
         self.setLayout(pLayout)
 
-    def vr_stream_toggle(self, checked):
+    def jovian_process_toggle(self, checked):
         if checked:
-            self.vr_stream_start()
+            self.jovian_process_start()
         else:
-            self.vr_stream_stop()
+            self.jovian_process_stop()
 
-    def vr_stream_start(self):
+    def jovian_process_start(self):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.pipe_timer.start()
-        self.vr_stream_process = Process(target=jovian_process, args=(self.pipe_socket_side, self.jov))
-        self.vr_stream_process.daemon = True
-        self.vr_stream_process.start()
+        self.jovian_process = Process(target=_jovian_process, args=(self.pipe_jovian_side, self.jov))
+        self.jovian_process.daemon = True
+        self.jovian_process.start()
         self.ac_tag = 1
-        # for video recording
-        # self.V_S.start()
 
-    def vr_stream_stop(self):
+
+    def jovian_process_stop(self):
         # self.stop_Socket()
         self.vrBtn.setText('VR Stream Off')
         self.vrBtn.setStyleSheet("background-color: white")
-        self.vr_stream_process.terminate()
-        self.vr_stream_process.join()
+        self.jovian_process.terminate()
+        self.jovian_process.join()
         self.pipe_timer.stop()
         self.ac_tag = 0
 
+
     def vr_parsing_protocol(self):
-        # with Timer('parsing_protocol', verbose=False):
-        # tic = time.time()
         ts, coord = self.pipe_gui_side.recv()
-        # print(ts, coord)
-        # toc = time.time()
-        # elapse = (toc - tic)*1e3
-        # if elapse>40:
-        # print('elapse = ',elapse)
-        # print(time, coord)
-        # Task: budget cost < 2ms updating nav_view
         self.nav_view.current_pos = np.array(coord)
+
 
     def Behavior_Protocol(self):
         print(self._time, self._coord)  
