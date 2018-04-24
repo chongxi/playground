@@ -1,10 +1,9 @@
 import sys
 import socket
 
-import torch.multiprocessing as mp
-from torch.multiprocessing import Process, Pipe
 
 host_ip = '10.102.20.26'
+
 
 class Jovian_Stream(str):
     def parse(self):
@@ -13,7 +12,6 @@ class Jovian_Stream(str):
         _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
         _coord = [_x, _y]
         return _t, _coord
-
 
 
 class Jovian(object):
@@ -72,5 +70,21 @@ class Jovian(object):
         else:
             return self.buf.next()
 
+
     def get(self):
         return self.readline().parse()
+
+
+    def teleport(self, prefix, target_pos, target_item=None):
+        '''
+           Core function: This is the only function that send `events` back to Jovian from interaction 
+        '''
+        x, y, z = target_pos # the coordination
+        if prefix == 'console':  # teleport animal, target_item is not needed
+            cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,z,0)
+            self.output.send(cmd)
+            # print(cmd)
+        elif prefix == 'model':  # move cue
+            cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
+            self.output.send(cmd)
+            # print(cmd)

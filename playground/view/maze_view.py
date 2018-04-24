@@ -198,28 +198,25 @@ class maze_view(scene.SceneCanvas):
        --------------------------------
     '''
 
-    def connect(self, sock_cmd):
+    def connect(self, jov):
         '''connect to the socket command output
         '''
-        self.sock_cmd = sock_cmd
+        self.jov = jov
         self.is_sock_cmd_connected = True
 
-    def teleport(self, prefix, target_item, target_pos):
+
+    def teleport(self, prefix, target_pos, target_item):
         '''
            Core function: This is the only function that send `events` back to Jovian from interaction 
         '''
         if self.is_sock_cmd_connected:
             x, y, _ = (target_pos-self.origin)/self.scale_factor # the maze coordination
-            v = 0 # control how animal move update scene, should be always 0
             if prefix == 'console':  # teleport animal
                 z = 5 # this should always be 5 based on Jovian constraint
-                cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,z,v)
-                self.sock_cmd.send(cmd)
+                self.jov.teleport(prefix, (x,y,z), target_item)
             elif prefix == 'model':  # move cue
                 z = self.cues[target_item].center[-1]
-                print 'z value', z
-                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
-                self.sock_cmd.send(cmd)
+                self.jov.teleport(prefix, (x,y,z), target_item)
         else:
             pass
         # print('from trajectory_view:',cmd)
@@ -264,13 +261,13 @@ class maze_view(scene.SceneCanvas):
             if keys.CONTROL in e.modifiers and e.button == 1:
                 target_item = 'animal'
                 target_pos  = self.imap(e.pos)
-                self.teleport(prefix='console', target_item=target_item, target_pos=target_pos)
+                self.teleport(prefix='console', target_pos=target_pos, target_item=target_item)
             if keys.CONTROL in e.modifiers and e.button == 2:
                 with Timer('cue moving', verbose=False):
                     target_item = self.cues.keys()[self._selected_cue]
                     target_pos  = self.imap(e.pos)
                     self.cues[target_item].move(target_pos)
-                    self.teleport(prefix='model', target_item=target_item, target_pos=target_pos)
+                    self.teleport(prefix='model', target_pos=target_pos, target_item=target_item)
 
 
     def run(self):

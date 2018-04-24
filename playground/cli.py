@@ -3,6 +3,7 @@
 """Console script for playground."""
 import sys
 import click
+import playground
 
 
 @click.command()
@@ -11,9 +12,7 @@ import click
 @click.option('--task', prompt='task', default='two cue', help='task name')
 def main(name, maze, task):
     """Console script for playground."""
-    click.echo("Replace this message by putting your code into "
-               "playground.cli.main")
-    click.echo("See click documentation at http://click.pocoo.org/")
+    playground.main()
     click.echo("rat #{} in {} maze doing {} task".format(name, maze, task))
     return 0
 
