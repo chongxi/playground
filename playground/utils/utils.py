@@ -1,6 +1,13 @@
 import numpy as np
 import collections
 import time
+import re
+from collections import defaultdict
+from functools import partial
+
+
+
+ENABLE_PROFILER = True
 
 #------------------------------------------------------------------------------
 # Compare the content of two list/array in a orderless manner
@@ -121,28 +128,32 @@ def pos2d_to_pos3d(pos, cam):
 #------------------------------------------------------------------------------
 class EventEmitter(object):
     """Class that emits events and accepts registered callbacks.
+
     Derive from this class to emit events and let other classes know
     of occurrences of actions and events.
+
     Example
     -------
+
     ```python
     class MyClass(EventEmitter):
         def f(self):
             self.emit('my_event', 1, key=2)
+
     o = MyClass()
+
     # The following function will be called when `o.f()` is called.
     @o.connect
     def on_my_event(arg, key=None):
         print(arg, key)
+
     ```
+
     """
 
     def __init__(self):
-        self._reset()
-
-    def _reset(self):
-        """Remove all registered callbacks."""
         self._callbacks = defaultdict(list)
+
 
     def _get_on_name(self, func):
         """Return `eventname` when the function name is `on_<eventname>()`."""
@@ -169,16 +180,22 @@ class EventEmitter(object):
 
     def connect(self, func=None, event=None, set_method=False):
         """Register a callback function to a given event.
+
         To register a callback function to the `spam` event, where `obj` is
         an instance of a class deriving from `EventEmitter`:
+
         ```python
         @obj.connect
         def on_spam(arg1, arg2):
             pass
         ```
+
         This is called when `obj.emit('spam', arg1, arg2)` is called.
+
         Several callback functions can be registered for a given event.
+
         The registration order is conserved and may matter in applications.
+
         """
         if func is None:
             return partial(self.connect, set_method=set_method)
@@ -210,16 +227,19 @@ class EventEmitter(object):
 
     def emit(self, event, caller=None, *args, **kwargs):
         """Call all callback functions registered with an event.
+
         Any positional and keyword arguments can be passed here, and they will
         be forwarded to the callback functions.
+
         Return the list of callback return results.
+
         """
         res = []
         for callback in self._callbacks.get(event, []):
             if caller and caller == callback.__module__:
                continue 
 
-            with Timer('[Event] emit -- {}'.format(callback.__module__), verbose=conf.ENABLE_PROFILER):
+            with Timer('[Event] emit -- {}.{}.{}'.format(callback.__module__, type(self).__name__, callback.__name__), verbose=ENABLE_PROFILER):
                 res.append(callback(*args, **kwargs))
         return res
 

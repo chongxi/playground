@@ -114,7 +114,7 @@ class maze_view(scene.SceneCanvas):
         '''
         ! pos_in must be np array with shape (2,): (vr_x, vr_y)
         '''
-        pos_in = pos_in.astype(np.float32)
+        pos_in = np.array(pos_in).astype(np.float32)
         self._current_pos = pos_in
         self.marker.transform.translate = self._current_pos
         self.stream_in_pos(pos_in)

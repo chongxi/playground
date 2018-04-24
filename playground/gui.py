@@ -7,11 +7,8 @@ from PyQt5.QtWidgets import QWidget, QTextBrowser, QPushButton, QVBoxLayout, QHB
 import time
 from datetime import datetime
 
-import torch as torch
-from torch.multiprocessing import Process, Pipe
-
 #---------new module---------
-from base import Jovian, _jovian_process
+from base import Jovian # , _jovian_process
 from view import maze_view
 from utils import Timer
 
@@ -30,14 +27,14 @@ class play_GUI(QWidget):
     def __init__(self, arg):
         super(play_GUI, self).__init__()
         self.arg = arg
-        self.ts  = np.array([])
-        self.pos = np.array([])
         self.event_log = {}
-
-        self.pipe_jovian_side, self.pipe_gui_side = Pipe()
-        self.pipe_timer = QtCore.QTimer(self)
-        self.pipe_timer.timeout.connect(self.nav_view_update)
+        self.nav_view_timer = QtCore.QTimer(self)
+        self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.initUI()
+
+    #------------------------------------------------------------------------------
+    # gui layout
+    #------------------------------------------------------------------------------
 
     def initUI(self, keys='interactive'):
         
@@ -97,31 +94,36 @@ class play_GUI(QWidget):
 
         self.setLayout(pLayout)
 
+
+    #------------------------------------------------------------------------------
+    # gui function
+    #------------------------------------------------------------------------------
+
     def jovian_process_toggle(self, checked):
         if checked:
             self.jovian_process_start()
         else:
             self.jovian_process_stop()
 
+
     def jovian_process_start(self):
-        self.jov = Jovian()
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
-        self.pipe_timer.start()
-        self.jovian_process = Process(target=_jovian_process, args=(self.pipe_jovian_side, self.jov))
-        self.jovian_process.daemon = True
-        self.jovian_process.start()        
+        self.jov = Jovian()
+        self.jov.start()
+        self.nav_view_timer.start()
         self.nav_view.connect(self.jov)
 
+
+
     def jovian_process_stop(self):
-        # self.stop_Socket()
         self.vrBtn.setText('VR Stream Off')
         self.vrBtn.setStyleSheet("background-color: white")
-        self.jovian_process.terminate()
-        self.jovian_process.join()
-        self.pipe_timer.stop()
-        self.jov.reset()
+        self.jov.stop()
+        self.nav_view_timer.stop()
+
 
     def nav_view_update(self):
-        ts, coord = self.pipe_gui_side.recv()
-        self.nav_view.current_pos = np.array(coord)
+        with Timer('', verbose=False):
+            ts, coord = self.jov.get()
+            self.nav_view.current_pos = coord

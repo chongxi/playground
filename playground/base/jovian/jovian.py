@@ -1,20 +1,15 @@
 import sys
 import socket
+import torch as torch
+from torch.multiprocessing import Process, Pipe
+from ...utils import Timer
+from ...utils import EventEmitter
 
 
 host_ip = '10.102.20.26'
+is_close = lambda pos, cue_pos: (pos[0]-cue_pos[0])**2 + (pos[1]-cue_pos[1]**2) < 8**2
 
 
-def _jovian_process(pipe, jov):
-    '''jovian reading process that use 
-       a multiprocessing pipe + a jovian instance 
-       as input parameters
-    '''
-    while True:
-        with Timer('', verbose=True):
-            _t, _coord = jov.readline().parse()
-            pipe.send((_t, _coord))
-        print(_t, _coord)
 
 
 class Jovian_Stream(str):
@@ -26,10 +21,13 @@ class Jovian_Stream(str):
         return _t, _coord
 
 
-class Jovian(object):
+
+class Jovian(EventEmitter):
     def __init__(self):
+        super(Jovian, self).__init__()
         self.socket_init()
         self.buf_init()
+
 
     def socket_init(self):
         self.input = socket.create_connection((host_ip, '22224'), timeout=1)
@@ -45,6 +43,7 @@ class Jovian(object):
         self.buffer = ''       # the content
         self.buffering = False # the buffering state
 
+
     def reset(self):
         self.input.close()
         self.output.close()
@@ -52,11 +51,13 @@ class Jovian(object):
         self.socket_init()
         self.buf_init()
 
+
     def enable_output(self, enable=True):
         if enable:
             self.output_control.send(b'1')
         else:
             self.output_control.send(b'1')
+
 
     def readbuffer(self):
         self.buffer = self.input.recv(256)
@@ -83,8 +84,42 @@ class Jovian(object):
             return self.buf.next()
 
 
+    def _jovian_process(self):
+        '''jovian reading process that use 
+           a multiprocessing pipe + a jovian instance 
+           as input parameters
+        '''
+        while True:
+            with Timer('', verbose=True):
+                self._t, self._coord = self.readline().parse()
+                self.pipe_jovian_side.send((self._t, self._coord))
+                self.examine_trigger()
+            # print(self._t, self._coord)
+
+    # def on_touch(self):
+    #     print(self._t, self._coord)
+
+    def examine_trigger(self):
+        print(self._t, self._coord)
+        if is_close(self._coord, (0,0)):
+            self.emit('touch', args=(self._t, self._coord))
+
+
+    def start(self):
+        self.pipe_jovian_side, self.pipe_gui_side = Pipe()
+        self.jovian_process = Process(target=self._jovian_process) #, args=(self.pipe_jovian_side,)
+        self.jovian_process.daemon = True
+        self.jovian_process.start()  
+
+
+    def stop(self):
+        self.jovian_process.terminate()
+        self.jovian_process.join()
+        self.reset()
+
+
     def get(self):
-        return self.readline().parse()
+        return self.pipe_gui_side.recv()
 
 
     def teleport(self, prefix, target_pos, target_item=None):
