@@ -5,6 +5,18 @@ import socket
 host_ip = '10.102.20.26'
 
 
+def _jovian_process(pipe, jov):
+    '''jovian reading process that use 
+       a multiprocessing pipe + a jovian instance 
+       as input parameters
+    '''
+    while True:
+        with Timer('', verbose=True):
+            _t, _coord = jov.readline().parse()
+            pipe.send((_t, _coord))
+        print(_t, _coord)
+
+
 class Jovian_Stream(str):
     def parse(self):
         line = self.__str__()

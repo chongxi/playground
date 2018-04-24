@@ -11,7 +11,7 @@ import torch as torch
 from torch.multiprocessing import Process, Pipe
 
 #---------new module---------
-from base import Jovian
+from base import Jovian, _jovian_process
 from view import maze_view
 from utils import Timer
 
@@ -21,14 +21,6 @@ maze_file       = dir_path+'/base/maze/obj/maze_2d.obj'
 maze_coord_file = dir_path+'/base/maze/2dmaze_2cue_follow1_4.coords'
 cue1_file       = dir_path+'/base/maze/obj/constraint_cue.obj'
 cue0_file       = dir_path+'/base/maze/obj/goal_cue.obj'
-
-
-def _jovian_process(pipe, jov):
-    while True:
-        with Timer('', verbose=True):
-            _t, _coord = jov.readline().parse()
-            pipe.send((_t, _coord))
-        print(_t, _coord)
 
 
 class play_GUI(QWidget):
@@ -44,7 +36,7 @@ class play_GUI(QWidget):
 
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()
         self.pipe_timer = QtCore.QTimer(self)
-        self.pipe_timer.timeout.connect(self.vr_parsing_protocol)
+        self.pipe_timer.timeout.connect(self.nav_view_update)
         self.initUI()
 
     def initUI(self, keys='interactive'):
@@ -128,15 +120,8 @@ class play_GUI(QWidget):
         self.jovian_process.terminate()
         self.jovian_process.join()
         self.pipe_timer.stop()
-        self.ac_tag = 0
         self.jov.reset()
 
-
-    def vr_parsing_protocol(self):
+    def nav_view_update(self):
         ts, coord = self.pipe_gui_side.recv()
         self.nav_view.current_pos = np.array(coord)
-
-
-    def Behavior_Protocol(self):
-        print(self._time, self._coord)  
-
