@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 #---------new module---------
-from base import Jovian # , _jovian_process
+from base import Jovian, one_cue_task, two_cue_task
 from view import maze_view
 from utils import Timer
 
@@ -30,13 +30,14 @@ class play_GUI(QWidget):
         self.event_log = {}
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
-        self.initUI()
+        self.init_UI()
+        self.init_Task()
 
     #------------------------------------------------------------------------------
     # gui layout
     #------------------------------------------------------------------------------
 
-    def initUI(self, keys='interactive'):
+    def init_UI(self, keys='interactive'):
         
         self.setAutoFillBackground(True)
         p = self.palette()
@@ -109,6 +110,26 @@ class play_GUI(QWidget):
         pLayout.addWidget(splitter)
         self.setLayout(pLayout)
 
+
+    def init_Task(self, task_name='two_cue_task'):
+
+        # 1. Init Jovian first 
+        self.jov = Jovian()
+        # @self.jov.connect
+        # def on_touch(args):
+        #     self.touch_id, self.coord = args
+        #     print(self.touch_id, self.coord)
+
+        self.nav_view.connect(self.jov)
+
+        # 2. Init Task
+        # self.jov = Jovian()
+        self.task_name = task_name
+        # self.task = globals()[task_name](self.jov)
+        self.task = two_cue_task(self.jov)
+        print(self.task.state)
+
+
     #------------------------------------------------------------------------------
     # gui function
     #------------------------------------------------------------------------------
@@ -123,14 +144,6 @@ class play_GUI(QWidget):
     def jovian_process_start(self):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
-        self.jov = Jovian()
-
-        @self.jov.connect
-        def on_touch(args):
-            self.touch_id, self.coord = args
-            print(self.touch_id, self.coord)
-            
-        self.nav_view.connect(self.jov)
         self.jov.start()
         self.nav_view_timer.start()
 

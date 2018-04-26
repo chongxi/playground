@@ -5,6 +5,7 @@ from torch.multiprocessing import Process, Pipe
 from ...utils import Timer
 from ...utils import EventEmitter
 import numpy as np
+# from .task import *
 
 
 host_ip = '10.102.20.26'
@@ -39,6 +40,7 @@ class Jovian(EventEmitter):
         super(Jovian, self).__init__()
         self.socket_init()
         self.buf_init()
+        self.shared_mem_init()
 
 
     def socket_init(self):
@@ -54,6 +56,13 @@ class Jovian(EventEmitter):
         self.buf = None        # the buf generator
         self.buffer = ''       # the content
         self.buffering = False # the buffering state
+
+
+    def shared_mem_init(self):
+        # current position of animal
+        pos = np.array([0, 0])
+        self.current_pos = torch.from_numpy(pos)
+        self.current_pos.share_memory_()
 
 
     def reset(self):
@@ -104,6 +113,7 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=verbose):
                 self._t, self._coord = self.readline().parse()
+                self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
                 self.pipe_jovian_side.send((self._t, self._coord))
                 self.examine_trigger()
             # print(self._t, self._coord)
@@ -129,7 +139,7 @@ class Jovian(EventEmitter):
                 self.emit('touch', args=(_cue_id, self._coord))
 
 
-    def start(self):
+    def start(self, task_name='two_cue_task'):
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()
         self.jovian_process = Process(target=self._jovian_process) #, args=(self.pipe_jovian_side,)
         self.jovian_process.daemon = True

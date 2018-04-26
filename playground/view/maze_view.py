@@ -232,6 +232,17 @@ class maze_view(scene.SceneCanvas):
         self.jov.set_trigger(self.shared_trigger)
         self.is_sock_cmd_connected = True
 
+        @self.jov.connect
+        def on_cue(cue_id, func, args):
+            '''jov control the cue, cue_id is 0,1,2,3
+               func is the cue fucntion name, execute with args
+            '''
+            getattr(self.cues[self.cues.keys()[cue_id]], func)(args)
+            # print(f)
+            # f(args)
+            # self.cues[target_item].pos = target_pos
+
+
 
     def _teleport(self, prefix, target_pos, target_item=None):
         '''

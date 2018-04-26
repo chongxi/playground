@@ -306,8 +306,22 @@ class CueVisual(CompoundVisual, EventEmitter):
         self._scale_factor = scale_factor
 
 
-    def move(self, coord):
-        self.pos = coord
+    def move(self, coord, floor=True):
+        if len(coord) == 2:
+            if type(coord) is list:
+                coord.append(0)
+            elif type(coord) is np.ndarray:
+                coord = np.append(coord, 0)
+                
+        if floor:
+            coord[-1] = self._z_floor
+            self.pos = np.array(coord)
+        else:
+            self.pos = np.array(coord)
+
+
+    def set_z(self, _z):
+        self.z = _z
 
 
     def floor(self):
