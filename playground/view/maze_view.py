@@ -15,7 +15,7 @@ from vispy.visuals.transforms import STTransform, MatrixTransform
 
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
-
+import torch
 
 class maze_view(scene.SceneCanvas):
     """
@@ -44,8 +44,6 @@ class maze_view(scene.SceneCanvas):
 
         self._current_pos = None 
         # self.marker    = scene.visuals.Markers(parent=self.view.scene)
-        self.marker = Animal(parent=self.view.scene, radius=200, color=(1,0,1,0.8))
-        self.marker.transform = STTransform()
 
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
         self.animal_color   = 'white'
@@ -53,11 +51,12 @@ class maze_view(scene.SceneCanvas):
 
         ### 4. cue objects
         self.cues = {}
-        self._selected_cue = 0
+        self._selected_cue = None
 
         ### Timer
         self._timer = app.Timer(0.1)
         self._timer.connect(self.on_timer)
+        self._timer.start(0.8)
         self.global_i = 0
 
         # self.set_range()
@@ -85,15 +84,37 @@ class maze_view(scene.SceneCanvas):
         self.maze.transform = transform 
         self.view.add(self.maze)
         self.set_range()
-        print(self.maze.coord['Origin'])
+        print('Origin:', self.origin)
+
+
+    def load_animal(self):
+        self.marker = Animal(parent=self.view.scene, radius=200, color=(1,0,1,0.8))
+        self.marker.transform = STTransform()
+        self.marker.origin = self.origin
+
+        @self.marker.connect
+        def on_move(target_pos):
+            self._teleport(prefix='console', target_pos=target_pos)
+
 
     def load_cue(self, cue_file, cue_name=None):
-        self.cues[cue_name] = Cue(cue_file) 
+        _cue = Cue(cue_file) 
+        _cue.name = cue_name
+        self.cues[cue_name] = _cue
         self.cues[cue_name].center = self.maze.coord[cue_name]
+        self.cues[cue_name].origin = self.origin
         self.cues[cue_name].transform = STTransform()
         self.cues[cue_name].scale(100)
-        self.cues[cue_name].move(self.origin)
+        self.cues[cue_name].pos = [0, 0, self.cues[cue_name].center[-1]]
         self.view.add(self.cues[cue_name])
+
+        @_cue.connect
+        def on_move(target_item, target_pos):
+            self._teleport(prefix='model', target_pos=target_pos, target_item=target_item)
+            ### update shared trigger pos (used by Jovian and Task)
+            pos = self._to_jovian_coord(target_pos)
+            cue_no = self.cues.keys().index(target_item)
+            self.shared_trigger[cue_no] = torch.from_numpy(pos)
 
 
     def set_file(self, file):
@@ -103,11 +124,9 @@ class maze_view(scene.SceneCanvas):
             pos = np.load(file).astype(np.float32)
             self.pos = pos
             
-
     @property
     def current_pos(self):
         return self._current_pos
-
 
     @current_pos.setter
     def current_pos(self, pos_in):
@@ -150,21 +169,12 @@ class maze_view(scene.SceneCanvas):
 
 
     def on_timer(self, event):
-        self.global_i += 100
-        with Timer('rendering takes', verbose = False):
-            try:
-                dynamic_pos   = self.pos[:self.global_i]
-                N = dynamic_pos.shape[0]
-                print N
-                dynamic_color = np.ones((N, 4), dtype=np.float32)
-                dynamic_color[:, 0] = np.linspace(0, 1, N)
-                dynamic_color[:, 1] = dynamic_color[::-1, 0]
-                self.trajectory.set_data(pos=dynamic_pos, color=dynamic_color)
-                self.marker.transform.translate = dynamic_pos[-1]
-                # self.marker.set_data(pos=dynamic_pos[-1].reshape(-1,2), face_color=self.animal_color)
+            # try:
+        if self._selected_cue is not None:
+            self.cues[self._selected_cue].vibrate(5)
+            # except:
+                # self._timer.stop()
 
-            except:
-                self._timer.stop()
 
     def set_range(self):
         self.view.camera.set_range(x=self.x_range,y=self.y_range, margin=.1)
@@ -189,8 +199,20 @@ class maze_view(scene.SceneCanvas):
 
             planePoint = (0,0,0) # or self.origin
             planeDirection = (0,0,1) # project to xyplane where z=0: (0,0,1) has null space `z=0`
-            maze_pos = line_plane_intersection(rayDirection, rayPoint, planeDirection, planePoint)
+            jovian_pos = line_plane_intersection(rayDirection, rayPoint, planeDirection, planePoint)
+            maze_pos = self._to_maze_coord(jovian_pos)
             return maze_pos
+
+
+    def _to_maze_coord(self, pos):
+        '''transform back to maze coord (0,0,0)
+        '''
+        return (pos-self.origin)/self.scale_factor
+
+    def _to_jovian_coord(self, pos):
+        '''transform to mouseover coord at origin
+        '''
+        return (pos*self.scale_factor)+self.origin
 
 
     '''--------------------------------
@@ -199,23 +221,27 @@ class maze_view(scene.SceneCanvas):
     '''
 
     def connect(self, jov):
-        '''connect to the socket command output
+        '''connect to the jovian instance
         '''
         self.jov = jov
+        _trigger_pos = []
+        for cue in self.cues.values():
+            _trigger_pos.append(cue._pos)
+        self.shared_trigger = torch.from_numpy(np.array(_trigger_pos))
+        self.shared_trigger.share_memory_()
+        self.jov.set_trigger(self.shared_trigger)
         self.is_sock_cmd_connected = True
 
 
-    def teleport(self, prefix, target_pos, target_item):
+    def _teleport(self, prefix, target_pos, target_item=None):
         '''
            Core function: This is the only function that send `events` back to Jovian from interaction 
         '''
         if self.is_sock_cmd_connected:
-            x, y, _ = (target_pos-self.origin)/self.scale_factor # the maze coordination
+            x, y, z = target_pos
             if prefix == 'console':  # teleport animal
-                z = 5 # this should always be 5 based on Jovian constraint
-                self.jov.teleport(prefix, (x,y,z), target_item)
+                self.jov.teleport(prefix, (x,y,5))
             elif prefix == 'model':  # move cue
-                z = self.cues[target_item].center[-1]
                 self.jov.teleport(prefix, (x,y,z), target_item)
         else:
             pass
@@ -242,12 +268,14 @@ class maze_view(scene.SceneCanvas):
         elif e.text == 'c':
             self.pos = None
             self.trajectory.update()
+        elif e.text == '0':
+            self._selected_cue = None
         elif e.text == '1':
-            self._selected_cue = 0
-            print(self.cues.keys()[self._selected_cue])
+            self._selected_cue = self.cues.keys()[0]
+            # print('{} is selected'.format(self._selected_cue))
         elif e.text == '2':
-            self._selected_cue = 1
-            print(self.cues.keys()[self._selected_cue])
+            self._selected_cue = self.cues.keys()[1]
+            # print('{} is selected'.format(self._selected_cue))
         elif e.text == '.':
             self.view.camera = 'fly'
             self.set_range()
@@ -255,20 +283,18 @@ class maze_view(scene.SceneCanvas):
             self.view.camera = 'turntable'
             self.set_range()
 
+
     def on_mouse_release(self, e):
         with Timer('click',verbose=False):
             modifiers = e.modifiers
             if keys.CONTROL in e.modifiers and e.button == 1:
-                target_item = 'animal'
-                target_pos  = self.imap(e.pos)
-                self.teleport(prefix='console', target_pos=target_pos, target_item=target_item)
+                self.marker.pos = self.imap(e.pos)
             if keys.CONTROL in e.modifiers and e.button == 2:
                 with Timer('cue moving', verbose=False):
-                    target_item = self.cues.keys()[self._selected_cue]
-                    target_pos  = self.imap(e.pos)
-                    self.cues[target_item].move(target_pos)
-                    self.teleport(prefix='model', target_pos=target_pos, target_item=target_item)
-
+                    target_maze_pos = self.imap(e.pos)
+                    target_maze_pos[-1] = self.cues[self._selected_cue]._z_floor # force it touches the ground by setting z=z_center
+                    self.cues[self._selected_cue].pos = target_maze_pos
+                    
 
     def run(self):
         self.show()

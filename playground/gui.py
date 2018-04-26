@@ -2,7 +2,7 @@ import numpy as np
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
-from PyQt5.QtWidgets import QWidget, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QWidget, QSplitter, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
 
 import time
 from datetime import datetime
@@ -45,55 +45,69 @@ class play_GUI(QWidget):
         self.setPalette(p)
 
         #1. Folder name and layout
-        self.DirLabel = QLabel("Folder Name", self)
-        self.DirName = QLineEdit("~/Work/testbench", self)
-        DirLayout = QHBoxLayout()
-        DirLayout.addWidget(self.DirLabel)
-        DirLayout.addWidget(self.DirName)
+        # self.DirLabel = QLabel("Folder Name", self)
+        # self.DirName = QLineEdit("~/Work/testbench", self)
+        # DirLayout = QHBoxLayout()
+        # DirLayout.addWidget(self.DirLabel)
+        # DirLayout.addWidget(self.DirName)
 
         #2. File name and Layout
-        self.FileNameLabel = QLabel("File Name", self)
-        self.FileName1 = QLineEdit("stFRVR", self)
-        self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
-        self.FileName2 = QLineEdit(self.Year_Date_Time,self)
+        # self.FileNameLabel = QLabel("File Name", self)
+        # self.FileName1 = QLineEdit("stFRVR", self)
+        # self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
+        # self.FileName2 = QLineEdit(self.Year_Date_Time,self)
 
-        FileNameLayout = QHBoxLayout()
-        FileNameLayout.addWidget(self.FileNameLabel)
-        FileNameLayout.addWidget(self.FileName1)
-        FileNameLayout.addWidget(self.FileName2)
+        # FileNameLayout = QHBoxLayout()
+        # FileNameLayout.addWidget(self.FileNameLabel)
+        # FileNameLayout.addWidget(self.FileName1)
+        # FileNameLayout.addWidget(self.FileName2)
 
         #3. Bottons
         self.vrBtn = QPushButton("VR Stream Off",self)
         self.vrBtn.setCheckable(True)
-        self.vrBtn.setStyleSheet("background-color: white")
+        self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.vrBtn.toggled.connect(self.jovian_process_toggle)
 
-        BtnLayout = QGridLayout()
-        BtnLayout.addWidget(self.vrBtn,0,0)
+        # BtnLayout = QGridLayout()
+        # BtnLayout.addWidget(self.vrBtn,0,0)
 
         #4. TextBrowser
-        self.TextBrowser = QTextBrowser()
-        self.TextBrowser.setGeometry(40, 90, 180, 79)
+        # self.TextBrowser = QTextBrowser()
+        # self.TextBrowser.setGeometry(40, 90, 180, 79)
 
         #4. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
         self.nav_view.load_maze(maze_file = maze_file, 
                                 maze_coord_file = maze_coord_file) 
+        self.nav_view.load_animal()
         self.nav_view.load_cue(cue_file = cue0_file, cue_name = '_dcue_000')
         self.nav_view.load_cue(cue_file = cue1_file, cue_name = '_dcue_001')
 
+
         #widget layout
-        WidLayout = QVBoxLayout()
-        WidLayout.addLayout(DirLayout)
-        WidLayout.addLayout(FileNameLayout)
-        WidLayout.addLayout(BtnLayout)
-        WidLayout.addWidget(self.TextBrowser)
+        # leftlayout = QVBoxLayout()
+        # leftlayout.addLayout(DirLayout)
+        # leftlayout.addLayout(FileNameLayout)
+        # leftlayout.addLayout(BtnLayout)
+        # leftlayout.addWidget(self.TextBrowser)
+        # leftside = QWidget()
+        # leftside.setLayout(leftlayout)
+
+        # rightlayout = QVBoxLayout()
+        # rightlayout.addWidget(self.nav_view.native)
+        # rightside = QWidget()
+        # rightside.setLayout(rightlayout)
+        # splitter = QSplitter(Qt.Horizontal)
+        # splitter.addWidget(leftside)
+        # splitter.addWidget(rightside)
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.addWidget(self.vrBtn)
+        splitter.addWidget(self.nav_view.native)        
+
         pLayout = QHBoxLayout()
-        pLayout.addLayout(WidLayout)
-        pLayout.addWidget(self.nav_view.native)
-
+        pLayout.addWidget(splitter)
         self.setLayout(pLayout)
-
 
     #------------------------------------------------------------------------------
     # gui function
@@ -110,15 +124,20 @@ class play_GUI(QWidget):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.jov = Jovian()
+
+        @self.jov.connect
+        def on_touch(args):
+            self.touch_id, self.coord = args
+            print(self.touch_id, self.coord)
+            
+        self.nav_view.connect(self.jov)
         self.jov.start()
         self.nav_view_timer.start()
-        self.nav_view.connect(self.jov)
-
 
 
     def jovian_process_stop(self):
         self.vrBtn.setText('VR Stream Off')
-        self.vrBtn.setStyleSheet("background-color: white")
+        self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.jov.stop()
         self.nav_view_timer.stop()
 
