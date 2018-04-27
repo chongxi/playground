@@ -121,12 +121,13 @@ class two_cue_task(Task):
 
     def guide_cue_touched(self, args):
         print(args)
-        self.jov.emit('cue', cue_id=1, func='set_z', args=-1000)
+        # self.jov.emit('cue', cue_id=1, func='set_z', args=-1000)
+        self.jov.teleport(prefix='model', target_pos=(0,0,0), target_item=1)
 
 
     def goal_cue_touched(self, args):
         print(args)
-        self.jov.emit('cue', cue_id=0, func='set_z', args=-1000)
+        # self.jov.emit('cue', cue_id=0, func='set_z', args=-1000)
         #TODO: give reward
 
 

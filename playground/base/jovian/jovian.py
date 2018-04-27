@@ -121,18 +121,21 @@ class Jovian(EventEmitter):
     # def on_touch(self):
     #     print(self._t, self._coord)
 
-    def set_trigger(self, shared_trigger):
-        '''shared_trigger is a torch Tensor it is a shared memory block between processes by:
-           shared_trigger.share_memory_()
+    def set_trigger(self, cues_name, shared_cue_pos):
+        '''shared_cue_pos is a torch Tensor it is a shared memory block between processes by:
+           shared_cue_pos.share_memory_()
         '''
-        self.trigger = shared_trigger
+        self.cues_name = cues_name
+        self.shared_cue_pos   = shared_cue_pos
+        print(self.cues_name)
+        print('is connected')
 
     def examine_trigger(self):
         # print(self._t, self._coord)
         # for i, _trigger in enumerate(self.trigger):
         # print self.trigger.numpy()
         pos = np.array(self._coord)
-        cue_pos = self.trigger.numpy()[:,:2]
+        cue_pos = self.shared_cue_pos.numpy()[:,:2]
         print(cue_pos)
         for _cue_id, _cue_pos in enumerate(cue_pos):
             if is_close(pos, _cue_pos):
@@ -166,6 +169,16 @@ class Jovian(EventEmitter):
             self.output.send(cmd)
             # print(cmd)
         elif prefix == 'model':  # move cue
-            cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
-            self.output.send(cmd)
+            target_pos = np.array([x,y,z])
+            target_pos = self._to_jovian_coord(target_pos)
+            if target_item in self.cues_name:
+                cue_no = self.cues_name.index(target_item)
+                self.shared_cue_pos[cue_no] = torch.from_numpy(target_pos)
+                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
+                self.output.send(cmd)
+            if type(target_item) is int:
+                cue_no = target_item
+                self.shared_cue_pos[cue_no] = torch.from_numpy(target_pos)
+                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
+                self.output.send(cmd)
             # print(cmd)

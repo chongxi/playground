@@ -114,7 +114,7 @@ class maze_view(scene.SceneCanvas):
             ### update shared trigger pos (used by Jovian and Task)
             pos = self._to_jovian_coord(target_pos)
             cue_no = self.cues.keys().index(target_item)
-            self.shared_trigger[cue_no] = torch.from_numpy(pos)
+            self.shared_cue_pos[cue_no] = torch.from_numpy(pos)
 
 
     def set_file(self, file):
@@ -227,9 +227,11 @@ class maze_view(scene.SceneCanvas):
         _trigger_pos = []
         for cue in self.cues.values():
             _trigger_pos.append(cue._pos)
-        self.shared_trigger = torch.from_numpy(np.array(_trigger_pos))
-        self.shared_trigger.share_memory_()
-        self.jov.set_trigger(self.shared_trigger)
+        self.shared_cue_pos = torch.from_numpy(np.array(_trigger_pos))
+        self.shared_cue_pos.share_memory_()
+        self.jov.set_trigger(self.cues.keys(), self.shared_cue_pos)
+        self.jov._to_maze_coord = self._to_maze_coord
+        self.jov._to_jovian_coord = self._to_jovian_coord
         self.is_sock_cmd_connected = True
 
         @self.jov.connect
@@ -293,7 +295,6 @@ class maze_view(scene.SceneCanvas):
         elif e.text == ',':
             self.view.camera = 'turntable'
             self.set_range()
-
 
     def on_mouse_release(self, e):
         with Timer('click',verbose=False):

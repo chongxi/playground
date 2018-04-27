@@ -120,7 +120,7 @@ class play_GUI(QWidget):
         #     self.touch_id, self.coord = args
         #     print(self.touch_id, self.coord)
 
-        self.nav_view.connect(self.jov)
+        self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
 
         # 2. Init Task
         # self.jov = Jovian()

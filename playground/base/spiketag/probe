@@ -1,0 +1,21 @@
+probe = {
+            "electrodes":[
+            {
+                "channel":0,
+                "group":"p1",
+                "coordinates":[0,0]
+            },
+            {
+                "channel":1,
+                "group":"p1",
+                "coordinates":[10,0]
+            }
+            ],
+
+
+            "groups":{
+                0: [4,5,6,10],
+                1: [9,10,45,128]
+            }
+
+       } 
