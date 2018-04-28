@@ -24,9 +24,9 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, arg):
+    def __init__(self, task_name):
         super(play_GUI, self).__init__()
-        self.arg = arg
+        self.task_name = task_name
         self.event_log = {}
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
@@ -111,23 +111,16 @@ class play_GUI(QWidget):
         self.setLayout(pLayout)
 
 
-    def init_Task(self, task_name='two_cue_task'):
+    def init_Task(self):
 
         # 1. Init Jovian first 
         self.jov = Jovian()
-        # @self.jov.connect
-        # def on_touch(args):
-        #     self.touch_id, self.coord = args
-        #     print(self.touch_id, self.coord)
-
         self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
 
         # 2. Init Task
-        # self.jov = Jovian()
-        self.task_name = task_name
-        # self.task = globals()[task_name](self.jov)
-        self.task = two_cue_task(self.jov)
-        print(self.task.state)
+        self.task = globals()[self.task_name](self.jov)
+        # self.task = two_cue_task(self.jov)
+        print(self.task_name, self.task.state)
 
 
     #------------------------------------------------------------------------------

@@ -6,6 +6,6 @@ from playground.gui import play_GUI
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    gui = play_GUI(0)
+    gui = play_GUI('two_cue_task')
     gui.show()
     sys.exit(app.exec_())
