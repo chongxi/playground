@@ -50,12 +50,14 @@ class Task(object):
         self.reset()
 
     def on_event(self, event):
-        try:
-            next_state, func, args = self.fsm[self.state][event]
-            func(args)
-            self.state = next_state
-        except:
-            print('Your Finite State Machine is Incomplete or Wrong')
+        # try:
+        print self.state
+        next_state, func, args = self.fsm[self.state][event]
+        func(args)
+        self.state = next_state
+        print self.state
+        # except:
+        #     print('Your Finite State Machine is Incomplete or Wrong')
 
 
 
@@ -95,9 +97,11 @@ class two_cue_task(Task):
 
     def __init__(self, jov):
 
+        # goal cue: 000, guide cue: 001
+
         fsm = {
-                '2cue': {0: ['2cue', self.warn, 'touch wrong cue'], 1: ['1cue', self.guide_cue_touched, 'right cue']}, 
-                '1cue': {0: ['2cue', self.goal_cue_touched, 'reward']} 
+                '2cue': { '_dcue_000': ['2cue', self.warn, 'touch wrong cue'],    '_dcue_001': ['1cue', self.guide_cue_touched, 'right cue'] }, 
+                '1cue': { '_dcue_000': ['2cue', self.goal_cue_touched, 'reward'], '_dcue_001': ['1cue', self.guide_cue_touched, 'wrong cue'] } 
               }
 
         super(two_cue_task, self).__init__(fsm, jov)
@@ -115,22 +119,21 @@ class two_cue_task(Task):
         self.jov.teleport(prefix='model', target_pos=_coord_guide, target_item='_dcue_001')
         self.state = '2cue'
 
-
     def warn(self, args):
         # TODO: give sound
         print(args)
 
-
     def guide_cue_touched(self, args):
         print(args)
-        # self.jov.emit('cue', cue_id=1, func='set_z', args=-1000)
-        self.jov.teleport(prefix='model', target_pos=(0,0,0), target_item='_dcue_001')
+        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
 
 
     def goal_cue_touched(self, args):
         print(args)
-        # self.jov.emit('cue', cue_id=0, func='set_z', args=-1000)
+        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
         #TODO: give reward
+        # self.jov.reward(100)
+        self.reset()
 
 
 

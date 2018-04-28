@@ -297,8 +297,6 @@ class maze_view(scene.SceneCanvas):
             if keys.CONTROL in e.modifiers and e.button == 2:
                 with Timer('cue moving', verbose=False):
                     target_maze_pos = self.imap(e.pos)
-                    # print target_maze_pos
-                    # target_maze_pos[-1] = self.cues[self._selected_cue]._z_floor # force it touches the ground by setting z=z_center
                     self.cues[self._selected_cue].pos = target_maze_pos
                     
 

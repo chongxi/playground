@@ -9,7 +9,7 @@ import numpy as np
 
 
 host_ip = '10.102.20.26'
-is_close = lambda pos, cue_pos: np.linalg.norm(pos-cue_pos)/100 < 18
+is_close = lambda pos, cue_pos: np.linalg.norm(pos-cue_pos)/100 < 15
 verbose = True
 
 
@@ -137,8 +137,8 @@ class Jovian(EventEmitter):
         # print self.trigger.numpy()
         pos = np.array(self._coord)
         for _cue_name in self.shared_cue_dict.keys():
-            print self.shared_cue_dict[_cue_name][0]
-            _cue_pos = self.shared_cue_dict[_cue_name][0]
+            print self.shared_cue_dict[_cue_name]
+            _cue_pos = self.shared_cue_dict[_cue_name]
             if is_close(pos, _cue_pos):
                 self.emit('touch', args=(_cue_name, self._coord))
 
