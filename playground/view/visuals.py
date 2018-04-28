@@ -224,6 +224,7 @@ class CueVisual(CompoundVisual, EventEmitter):
         self._border = scene.visuals.Mesh()
         self._origin = np.array([0,0,0])
         self._center = np.array([0,0,0])
+        self._xy_center = np.array([0,0,0])
         self._pos    = np.array([0,0,0])
         self._z      = 0
         self._z_floor = 0
@@ -267,6 +268,8 @@ class CueVisual(CompoundVisual, EventEmitter):
     def center(self, v):
         self._center = np.array(v)
         self._z_floor = self._center[-1]
+        self._xy_center = self._center.copy()
+        self._xy_center[-1] -= self._z_floor
 
     @property
     def pos(self):
@@ -275,9 +278,21 @@ class CueVisual(CompoundVisual, EventEmitter):
     @pos.setter
     def pos(self, v):
         self.emit('move', target_item=self._name, target_pos=v)
-        self._pos = _to_jovian_coord((np.array(v) - self._center), self._origin, self._scale_factor)
-        self._pos[-1] = -self._pos[-1]
-        self._transform.translate = self._pos
+        self._pos = _to_jovian_coord((np.array(v) - self._xy_center), self._origin, self._scale_factor)
+        # self._pos[-1] = 0 
+        # self._transform.translate = self._pos
+
+
+    @property
+    def bottom(self):
+        ''' The jovian coord of the bottom of the cue
+            (important! ) used for trigger examination, task, jovian report
+            So it is in Jovian coordination
+        '''
+        pos_jovian = self._pos + self._scale_factor*self.center
+        pos_jovian[-1] -= self._scale_factor*self.center[-1]
+        return pos_jovian
+
 
     @property
     def z(self):

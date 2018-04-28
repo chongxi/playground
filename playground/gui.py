@@ -159,3 +159,4 @@ class play_GUI(QWidget):
         with Timer('', verbose=False):
             ts, coord = self.jov.get()
             self.nav_view.current_pos = coord
+            self.nav_view.cue_update()

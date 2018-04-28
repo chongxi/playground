@@ -19,7 +19,7 @@ class Jovian_Stream(str):
         line = self.__str__()
         _line = line.split(',')
         _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
-        _coord = [_x, _y]
+        _coord = [_x, _y, 0]
         return _t, _coord
 
 
@@ -113,7 +113,7 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=verbose):
                 self._t, self._coord = self.readline().parse()
-                self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
+                # self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
                 self.pipe_jovian_side.send((self._t, self._coord))
                 self.examine_trigger()
             # print(self._t, self._coord)
@@ -121,25 +121,26 @@ class Jovian(EventEmitter):
     # def on_touch(self):
     #     print(self._t, self._coord)
 
-    def set_trigger(self, cues_name, shared_cue_pos):
+    def set_trigger(self, shared_cue_dict):
         '''shared_cue_pos is a torch Tensor it is a shared memory block between processes by:
            shared_cue_pos.share_memory_()
         '''
-        self.cues_name = cues_name
-        self.shared_cue_pos   = shared_cue_pos
-        print(self.cues_name)
-        print('is connected')
+        self.shared_cue_dict = shared_cue_dict
+        print('---------------------------------')
+        print('jovian and maze_view is connected, they starts to share cues position and transformations')
+        print(self.shared_cue_dict.items())
+
 
     def examine_trigger(self):
         # print(self._t, self._coord)
         # for i, _trigger in enumerate(self.trigger):
         # print self.trigger.numpy()
         pos = np.array(self._coord)
-        cue_pos = self.shared_cue_pos.numpy()[:,:2]
-        print(cue_pos)
-        for _cue_id, _cue_pos in enumerate(cue_pos):
+        for _cue_name in self.shared_cue_dict.keys():
+            print self.shared_cue_dict[_cue_name][0]
+            _cue_pos = self.shared_cue_dict[_cue_name][0]
             if is_close(pos, _cue_pos):
-                self.emit('touch', args=(_cue_id, self._coord))
+                self.emit('touch', args=(_cue_name, self._coord))
 
 
     def start(self, task_name='two_cue_task'):
@@ -163,22 +164,20 @@ class Jovian(EventEmitter):
         '''
            Core function: This is the only function that send `events` back to Jovian from interaction 
         '''
-        x, y, z = target_pos # the coordination
+        try:
+            x, y, z = target_pos # the coordination
+        except:
+            x, y = target_pos
+            z = 0
         if prefix == 'console':  # teleport animal, target_item is not needed
-            cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,z,0)
+            cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,5,0)
             self.output.send(cmd)
             # print(cmd)
         elif prefix == 'model':  # move cue
-            target_pos = np.array([x,y,z])
-            target_pos = self._to_jovian_coord(target_pos)
-            if target_item in self.cues_name:
-                cue_no = self.cues_name.index(target_item)
-                self.shared_cue_pos[cue_no] = torch.from_numpy(target_pos)
-                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
-                self.output.send(cmd)
-            if type(target_item) is int:
-                cue_no = target_item
-                self.shared_cue_pos[cue_no] = torch.from_numpy(target_pos)
-                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
-                self.output.send(cmd)
+            z += self.shared_cue_height[target_item]
+            cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
+            self.output.send(cmd)
+            bottom = z - self.shared_cue_height[target_item]
+            self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom]))
+            print self.shared_cue_dict[target_item]
             # print(cmd)

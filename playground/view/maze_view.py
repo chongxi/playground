@@ -16,6 +16,7 @@ from vispy.visuals.transforms import STTransform, MatrixTransform
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 import torch
+from torch import multiprocessing
 
 class maze_view(scene.SceneCanvas):
     """
@@ -51,12 +52,13 @@ class maze_view(scene.SceneCanvas):
 
         ### 4. cue objects
         self.cues = {}
+        self.cues_height = {}
         self._selected_cue = None
 
         ### Timer
         self._timer = app.Timer(0.1)
         self._timer.connect(self.on_timer)
-        self._timer.start(0.8)
+        # self._timer.start(0.8)
         self.global_i = 0
 
         # self.set_range()
@@ -94,7 +96,7 @@ class maze_view(scene.SceneCanvas):
 
         @self.marker.connect
         def on_move(target_pos):
-            self._teleport(prefix='console', target_pos=target_pos)
+            self.jov.teleport(prefix='console', target_pos=target_pos)
 
 
     def load_cue(self, cue_file, cue_name=None):
@@ -108,13 +110,17 @@ class maze_view(scene.SceneCanvas):
         self.cues[cue_name].pos = [0, 0, self.cues[cue_name].center[-1]]
         self.view.add(self.cues[cue_name])
 
+        self.cues_height[cue_name] = self.cues[cue_name].center[-1]  # jovian will use this papameter
+
         @_cue.connect
         def on_move(target_item, target_pos):
-            self._teleport(prefix='model', target_pos=target_pos, target_item=target_item)
-            ### update shared trigger pos (used by Jovian and Task)
-            pos = self._to_jovian_coord(target_pos)
-            cue_no = self.cues.keys().index(target_item)
-            self.shared_cue_pos[cue_no] = torch.from_numpy(pos)
+            self.jov.teleport(prefix='model', target_pos=target_pos, target_item=target_item)
+
+
+    def cue_update(self):
+        for cue_name, cue in self.cues.items():
+            # [1,1,-1] because of mirror image of projection
+            cue._transform.translate = np.array([1,1,-1])*self.shared_cue_dict[cue_name] - cue._xy_center*cue._scale_factor
 
 
     def set_file(self, file):
@@ -124,9 +130,11 @@ class maze_view(scene.SceneCanvas):
             pos = np.load(file).astype(np.float32)
             self.pos = pos
             
+
     @property
     def current_pos(self):
         return self._current_pos
+
 
     @current_pos.setter
     def current_pos(self, pos_in):
@@ -141,9 +149,11 @@ class maze_view(scene.SceneCanvas):
 
     def stream_in_pos(self, pos_in):
         '''
-        ! pos_in must be np array with shape (2,)
+        ! pos_in must be np array with shape (2,) because the way we write LineVisual
+          It only affects visualzation but not computation involved in task
         '''
         # print pos_in
+        pos_in = pos_in[:2]
         if self.pos is None:
             self.pos = pos_in.reshape(-1,2)
         else:
@@ -222,16 +232,15 @@ class maze_view(scene.SceneCanvas):
 
     def connect(self, jov):
         '''connect to the jovian instance
+           called after all the cues are loaded
         '''
         self.jov = jov
-        _trigger_pos = []
-        for cue in self.cues.values():
-            _trigger_pos.append(cue._pos)
-        self.shared_cue_pos = torch.from_numpy(np.array(_trigger_pos))
-        self.shared_cue_pos.share_memory_()
-        self.jov.set_trigger(self.cues.keys(), self.shared_cue_pos)
+        mgr = multiprocessing.Manager()
+        self.shared_cue_dict = mgr.dict()
+        self.jov.set_trigger(self.shared_cue_dict)
         self.jov._to_maze_coord = self._to_maze_coord
         self.jov._to_jovian_coord = self._to_jovian_coord
+        self.jov.shared_cue_height = self.cues_height
         self.is_sock_cmd_connected = True
 
         @self.jov.connect
@@ -243,22 +252,6 @@ class maze_view(scene.SceneCanvas):
             # print(f)
             # f(args)
             # self.cues[target_item].pos = target_pos
-
-
-
-    def _teleport(self, prefix, target_pos, target_item=None):
-        '''
-           Core function: This is the only function that send `events` back to Jovian from interaction 
-        '''
-        if self.is_sock_cmd_connected:
-            x, y, z = target_pos
-            if prefix == 'console':  # teleport animal
-                self.jov.teleport(prefix, (x,y,5))
-            elif prefix == 'model':  # move cue
-                self.jov.teleport(prefix, (x,y,z), target_item)
-        else:
-            pass
-        # print('from trajectory_view:',cmd)
 
 
     '''--------------------------------
@@ -304,7 +297,8 @@ class maze_view(scene.SceneCanvas):
             if keys.CONTROL in e.modifiers and e.button == 2:
                 with Timer('cue moving', verbose=False):
                     target_maze_pos = self.imap(e.pos)
-                    target_maze_pos[-1] = self.cues[self._selected_cue]._z_floor # force it touches the ground by setting z=z_center
+                    # print target_maze_pos
+                    # target_maze_pos[-1] = self.cues[self._selected_cue]._z_floor # force it touches the ground by setting z=z_center
                     self.cues[self._selected_cue].pos = target_maze_pos
                     
 

@@ -9,7 +9,7 @@ def _cue_generate_2d_maze(*args):
     '''
     while True:
         break_condition = True
-        pos = np.random.randint(low=-100, high=100, size=(2,))
+        pos = np.random.randint(low=-85, high=85, size=(2,))
         for _pos in args:
             if np.linalg.norm(pos - np.array(_pos)) < 30:
                break_condition = False 
@@ -102,6 +102,8 @@ class two_cue_task(Task):
 
         super(two_cue_task, self).__init__(fsm, jov)
 
+        self.cues_name = ['_dcue_000', '_dcue_001']  # goal cue: 000, guide cue: 001
+
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
     #---------------------------------------------------------------------------------------------------
@@ -109,8 +111,8 @@ class two_cue_task(Task):
         _corrd_animal = self.current_pos
         _coord_guide  = _cue_generate_2d_maze(_corrd_animal) 
         _coord_goal   = _cue_generate_2d_maze(_corrd_animal, _coord_guide)
-        self.jov.emit('cue', cue_id=0, func='move', args=_coord_goal)
-        self.jov.emit('cue', cue_id=1, func='move', args=_coord_guide)
+        self.jov.teleport(prefix='model', target_pos=_coord_goal, target_item='_dcue_000')
+        self.jov.teleport(prefix='model', target_pos=_coord_guide, target_item='_dcue_001')
         self.state = '2cue'
 
 
@@ -122,7 +124,7 @@ class two_cue_task(Task):
     def guide_cue_touched(self, args):
         print(args)
         # self.jov.emit('cue', cue_id=1, func='set_z', args=-1000)
-        self.jov.teleport(prefix='model', target_pos=(0,0,0), target_item=1)
+        self.jov.teleport(prefix='model', target_pos=(0,0,0), target_item='_dcue_001')
 
 
     def goal_cue_touched(self, args):
