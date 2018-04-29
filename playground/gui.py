@@ -2,7 +2,8 @@ import numpy as np
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
-from PyQt5.QtWidgets import QWidget, QSplitter, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtGui import QIcon
 
 import time
 from datetime import datetime
@@ -14,24 +15,26 @@ from utils import Timer
 
 import os 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-maze_file       = dir_path+'/base/maze/obj/maze_2d.obj'
-maze_coord_file = dir_path+'/base/maze/2dmaze_2cue_follow1_4.coords'
-cue1_file       = dir_path+'/base/maze/obj/constraint_cue.obj'
-cue0_file       = dir_path+'/base/maze/obj/goal_cue.obj'
+dir_path += '/base/maze/obj/'
+# maze_file       = dir_path+'/base/maze/obj/maze_2d.obj'
+# maze_coord_file = dir_path+'/base/maze/obj/maze_2d.coords'
+# cue1_file       = dir_path+'/base/maze/obj/_dcue_001.obj'
+# cue0_file       = dir_path+'/base/maze/obj/_dcue_000.obj'
 
 
 class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, task_name):
-        super(play_GUI, self).__init__()
-        self.task_name = task_name
+    def __init__(self):
+        # super(play_GUI, self).__init__()
+        QWidget.__init__(self)
+        # self.task_name = task_name
         self.event_log = {}
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
-        self.init_Task()
+        # self.init_Task()
 
     #------------------------------------------------------------------------------
     # gui layout
@@ -45,23 +48,23 @@ class play_GUI(QWidget):
         p.setColor(self.foregroundRole(), Qt.white)
         self.setPalette(p)
 
-        #1. Folder name and layout
-        # self.DirLabel = QLabel("Folder Name", self)
-        # self.DirName = QLineEdit("~/Work/testbench", self)
-        # DirLayout = QHBoxLayout()
-        # DirLayout.addWidget(self.DirLabel)
-        # DirLayout.addWidget(self.DirName)
+        #1. Folder name (Maze files and task log) and layout
+        self.DirName = QLineEdit(dir_path, self)
+        self.DirName.returnPressed.connect(self.line_loadDialog)
+        self.mzBtn = QPushButton("Load Maze",self)
+        self.mzBtn.clicked.connect(self.btn_loadDialog)
+        self.combo = QComboBox(self) 
+        self.combo.addItem("one_cue_task")
+        self.combo.addItem("two_cue_task")
+        self.combo.activated[str].connect(self.selectTask)
+
+        DirLayout = QGridLayout()
+        DirLayout.addWidget(self.DirName, 0,0,1,2)
+        DirLayout.addWidget(self.mzBtn, 1,0, 1, 1)
+        DirLayout.addWidget(self.combo, 1,1 ,1, 1)
 
         #2. File name and Layout
-        # self.FileNameLabel = QLabel("File Name", self)
-        # self.FileName1 = QLineEdit("stFRVR", self)
-        # self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
-        # self.FileName2 = QLineEdit(self.Year_Date_Time,self)
-
-        # FileNameLayout = QHBoxLayout()
-        # FileNameLayout.addWidget(self.FileNameLabel)
-        # FileNameLayout.addWidget(self.FileName1)
-        # FileNameLayout.addWidget(self.FileName2)
+        self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
 
         #3. Bottons
         self.vrBtn = QPushButton("VR Stream Off",self)
@@ -69,30 +72,23 @@ class play_GUI(QWidget):
         self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.vrBtn.toggled.connect(self.jovian_process_toggle)
 
-        # BtnLayout = QGridLayout()
-        # BtnLayout.addWidget(self.vrBtn,0,0)
+        BtnLayout = QGridLayout()
+        BtnLayout.addWidget(self.vrBtn,0,0)
 
         #4. TextBrowser
-        # self.TextBrowser = QTextBrowser()
-        # self.TextBrowser.setGeometry(40, 90, 180, 79)
+        self.TextBrowser = QTextBrowser()
+        self.TextBrowser.setGeometry(40, 90, 180, 79)
 
         #4. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
-        self.nav_view.load_maze(maze_file = maze_file, 
-                                maze_coord_file = maze_coord_file) 
-        self.nav_view.load_animal()
-        self.nav_view.load_cue(cue_file = cue0_file, cue_name = '_dcue_000')
-        self.nav_view.load_cue(cue_file = cue1_file, cue_name = '_dcue_001')
-
 
         #widget layout
-        # leftlayout = QVBoxLayout()
-        # leftlayout.addLayout(DirLayout)
-        # leftlayout.addLayout(FileNameLayout)
-        # leftlayout.addLayout(BtnLayout)
-        # leftlayout.addWidget(self.TextBrowser)
-        # leftside = QWidget()
-        # leftside.setLayout(leftlayout)
+        leftlayout = QVBoxLayout()
+        leftlayout.addLayout(DirLayout)
+        leftlayout.addLayout(BtnLayout)
+        leftlayout.addWidget(self.TextBrowser)
+        leftside = QWidget()
+        leftside.setLayout(leftlayout)
 
         # rightlayout = QVBoxLayout()
         # rightlayout.addWidget(self.nav_view.native)
@@ -103,16 +99,29 @@ class play_GUI(QWidget):
         # splitter.addWidget(rightside)
 
         splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.vrBtn)
+        splitter.addWidget(leftside)
         splitter.addWidget(self.nav_view.native)        
 
         pLayout = QHBoxLayout()
         pLayout.addWidget(splitter)
         self.setLayout(pLayout)
 
+    #------------------------------------------------------------------------------
+    # gui function
+    #------------------------------------------------------------------------------
+    def line_loadDialog(self):
+        folder = self.DirName.text()
+        self.load_maze(folder)
 
-    def init_Task(self):
+    def btn_loadDialog(self):
+        folder = str(QFileDialog.getExistingDirectory(None))
+        self.DirName.setText(folder)
+        self.load_maze(folder)
 
+    def selectTask(self, task_name):
+        self.task_name = task_name
+
+    # def init_Task(self):
         # 1. Init Jovian first 
         self.jov = Jovian()
         self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
@@ -123,9 +132,25 @@ class play_GUI(QWidget):
         print(self.task_name, self.task.state)
 
 
-    #------------------------------------------------------------------------------
-    # gui function
-    #------------------------------------------------------------------------------
+    def load_maze(self, folder):
+        maze_files = [_ for _ in os.listdir(folder) if 'maze' in _]
+        cue_files  = [_ for _ in os.listdir(folder) if 'cue'  in _]
+        for file in maze_files:
+            if file.endswith(".obj"):
+                maze_mesh_file = os.path.join(folder, file)
+            elif file.endswith(".coords"):
+                maze_coord_file = os.path.join(folder, file)
+        self.nav_view.load_maze(maze_file = maze_mesh_file, 
+                                maze_coord_file = maze_coord_file) 
+        self.nav_view.load_animal()
+        print('load ', maze_mesh_file, maze_coord_file)
+
+        for file in cue_files:
+            _cue_file = os.path.join(folder, file)
+            self.nav_view.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
+            # print(os.path.join(folder, file))
+            print('load ', _cue_file)
+
 
     def jovian_process_toggle(self, checked):
         if checked:
