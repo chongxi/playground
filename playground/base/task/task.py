@@ -115,17 +115,12 @@ class one_cue_task(Task):
 class two_cue_task(Task):
 
     def __init__(self, jov):
-
         # goal cue: 000, guide cue: 001
-
         fsm = {
                 '2cue': { '_dcue_000': ['2cue', self.warn, 'touch wrong cue'],    '_dcue_001': ['1cue', self.guide_cue_touched, 'right cue'] }, 
                 '1cue': { '_dcue_000': ['2cue', self.goal_cue_touched, 'reward'], '_dcue_001': ['1cue', self.guide_cue_touched, 'wrong cue'] } 
               }
-
         super(two_cue_task, self).__init__(fsm, jov)
-
-        self.cues_name = ['_dcue_000', '_dcue_001']  # goal cue: 000, guide cue: 001
 
         @self.jov.connect
         def on_animate():
@@ -135,7 +130,7 @@ class two_cue_task(Task):
                 self.z -= 1
             else:
                 pass
-
+                
         self.z = 60
         self.reset()
 
@@ -150,7 +145,6 @@ class two_cue_task(Task):
         # self.jov.teleport(prefix='model', target_pos=self._coord_guide, target_item='_dcue_001')
         # self.jov.teleport(prefix='model', target_pos=self._coord_goal,  target_item='_dcue_000')
         self.state = '2cue'
-
 
     def warn(self, args):
         # TODO: give sound

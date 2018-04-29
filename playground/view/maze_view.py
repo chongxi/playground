@@ -118,9 +118,12 @@ class maze_view(scene.SceneCanvas):
 
 
     def cue_update(self):
-        for cue_name, cue in self.cues.items():
-            # [1,1,-1] because of mirror image of projection
-            cue._transform.translate = np.array([1,1,-1])*self.shared_cue_dict[cue_name] - cue._xy_center*cue._scale_factor
+        with Timer('cue_update', verbose = False):
+            for cue_name, cue_pos in self.shared_cue_dict.items():
+                # print cue_name, cue_pos
+                _cue = self.cues[cue_name]
+                # [1,1,-1] because of mirror image of projection
+                _cue._transform.translate = np.array([1,1,-1])*cue_pos - _cue._xy_center*_cue._scale_factor
 
 
     def set_file(self, file):
