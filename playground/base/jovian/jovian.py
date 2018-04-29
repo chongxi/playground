@@ -117,8 +117,8 @@ class Jovian(EventEmitter):
             with Timer('', verbose=verbose):
                 self._t, self._coord = self.readline().parse()
                 self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
-                self.pipe_jovian_side.send((self._t, self._coord))
                 self.task_routine()
+                # self.pipe_jovian_side.send((self._t, self._coord))
             # print(self._t, self._coord)
 
 

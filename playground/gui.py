@@ -163,7 +163,7 @@ class play_GUI(QWidget):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.jov.start()
-        self.nav_view_timer.start()
+        self.nav_view_timer.start(20)
 
 
     def jovian_process_stop(self):
@@ -175,6 +175,5 @@ class play_GUI(QWidget):
 
     def nav_view_update(self):
         with Timer('', verbose=False):
-            ts, coord = self.jov.get()
-            self.nav_view.current_pos = coord
+            self.nav_view.current_pos = self.jov.current_pos.numpy()
             self.nav_view.cue_update()
