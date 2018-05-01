@@ -249,7 +249,6 @@ class empty_task(Task):
     def __init__(self, arg):
         super(empty_task, self).__init__()
         self.arg = arg
-        
 
 
 
