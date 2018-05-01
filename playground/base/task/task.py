@@ -32,8 +32,7 @@ class Task(object):
     def __init__(self, fsm, jov):
         # jovian first
         self.jov = jov
-        # self.cue_name   = self.jov.shared_cue_dict.keys()
-        self.animation = {}  # {"_dcue_000": deque([(4, parachute), (60, vibrate)]), "_dcue_111": deque([(2, animation111)])}
+        self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
 
         @self.jov.connect
         def on_start():
@@ -87,11 +86,17 @@ class Task(object):
     #------------------------------------------------------------------------------
 
     def parachute(self, cue_name, pos):
+        ''' usage:
+            self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
+        '''
         for z in range(60,-1,-2):
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
 
     def vibrate(self, cue_name):
+        ''' usage:
+            self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
+        '''
         for z in range(1000):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  5], target_item=cue_name)
@@ -99,6 +104,15 @@ class Task(object):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  0], target_item=cue_name)
             yield            
+
+    def trajectory_teleport(self, trajectory):
+        ''' usage:
+            trajectory = np.arange(-99,100).repeat(2).reshape(-1,2)
+            self.animation['animal'] = deque([ (3, self.trajectory_teleport(trajectory)) ])
+        '''
+        for pos in trajectory:
+            self.jov.teleport(prefix='console', target_pos=pos)
+            yield
 
 
 
@@ -135,7 +149,7 @@ class one_cue_task(Task):
 
 
 #------------------------------------------------------------------------------
-# one cue task
+# two cue task
 #------------------------------------------------------------------------------
 class two_cue_task(Task):
 
@@ -173,7 +187,6 @@ class two_cue_task(Task):
         self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
         self.jov.reward(self.reward_time)
         self.reset()
-
 
 
 
