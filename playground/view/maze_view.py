@@ -27,7 +27,7 @@ class maze_view(scene.SceneCanvas):
         scene.SceneCanvas.__init__(self, title='Navigation View', keys=None)
         self.unfreeze()
 
-        self.is_sock_cmd_connected = False
+        self.is_jovian_connected = False
         ### 1. viewbox, border and camera
         self.view = self.central_widget.add_view(margin=10)
         # self.view.camera = 'panzoom'
@@ -244,7 +244,7 @@ class maze_view(scene.SceneCanvas):
         self.jov._to_maze_coord = self._to_maze_coord
         self.jov._to_jovian_coord = self._to_jovian_coord
         self.jov.shared_cue_height = self.cues_height
-        self.is_sock_cmd_connected = True
+        self.is_jovian_connected = True
 
         @self.jov.connect
         def on_cue(cue_id, func, args):

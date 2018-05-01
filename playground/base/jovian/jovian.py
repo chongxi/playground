@@ -8,11 +8,14 @@ import numpy as np
 # from .task import *
 
 
+
+ENABLE_PROFILER = False
+
 host_ip = '10.102.20.26'
-radius = 18
-is_close = lambda pos, cue_pos: np.linalg.norm(pos-cue_pos)/100 < radius
+pynq_ip = '10.102.20.105'
 verbose = True
 
+is_close = lambda pos, cue_pos, radius: np.linalg.norm(pos-cue_pos)/100 < radius
 
 
 class Jovian_Stream(str):
@@ -45,6 +48,7 @@ class Jovian(EventEmitter):
 
 
     def socket_init(self):
+        ### mouseover server connection
         self.input = socket.create_connection((host_ip, '22224'), timeout=1)
         self.input.setblocking(1)
         self.input.settimeout(0.8)
@@ -54,6 +58,14 @@ class Jovian(EventEmitter):
         self.output_control = socket.create_connection((host_ip, '22225'), timeout=1)
         self.enable_output()
 
+        ### pynq server connection
+        self.pynq = socket.create_connection((pynq_ip, '2222'), timeout=1)
+        self.pynq.setblocking(1)
+        self.pynq.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+        self.socks = [self.input,  self.output, self.output_control, self.pynq]
+
+
     def buf_init(self):
         self.buf = None        # the buf generator
         self.buffer = ''       # the content
@@ -62,17 +74,16 @@ class Jovian(EventEmitter):
 
     def shared_mem_init(self):
         # current position of animal
-        pos = np.array([0, 0, 0])
-        self.current_pos = torch.from_numpy(pos)
+        self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
+        self.cnt = torch.empty(1,)
+        self.cnt.share_memory_()
 
 
     def reset(self):
-        self.input.close()
-        self.output.close()
-        self.output_control.close()
-        self.socket_init()
+        [conn.shutdown(2) for conn in self.socks]
         self.buf_init()
+        self.socket_init()
 
 
     def enable_output(self, enable=True):
@@ -112,9 +123,8 @@ class Jovian(EventEmitter):
            a multiprocessing pipe + a jovian instance 
            as input parameters
         '''
-        self.cnt = 0
         while True:
-            with Timer('', verbose=verbose):
+            with Timer('', verbose=ENABLE_PROFILER):
                 self._t, self._coord = self.readline().parse()
                 self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
                 self.task_routine()
@@ -129,26 +139,22 @@ class Jovian(EventEmitter):
         self.shared_cue_dict = shared_cue_dict
         print('---------------------------------')
         print('jovian and maze_view is connected, they starts to share cues position and transformations')
-        print(self.shared_cue_dict.items())
 
 
     def examine_trigger(self):
-        # print(self._t, self._coord)
-        # for i, _trigger in enumerate(self.trigger):
-        # print self.trigger.numpy()
-        pos = np.array(self._coord)
+        print('animalpos', self.current_pos.numpy())
         for _cue_name in self.shared_cue_dict.keys():
-            print self.shared_cue_dict[_cue_name]
-            _cue_pos = self.shared_cue_dict[_cue_name]
-            if is_close(pos, _cue_pos):
+            print(_cue_name, self.shared_cue_dict[_cue_name])
+            if self._is_close(self.current_pos.numpy(), self.shared_cue_dict[_cue_name], self.touch_radius):
                 self.emit('touch', args=(_cue_name, self._coord))
 
 
     def task_routine(self):
-        self.cnt+=1
-        if self.cnt%30:
-            self.emit('animate')
-        print(self.current_pos.numpy())
+        self.cnt.add_(1)
+        if self.cnt == 1:
+            self.emit('start')
+        # if self.cnt%2 == 0:
+        self.emit('animate')
         self.examine_trigger()
 
 
@@ -156,17 +162,23 @@ class Jovian(EventEmitter):
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()
         self.jovian_process = Process(target=self._jovian_process) #, args=(self.pipe_jovian_side,)
         self.jovian_process.daemon = True
+        self.reset() # reset immediately before start solve the first time jam issue
         self.jovian_process.start()  
 
 
     def stop(self):
         self.jovian_process.terminate()
         self.jovian_process.join()
-        self.reset()
+        self.cnt.fill_(0)
+        # self.reset()
 
 
     def get(self):
         return self.pipe_gui_side.recv()
+
+
+    def _is_close(self, pos, cue_pos, radius):
+        return is_close(pos, cue_pos, radius)
 
 
     def teleport(self, prefix, target_pos, target_item=None):
@@ -183,11 +195,13 @@ class Jovian(EventEmitter):
             self.output.send(cmd)
             # print(cmd)
         elif prefix == 'model':  # move cue
-            with Timer('', verbose = True):
+            with Timer('', verbose = ENABLE_PROFILER):
                 z += self.shared_cue_height[target_item]
                 cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
                 self.output.send(cmd)
                 bottom = z - self.shared_cue_height[target_item]
                 self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom]))
-                print self.shared_cue_dict[target_item]
             # print(cmd)
+
+    def reward(self, amount):
+        self.pynq.send('reward, {}'.format(amount))

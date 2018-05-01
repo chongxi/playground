@@ -7,7 +7,7 @@ from functools import partial
 
 
 
-ENABLE_PROFILER = True
+ENABLE_PROFILER = False
 
 #------------------------------------------------------------------------------
 # Compare the content of two list/array in a orderless manner

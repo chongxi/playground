@@ -2,7 +2,7 @@ import numpy as np
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
-from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
 from PyQt5.QtGui import QIcon
 
 import time
@@ -16,10 +16,6 @@ from utils import Timer
 import os 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path += '/base/maze/obj/'
-# maze_file       = dir_path+'/base/maze/obj/maze_2d.obj'
-# maze_coord_file = dir_path+'/base/maze/obj/maze_2d.coords'
-# cue1_file       = dir_path+'/base/maze/obj/_dcue_001.obj'
-# cue0_file       = dir_path+'/base/maze/obj/_dcue_000.obj'
 
 
 class play_GUI(QWidget):
@@ -29,12 +25,10 @@ class play_GUI(QWidget):
     def __init__(self):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
-        # self.task_name = task_name
         self.event_log = {}
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
-        # self.init_Task()
 
     #------------------------------------------------------------------------------
     # gui layout
@@ -60,8 +54,8 @@ class play_GUI(QWidget):
 
         DirLayout = QGridLayout()
         DirLayout.addWidget(self.DirName, 0,0,1,2)
-        DirLayout.addWidget(self.mzBtn, 1,0, 1, 1)
-        DirLayout.addWidget(self.combo, 1,1 ,1, 1)
+        DirLayout.addWidget(self.mzBtn,   1,0,1,1)
+        DirLayout.addWidget(self.combo,   1,1,1,1)
 
         #2. File name and Layout
         self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
@@ -75,12 +69,31 @@ class play_GUI(QWidget):
         BtnLayout = QGridLayout()
         BtnLayout.addWidget(self.vrBtn,0,0)
 
+        #4 Reward Parameter
+        self.reward_time_label   = QLabel('Reward Time: 1s')
+        self.touch_radius_label = QLabel('Reward Radius: 18')
+        self.reward_time   = QSlider(Qt.Horizontal, self)
+        self.reward_time.setValue(10)
+        self.reward_time.valueChanged.connect(self.reward_time_changed)
+
+        self.touch_radius = QSlider(Qt.Horizontal, self)
+        self.touch_radius.setValue(20)
+        self.touch_radius.valueChanged.connect(self.touch_radius_changed)
+
+        ParaLayout = QGridLayout()
+        ParaLayout.addWidget(self.reward_time_label,   0,0,1,1)
+        ParaLayout.addWidget(self.reward_time,         0,1,1,1)
+        ParaLayout.addWidget(self.touch_radius_label, 0,2,1,1)
+        ParaLayout.addWidget(self.touch_radius,       0,3,1,1)
+
         #4. TextBrowser
         self.TextBrowser = QTextBrowser()
         self.TextBrowser.setGeometry(40, 90, 180, 79)
 
         #4. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
+        self._maze_loaded   = False
+        self._task_selected = False
 
         #widget layout
         leftlayout = QVBoxLayout()
@@ -90,17 +103,15 @@ class play_GUI(QWidget):
         leftside = QWidget()
         leftside.setLayout(leftlayout)
 
-        # rightlayout = QVBoxLayout()
-        # rightlayout.addWidget(self.nav_view.native)
-        # rightside = QWidget()
-        # rightside.setLayout(rightlayout)
-        # splitter = QSplitter(Qt.Horizontal)
-        # splitter.addWidget(leftside)
-        # splitter.addWidget(rightside)
+        rightlayout = QVBoxLayout()
+        rightlayout.addLayout(ParaLayout)
+        rightlayout.addWidget(self.nav_view.native)
+        rightside = QWidget()
+        rightside.setLayout(rightlayout)
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(leftside)
-        splitter.addWidget(self.nav_view.native)        
+        splitter.addWidget(rightside)        
 
         pLayout = QHBoxLayout()
         pLayout.addWidget(splitter)
@@ -109,27 +120,47 @@ class play_GUI(QWidget):
     #------------------------------------------------------------------------------
     # gui function
     #------------------------------------------------------------------------------
+
     def line_loadDialog(self):
         folder = self.DirName.text()
         self.load_maze(folder)
+
 
     def btn_loadDialog(self):
         folder = str(QFileDialog.getExistingDirectory(None))
         self.DirName.setText(folder)
         self.load_maze(folder)
 
+
     def selectTask(self, task_name):
-        self.task_name = task_name
+        if self._maze_loaded:
+            self.task_name = task_name
+            # 1. Init Jovian and connect to maze navigation view 
+            try:  # in cause it is already loaded 
+                self.jov.pynq.shutdown(2)
+            except:
+                pass
+            self.jov = Jovian()
+            self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
+            
+            # 2. Init Task
+            try:
+                self.task = globals()[self.task_name](self.jov)
+                print('--------------------------')
+                print('task: {}'.format(self.task_name))
 
-    # def init_Task(self):
-        # 1. Init Jovian first 
-        self.jov = Jovian()
-        self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
+                # 3. Task parameter
+                self.task.reward_time = self.reward_time.value()/10. 
+                self.jov.touch_radius = self.touch_radius.value()
+                print('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
+                print('Task Ready')
+                self._task_selected = True
 
-        # 2. Init Task
-        self.task = globals()[self.task_name](self.jov)
-        # self.task = two_cue_task(self.jov)
-        print(self.task_name, self.task.state)
+            except:
+                self.jov.pynq.shutdown(2)
+                raise
+        else:
+            print('Load Maze folder first')
 
 
     def load_maze(self, folder):
@@ -148,9 +179,30 @@ class play_GUI(QWidget):
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
             self.nav_view.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
-            # print(os.path.join(folder, file))
             print('load ', _cue_file)
 
+        self._maze_loaded = True
+
+
+    def reward_time_changed(self, value):
+        if self._task_selected:
+            self.reward_time_label.setText('Reward Time: {}'.format(str(value/10.)))
+            self.task.reward_time = value/10. 
+        else:
+            print('select Task First')
+
+
+    def touch_radius_changed(self, value):
+        if self._task_selected:
+            self.touch_radius_label.setText('Reward Radius: {}'.format(str(value)))
+            self.jov.touch_radius = value
+        else:
+            print('select Task First')
+
+
+    #------------------------------------------------------------------------------
+    # jovian process (input, task fsm, output) in another CPU
+    #------------------------------------------------------------------------------
 
     def jovian_process_toggle(self, checked):
         if checked:
@@ -175,5 +227,6 @@ class play_GUI(QWidget):
 
     def nav_view_update(self):
         with Timer('', verbose=False):
-            self.nav_view.current_pos = self.jov.current_pos.numpy()
-            self.nav_view.cue_update()
+            if self.jov.cnt>0:
+                self.nav_view.current_pos = self.jov.current_pos.numpy()
+                self.nav_view.cue_update()
