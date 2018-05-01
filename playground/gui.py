@@ -9,7 +9,9 @@ import time
 from datetime import datetime
 
 #---------new module---------
-from base import Jovian, one_cue_task, two_cue_task
+from base import Jovian
+from base import task
+from base.task import one_cue_task, two_cue_task 
 from view import maze_view
 from utils import Timer
 
@@ -48,8 +50,9 @@ class play_GUI(QWidget):
         self.mzBtn = QPushButton("Load Maze",self)
         self.mzBtn.clicked.connect(self.btn_loadDialog)
         self.combo = QComboBox(self) 
-        self.combo.addItem("one_cue_task")
-        self.combo.addItem("two_cue_task")
+        tasks = [x for x in dir(task) if '__' not in x and 'task' != x] # task is the module name
+        for task_name in tasks:
+            self.combo.addItem(task_name)
         self.combo.activated[str].connect(self.selectTask)
 
         DirLayout = QGridLayout()
@@ -135,6 +138,7 @@ class play_GUI(QWidget):
     def selectTask(self, task_name):
         if self._maze_loaded:
             self.task_name = task_name
+            print self.task_name
             # 1. Init Jovian and connect to maze navigation view 
             try:  # in cause it is already loaded 
                 self.jov.pynq.shutdown(2)
@@ -151,7 +155,7 @@ class play_GUI(QWidget):
 
                 # 3. Task parameter
                 self.task.reward_time = self.reward_time.value()/10. 
-                self.jov.touch_radius = self.touch_radius.value()
+                self.jov.touch_radius.fill_(self.touch_radius.value())
                 print('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
                 print('Task Ready')
                 self._task_selected = True
@@ -195,7 +199,7 @@ class play_GUI(QWidget):
     def touch_radius_changed(self, value):
         if self._task_selected:
             self.touch_radius_label.setText('Reward Radius: {}'.format(str(value)))
-            self.jov.touch_radius = value
+            self.jov.touch_radius.fill_(value)
         else:
             print('select Task First')
 

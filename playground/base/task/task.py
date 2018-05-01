@@ -1,9 +1,12 @@
 import numpy as np
 from ..jovian import Jovian
+from ...utils import EventEmitter
+from event import Event
 import time
 import torch
 from itertools import chain
-from collections import deque
+from collections import deque, namedtuple
+from abc import abstractmethod
 
 
 def _cue_generate_2d_maze(*args):
@@ -24,6 +27,13 @@ def _cue_generate_2d_maze(*args):
     return pos
 
 
+class Event(EventEmitter):
+    """docstring for Event"""
+    def __init__(self, type, arg):
+        super(Event, self).__init__()
+        self.type = type
+        self.arg = arg
+        
 
 class Task(object):
     '''Every task has the same jov to report event
@@ -32,19 +42,27 @@ class Task(object):
     def __init__(self, fsm, jov):
         # jovian first
         self.jov = jov
+        self.fsm = fsm 
+        self.transition_enable = namedtuple("transition_enable", ['behave', 'env', 'ephys'], verbose=False)
+        self.transition_enable.behave, self.transition_enable.ephys = True, False
+        self.ani = EventEmitter()
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
 
+        # initial reset only after jov process start 
         @self.jov.connect
         def on_start():
             self.reset()  
 
+        # fsm will use jov real-time event to update
         @self.jov.connect
         def on_touch(args):
             self.touch_id, self.coord = args
-            self.on_event(self.touch_id) 
+            self.event = Event('behave', self.touch_id)
+            self.on_event(self.event) 
 
+        # use jov frame update to do the animation
         @self.jov.connect
-        def on_animate():
+        def on_frame():
             for _cue_name, _action_queue in self.animation.items():
                 try: 
                     _pace, _animation = _action_queue[0]
@@ -52,12 +70,19 @@ class Task(object):
                         try:
                             _animation.next()
                         except StopIteration:
-                            _action_queue.popleft()
+                            __pace__, __animation__ = _action_queue.popleft()
+                            self.ani.emit('finish', arg=__animation__.__name__)
                 except:
                     pass
 
-        # fsm will use jov real-time event to update
-        self.fsm = fsm 
+
+        @self.ani.connect
+        def on_finish(arg):
+            print(arg, 'finished')
+
+    @abstractmethod
+    def reset(self):
+        self.transition_enable.behave = True
 
     @property
     def current_pos(self):
@@ -70,16 +95,20 @@ class Task(object):
         self.reset()
 
     def on_event(self, event):
-        try:
-            print self.state
-            next_state, func, args = self.fsm[self.state][event]
-            func(args)
-            self.state = next_state
-            print self.state
-        except:
+        if event.type == 'behave':
+            if self.transition_enable.behave:
+                try:
+                    print('from state {}, touch {}'.format(self.state, event.arg))
+                    next_state, func, args = self.fsm[self.state][event.arg]
+                    func(args)
+                    self.state = next_state
+                    print('to state {}'.format(self.state))
+                except:
+                    print('Your Finite State Machine is Incomplete or Wrong')
+
+        elif event.type == 'ephys':
+            #TODO: Add ephys API
             pass
-        # except:
-        #     print('Your Finite State Machine is Incomplete or Wrong')
 
     #------------------------------------------------------------------------------
     # animation effect
@@ -90,6 +119,14 @@ class Task(object):
             self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
         '''
         for z in range(60,-1,-2):
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
+            yield
+
+
+    def bury(self, cue_name):
+        self.transition_enable.behave = False
+        for z in range(0, -100, -8):
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
 
@@ -130,11 +167,17 @@ class one_cue_task(Task):
         super(one_cue_task, self).__init__(fsm, jov)
 
         self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
+
+        @self.ani.connect
+        def on_finish(arg):
+            if arg == 'bury':
+                self.reset()
+
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
     #---------------------------------------------------------------------------------------------------
     def reset(self):
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
+        super(one_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
@@ -143,8 +186,7 @@ class one_cue_task(Task):
     def goal_cue_touched(self, args):
         print(args)
         self.jov.reward(self.reward_time)
-        self.reset() 
-
+        self.animation['_dcue_000'] = deque([ (2, self.bury('_dcue_000')) ])
 
 
 
@@ -161,11 +203,18 @@ class two_cue_task(Task):
               }
         super(two_cue_task, self).__init__(fsm, jov)
 
+        @self.ani.connect
+        def on_finish(arg):
+            if arg == 'trajectory_teleport':
+                pass
+            elif arg == 'bury':
+                self.reset()
+
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
     #---------------------------------------------------------------------------------------------------
     def reset(self):
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
+        super(two_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_guide  = _cue_generate_2d_maze(self._corrd_animal) 
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal, self._coord_guide)
@@ -184,10 +233,23 @@ class two_cue_task(Task):
 
     def goal_cue_touched(self, args):
         print(args)
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
+        # self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
         self.jov.reward(self.reward_time)
-        self.reset()
+        # trajectory = np.arange(-99,100).repeat(2).reshape(-1,2)
+        # self.animation['animal'] = deque([ (1, self.trajectory_teleport(trajectory)) ])
+        self.animation['_dcue_000'] = deque([ (2, self.bury('_dcue_000')) ])
+        # self.reset()
 
+
+#------------------------------------------------------------------------------
+# empty task
+#------------------------------------------------------------------------------
+class empty_task(Task):
+    """docstring for empty_task"""
+    def __init__(self, arg):
+        super(empty_task, self).__init__()
+        self.arg = arg
+        
 
 
 

@@ -69,7 +69,7 @@ class maze_view(scene.SceneCanvas):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
         self.scale_factor = 100
-        self.origin  = -np.array(self.maze.coord['Origin']) * self.scale_factor
+        self.origin  = -np.array(self.maze.coord['Origin']).astype(np.float32) * self.scale_factor
         self.border  = border
         self.x_range = (self.origin[0]+self.border[0]*self.scale_factor, self.origin[0]+self.border[2]*self.scale_factor)
         self.y_range = (self.origin[1]+self.border[1]*self.scale_factor, self.origin[1]+self.border[3]*self.scale_factor)
@@ -246,12 +246,12 @@ class maze_view(scene.SceneCanvas):
         self.jov.shared_cue_height = self.cues_height
         self.is_jovian_connected = True
 
-        @self.jov.connect
-        def on_cue(cue_id, func, args):
-            '''jov control the cue, cue_id is 0,1,2,3
-               func is the cue fucntion name, execute with args
-            '''
-            getattr(self.cues[self.cues.keys()[cue_id]], func)(args)
+        # @self.jov.connect
+        # def on_cue(cue_id, func, args):
+        #     '''jov control the cue, cue_id is 0,1,2,3
+        #        func is the cue fucntion name, execute with args
+        #     '''
+        #     getattr(self.cues[self.cues.keys()[cue_id]], func)(args)
             # print(f)
             # f(args)
             # self.cues[target_item].pos = target_pos

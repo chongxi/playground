@@ -15,7 +15,7 @@ host_ip = '10.102.20.26'
 pynq_ip = '10.102.20.105'
 verbose = True
 
-is_close = lambda pos, cue_pos, radius: np.linalg.norm(pos-cue_pos)/100 < radius
+is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
 
 
 class Jovian_Stream(str):
@@ -74,10 +74,12 @@ class Jovian(EventEmitter):
 
     def shared_mem_init(self):
         # current position of animal
-        self.current_pos = torch.empty(3,)
-        self.current_pos.share_memory_()
         self.cnt = torch.empty(1,)
         self.cnt.share_memory_()
+        self.current_pos = torch.empty(3,)
+        self.current_pos.share_memory_()
+        self.touch_radius = torch.empty(1,)
+        self.touch_radius.share_memory_()
 
 
     def reset(self):
@@ -126,7 +128,7 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
                 self._t, self._coord = self.readline().parse()
-                self.current_pos[:]  = torch.from_numpy(np.array(self._coord))
+                self.current_pos[:]  = torch.tensor(self._coord)
                 self.task_routine()
                 # self.pipe_jovian_side.send((self._t, self._coord))
             # print(self._t, self._coord)
@@ -141,21 +143,22 @@ class Jovian(EventEmitter):
         print('jovian and maze_view is connected, they starts to share cues position and transformations')
 
 
-    def examine_trigger(self):
-        print('animalpos', self.current_pos.numpy())
-        for _cue_name in self.shared_cue_dict.keys():
-            print(_cue_name, self.shared_cue_dict[_cue_name])
-            if self._is_close(self.current_pos.numpy(), self.shared_cue_dict[_cue_name], self.touch_radius):
-                self.emit('touch', args=(_cue_name, self._coord))
-
 
     def task_routine(self):
         self.cnt.add_(1)
         if self.cnt == 1:
             self.emit('start')
         # if self.cnt%2 == 0:
-        self.emit('animate')
+        self.emit('frame')
         self.examine_trigger()
+
+
+    def examine_trigger(self):
+        print('animalpos', self.current_pos.numpy())
+        for _cue_name in self.shared_cue_dict.keys():
+            print(_cue_name, self.shared_cue_dict[_cue_name])
+            if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
+                self.emit('touch', args=(_cue_name, self._coord))
 
 
     def start(self):
@@ -190,18 +193,19 @@ class Jovian(EventEmitter):
         except:
             x, y = target_pos
             z = 0
+
         if prefix == 'console':  # teleport animal, target_item is not needed
             cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,5,0)
             self.output.send(cmd)
-            # print(cmd)
+
         elif prefix == 'model':  # move cue
             with Timer('', verbose = ENABLE_PROFILER):
                 z += self.shared_cue_height[target_item]
                 cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
                 self.output.send(cmd)
                 bottom = z - self.shared_cue_height[target_item]
-                self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom]))
-            # print(cmd)
+                self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom], dtype=np.float32))
 
-    def reward(self, amount):
-        self.pynq.send('reward, {}'.format(amount))
+
+    def reward(self, time):
+        self.pynq.send('reward, {}'.format(time))
