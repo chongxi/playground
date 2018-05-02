@@ -9,7 +9,7 @@ from gui import play_GUI
 def main():
     # print 'playground start'
     app = QApplication(sys.argv)
-    gui = play_GUI("two_cue_task")
+    gui = play_GUI()
     gui.show()
     sys.exit(app.exec_())
 
