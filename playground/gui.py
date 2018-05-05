@@ -11,7 +11,7 @@ from datetime import datetime
 #---------new module---------
 from base import Jovian
 from base import task
-from base.task import one_cue_task, two_cue_task 
+from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
 from utils import Timer
 
@@ -24,10 +24,10 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self):
+    def __init__(self, logger):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
-        self.event_log = {}
+        self.log = logger
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
@@ -138,33 +138,32 @@ class play_GUI(QWidget):
     def selectTask(self, task_name):
         if self._maze_loaded:
             self.task_name = task_name
-            print self.task_name
             # 1. Init Jovian and connect to maze navigation view 
             try:  # in cause it is already loaded 
                 self.jov.pynq.shutdown(2)
             except:
                 pass
             self.jov = Jovian()
+            self.jov.log = self.log
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             
             # 2. Init Task
             try:
                 self.task = globals()[self.task_name](self.jov)
-                print('--------------------------')
-                print('task: {}'.format(self.task_name))
+                self.log.info('task: {}'.format(self.task_name))
 
                 # 3. Task parameter
                 self.task.reward_time = self.reward_time.value()/10. 
                 self.jov.touch_radius.fill_(self.touch_radius.value())
-                print('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
-                print('Task Ready')
+                self.log.info('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
+                self.log.info('Task Ready')
                 self._task_selected = True
 
             except:
                 self.jov.pynq.shutdown(2)
                 raise
         else:
-            print('Load Maze folder first')
+            self.log.warn('Load Maze folder first')
 
 
     def load_maze(self, folder):
@@ -178,12 +177,12 @@ class play_GUI(QWidget):
         self.nav_view.load_maze(maze_file = maze_mesh_file, 
                                 maze_coord_file = maze_coord_file) 
         self.nav_view.load_animal()
-        print('load ', maze_mesh_file, maze_coord_file)
+        self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
 
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
             self.nav_view.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
-            print('load ', _cue_file)
+            self.log.info('load {}'.format(_cue_file))
 
         self._maze_loaded = True
 
@@ -193,7 +192,7 @@ class play_GUI(QWidget):
             self.reward_time_label.setText('Reward Time: {}'.format(str(value/10.)))
             self.task.reward_time = value/10. 
         else:
-            print('select Task First')
+            self.log.warn('select Task First')
 
 
     def touch_radius_changed(self, value):
@@ -201,7 +200,7 @@ class play_GUI(QWidget):
             self.touch_radius_label.setText('Reward Radius: {}'.format(str(value)))
             self.jov.touch_radius.fill_(value)
         else:
-            print('select Task First')
+            self.log.warn('select Task First')
 
 
     #------------------------------------------------------------------------------
@@ -216,6 +215,9 @@ class play_GUI(QWidget):
 
 
     def jovian_process_start(self):
+        self.log.info('---------------------------------')
+        self.log.info('jovian_process_start')
+        self.log.info('---------------------------------')
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.jov.start()
@@ -223,6 +225,9 @@ class play_GUI(QWidget):
 
 
     def jovian_process_stop(self):
+        self.log.info('---------------------------------')
+        self.log.info('jovian_process_stop')
+        self.log.info('---------------------------------')
         self.vrBtn.setText('VR Stream Off')
         self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.jov.stop()

@@ -128,20 +128,21 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
                 self._t, self._coord = self.readline().parse()
+                self.log.info('{}, {}'.format(self._t, self._coord))
                 self.current_pos[:]  = torch.tensor(self._coord)
                 self.task_routine()
                 # self.pipe_jovian_side.send((self._t, self._coord))
-            # print(self._t, self._coord)
 
 
     def set_trigger(self, shared_cue_dict):
-        '''shared_cue_pos is a torch Tensor it is a shared memory block between processes by:
-           shared_cue_pos.share_memory_()
+        '''shared_cue_dict is a a shared memory dict between processes contains cue name and position:
+           shared_cue_dict := {cue_name: cue_pos, 
+                               ...}
         '''
         self.shared_cue_dict = shared_cue_dict
-        print('---------------------------------')
-        print('jovian and maze_view is connected, they starts to share cues position and transformations')
-
+        self.log.info('-----------------------------------------------------------------------------------------')
+        self.log.info('jovian and maze_view is connected, they starts to share cues position and transformations')
+        self.log.info('-----------------------------------------------------------------------------------------')
 
 
     def task_routine(self):
@@ -154,18 +155,17 @@ class Jovian(EventEmitter):
 
 
     def examine_trigger(self):
-        print('animalpos', self.current_pos.numpy())
         for _cue_name in self.shared_cue_dict.keys():
-            print(_cue_name, self.shared_cue_dict[_cue_name])
             if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
-                self.emit('touch', args=(_cue_name, self._coord))
+                # self.log.info('touch {}@{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
+                self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))
 
 
     def start(self):
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()
-        self.jovian_process = Process(target=self._jovian_process) #, args=(self.pipe_jovian_side,)
+        self.jovian_process = Process(target=self._jovian_process, name='jovian') #, args=(self.pipe_jovian_side,)
         self.jovian_process.daemon = True
-        self.reset() # reset immediately before start solve the first time jam issue
+        self.reset() # !!! reset immediately before start solve the first time jam issue
         self.jovian_process.start()  
 
 
@@ -173,7 +173,6 @@ class Jovian(EventEmitter):
         self.jovian_process.terminate()
         self.jovian_process.join()
         self.cnt.fill_(0)
-        # self.reset()
 
 
     def get(self):

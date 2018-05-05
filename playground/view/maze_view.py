@@ -15,7 +15,6 @@ from vispy.visuals.transforms import STTransform, MatrixTransform
 
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
-import torch
 from torch import multiprocessing
 
 class maze_view(scene.SceneCanvas):
@@ -228,22 +227,21 @@ class maze_view(scene.SceneCanvas):
         return (pos*self.scale_factor)+self.origin
 
 
-    '''--------------------------------
-        user issued socket commands 
-       --------------------------------
-    '''
-
     def connect(self, jov):
-        '''connect to the jovian instance
-           called after all the cues are loaded
-        '''
+        '''--------------------------------
+            connect maze and jovian: 
+            1. shared_cue_dict.  := {cue_name: cue_pos}
+            2. shared_cue_height := {cue_name: cue_height}
+            3. coord transformations
+           --------------------------------
+        '''        
         self.jov = jov
         mgr = multiprocessing.Manager()
         self.shared_cue_dict = mgr.dict()
         self.jov.set_trigger(self.shared_cue_dict)
+        self.jov.shared_cue_height = self.cues_height
         self.jov._to_maze_coord = self._to_maze_coord
         self.jov._to_jovian_coord = self._to_jovian_coord
-        self.jov.shared_cue_height = self.cues_height
         self.is_jovian_connected = True
 
         # @self.jov.connect

@@ -5,11 +5,12 @@ import sys
 import time
 from PyQt5.QtWidgets import QApplication
 from gui import play_GUI
+from base import create_logger
 
 def main():
-    # print 'playground start'
+    logger = create_logger()
     app = QApplication(sys.argv)
-    gui = play_GUI()
+    gui = play_GUI(logger)
     gui.show()
     sys.exit(app.exec_())
 
