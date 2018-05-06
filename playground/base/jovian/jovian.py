@@ -8,7 +8,6 @@ import numpy as np
 # from .task import *
 
 
-
 ENABLE_PROFILER = False
 
 host_ip = '10.102.20.26'
@@ -156,6 +155,7 @@ class Jovian(EventEmitter):
 
     def examine_trigger(self):
         for _cue_name in self.shared_cue_dict.keys():
+            # self.log.info('{},{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
             if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
                 # self.log.info('touch {}@{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
                 self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))

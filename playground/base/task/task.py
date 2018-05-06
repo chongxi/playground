@@ -143,12 +143,29 @@ class Task(object):
             yield            
 
     def wander(self, cue_name, direction='x'):
-        # for i in range(10000):
-            # if direction=='x':
-        for _x in np.linspace(-100, 100, 200):
-            x, y = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
-            self.jov.teleport(prefix='model', target_pos=[_x,  y,  0], target_item=cue_name)
+        for i in range(10000):
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
+            if direction=='x':
+                _x = pos[0]
+                while _x>=-95:
+                    _x -= 5
+                    self.jov.teleport(prefix='model', target_pos=[_x,  pos[1],  0], target_item=cue_name)
+                    yield
+                while _x<=95:
+                    _x += 5
+                    self.jov.teleport(prefix='model', target_pos=[_x,  pos[1],  0], target_item=cue_name)
+                    yield
+
+    def escape(self, cue_name, speed=5):
+        while True:
+            animal_pos = self.jov._to_maze_coord(self.current_pos)
+            cue_pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             yield
+            new_animal_pos = self.jov._to_maze_coord(self.current_pos) 
+            new_cue_pos = new_animal_pos - animal_pos + cue_pos
+            self.jov.teleport(prefix='model', target_pos=[new_cue_pos[0],  new_cue_pos[1],  0], target_item=cue_name)
+            yield
+
 
     def trajectory_teleport(self, trajectory):
         ''' usage:
@@ -226,7 +243,8 @@ class one_cue_moving_task(Task):
         super(one_cue_moving_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.vibrate('_dcue_000')) ])
+        # self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000', direction='x')) ])
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (2, self.wander('_dcue_000')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
