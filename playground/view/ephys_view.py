@@ -83,10 +83,18 @@ class probe_view(scene.SceneCanvas):
 
         self.view.camera.set_range([-100,100])
 
+    def imap(self, mouse_pos):
+        tr = self.view.scene.transform
+        Point = tr.imap(mouse_pos)[:2]
+        return Point
 
     def on_key_press(self, e):
         if e.text == 'r':
             self.view.camera.set_range([-100,100])
+
+    def on_mouse_release(self, e):
+        if e.button == 1:
+            print self.imap(e.pos)
 
 
     def run(self):
