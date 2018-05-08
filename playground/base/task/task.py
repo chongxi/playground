@@ -145,7 +145,12 @@ class Task(object):
     def wander(self, cue_name, direction='x'):
         for i in range(10000):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
-            if direction=='x':
+            print('pos',pos)
+            pos = pos[:2].astype(float)
+            radius = np.linalg.norm(pos)
+            print(radius)
+            if radius > 95:  # if direction=='x':
+                print('outer loop')
                 _x = pos[0]
                 while _x>=-95:
                     _x -= 5
@@ -155,6 +160,19 @@ class Task(object):
                     _x += 5
                     self.jov.teleport(prefix='model', target_pos=[_x,  pos[1],  0], target_item=cue_name)
                     yield
+            else: # direction=='circular':
+                print('inner loop')
+                _x, _y  = pos
+                _delta = 0.0
+                print(pos)
+                theta = np.arctan(_y/_x)
+                print(theta)
+                _delta = np.pi/32
+                while True:
+                    theta  += _delta
+                    self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
+                    yield
+
 
     def escape(self, cue_name, speed=5):
         while True:
