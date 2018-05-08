@@ -244,7 +244,7 @@ class one_cue_moving_task(Task):
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
         # self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000', direction='x')) ])
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (2, self.wander('_dcue_000')) ])
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
