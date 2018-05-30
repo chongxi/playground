@@ -41,5 +41,5 @@ if __name__ == '__main__':
     print prb
 
     prb_view = probe_view()
-    prb_view.set_data(prb)
+    prb_view.set_data(prb, font_size=25)
     prb_view.run()
