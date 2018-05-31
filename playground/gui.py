@@ -13,6 +13,8 @@ from base import Jovian
 from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
+from spiketag.view import probe_view
+from view.ephys_view import prb
 from utils import Timer
 
 import os 
@@ -49,16 +51,16 @@ class play_GUI(QWidget):
         self.DirName.returnPressed.connect(self.line_loadDialog)
         self.mzBtn = QPushButton("Load Maze",self)
         self.mzBtn.clicked.connect(self.btn_loadDialog)
-        self.combo = QComboBox(self) 
+        self.task_combo = QComboBox(self) 
         tasks = [x for x in dir(task) if '__' not in x and 'task' != x] # task is the module name
         for task_name in tasks:
-            self.combo.addItem(task_name)
-        self.combo.activated[str].connect(self.selectTask)
+            self.task_combo.addItem(task_name)
+        self.task_combo.activated[str].connect(self.selectTask)
 
         DirLayout = QGridLayout()
-        DirLayout.addWidget(self.DirName, 0,0,1,2)
-        DirLayout.addWidget(self.mzBtn,   1,0,1,1)
-        DirLayout.addWidget(self.combo,   1,1,1,1)
+        DirLayout.addWidget(self.DirName,    0,0,1,2)
+        DirLayout.addWidget(self.mzBtn,      1,0,1,1)
+        DirLayout.addWidget(self.task_combo, 1,1,1,1)
 
         #2. File name and Layout
         self.Year_Date_Time = datetime.now().strftime("%Y%m%d_%H%M")
@@ -86,12 +88,14 @@ class play_GUI(QWidget):
         ParaLayout = QGridLayout()
         ParaLayout.addWidget(self.reward_time_label,   0,0,1,1)
         ParaLayout.addWidget(self.reward_time,         0,1,1,1)
-        ParaLayout.addWidget(self.touch_radius_label, 0,2,1,1)
-        ParaLayout.addWidget(self.touch_radius,       0,3,1,1)
+        ParaLayout.addWidget(self.touch_radius_label,  0,2,1,1)
+        ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
 
         #4. TextBrowser
-        self.TextBrowser = QTextBrowser()
-        self.TextBrowser.setGeometry(40, 90, 180, 79)
+        # self.TextBrowser = QTextBrowser()
+        # self.TextBrowser.setGeometry(40, 90, 180, 79)
+        self.prb_view = probe_view()
+        self.prb_view.set_data(prb, font_size=20)
 
         #4. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
@@ -102,7 +106,7 @@ class play_GUI(QWidget):
         leftlayout = QVBoxLayout()
         leftlayout.addLayout(DirLayout)
         leftlayout.addLayout(BtnLayout)
-        leftlayout.addWidget(self.TextBrowser)
+        leftlayout.addWidget(self.prb_view.native)
         leftside = QWidget()
         leftside.setLayout(leftlayout)
 
@@ -208,10 +212,19 @@ class play_GUI(QWidget):
     #------------------------------------------------------------------------------
 
     def jovian_process_toggle(self, checked):
-        if checked:
-            self.jovian_process_start()
+        if self._task_selected:
+            if checked:
+                self.jovian_process_start()
+                self.task_combo.setEnabled(False)
+                self.DirName.setEnabled(False)
+                self.mzBtn.setEnabled(False)
+            else:
+                self.jovian_process_stop()
+                self.task_combo.setEnabled(True)
+                self.DirName.setEnabled(True)
+                self.mzBtn.setEnabled(True)
         else:
-            self.jovian_process_stop()
+            self.log.warn('select Task First')
 
 
     def jovian_process_start(self):
@@ -239,3 +252,4 @@ class play_GUI(QWidget):
             if self.jov.cnt>0:
                 self.nav_view.current_pos = self.jov.current_pos.numpy()
                 self.nav_view.cue_update()
+
