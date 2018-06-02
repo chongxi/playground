@@ -5,6 +5,7 @@ from spiketag.view import probe_view
 
 if __name__ == '__main__':
     print(prb)
-    prb_view = probe_view()
-    prb_view.set_data(prb, font_size=17)
-    prb_view.run()
+    # prb_view = probe_view()
+    # prb_view.set_data(prb, font_size=17)
+    # prb_view.run()
+    prb.show()
