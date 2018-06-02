@@ -2,7 +2,7 @@ import numpy as np
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QThread, QEventLoop
-from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, QWidget, QSplitter, QComboBox, QTextBrowser, QSlider, QPushButton, QTableWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QLabel, QGridLayout
 from PyQt5.QtGui import QIcon
 
 import time
@@ -91,13 +91,16 @@ class play_GUI(QWidget):
         ParaLayout.addWidget(self.touch_radius_label,  0,2,1,1)
         ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
 
-        #4. TextBrowser
-        # self.TextBrowser = QTextBrowser()
-        # self.TextBrowser.setGeometry(40, 90, 180, 79)
+        #5. Probe View
         self.prb_view = probe_view()
         self.prb_view.set_data(prb, font_size=20)
 
-        #4. Navigation view for both viz and interaction 
+        #6. Unit Table
+        self.unit_table = QTableWidget()
+        self.unit_table.setColumnCount(5)
+        self.unit_table.setRowCount(8)
+
+        #7. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
         self._maze_loaded   = False
         self._task_selected = False
@@ -107,6 +110,7 @@ class play_GUI(QWidget):
         leftlayout.addLayout(DirLayout)
         leftlayout.addLayout(BtnLayout)
         leftlayout.addWidget(self.prb_view.native)
+        leftlayout.addWidget(self.unit_table)
         leftside = QWidget()
         leftside.setLayout(leftlayout)
 

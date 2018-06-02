@@ -1,5 +1,5 @@
 import numpy as np
-from spiketag.base import prb_bowtie_L as prb 
+from spiketag.probe import prb_bowtie_L as prb 
 from spiketag.view import probe_view
 
 
