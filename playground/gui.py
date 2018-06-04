@@ -13,8 +13,8 @@ from base import Jovian
 from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
+from spiketag.probe import prb_bowtie_L as prb 
 from spiketag.view import probe_view
-from view.ephys_view import prb
 from utils import Timer
 
 import os 
