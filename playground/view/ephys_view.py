@@ -8,6 +8,7 @@ def on_select(group_id, chs):
 
 if __name__ == '__main__':
     print(prb)
+    # prb.prb_view.electrode_pads
     prb.show()
     # prb_view = probe_view()
     # prb_view.set_data(prb, font_size=17)
