@@ -16,6 +16,7 @@ from vispy.visuals.transforms import STTransform, MatrixTransform
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 from torch import multiprocessing
+from pysine import sine
 
 class maze_view(scene.SceneCanvas):
     """
@@ -43,11 +44,20 @@ class maze_view(scene.SceneCanvas):
         self.ray_vector  = scene.visuals.Line(parent=self.view.scene)
 
         self._current_pos = None 
-        # self.marker    = scene.visuals.Markers(parent=self.view.scene)
+        self.marker       = None
 
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
         self.animal_color   = 'white'
-
+        
+        ### 4. replay
+        self.replay_current_pos = scene.visuals.Markers(parent=self.view.scene)
+        self.replay_current_pos.set_data(np.array([0,0,0]).reshape(-1,3))
+        self.replay_trajectory  = scene.visuals.Line(parent=self.view.scene)
+        self.replay_time = 0.0
+        self.replay_coord      = 'jovian'
+        self.replay_timer = app.Timer()
+        self.replay_timer.connect(self.on_replay)
+        self.replay_speed = 1
 
         ### 4. cue objects
         self.cues = {}
@@ -132,6 +142,47 @@ class maze_view(scene.SceneCanvas):
             pos = np.load(file).astype(np.float32)
             self.pos = pos
             
+            
+    def load_replay_file(self, file_name, var='pos', show=True):
+        pos = np.load(file_name)[var]
+        pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
+        if self.replay_coord == 'jovian':
+            pos = self._to_jovian_coord(pos).astype(np.float32)
+        self.replay_t = np.load(file_name)['time']
+        self.replay_pos = pos
+        if show:
+            self.replay_trajectory.set_data(self.replay_pos)
+            self.replay_current_pos.set_data(self.replay_pos[0].reshape(-1,3))
+
+    def load_neurons(self, file_name, var='spk_time'):
+        self.replay_spk_t = np.load(file_name)[var].item()
+        self.neurons = scene.visuals.Markers(parent=self.view.scene)
+        self.neuron_firing_pos = {}
+        for i in self.replay_spk_t.keys():
+            self.neuron_firing_pos[i] = np.array([])
+        # print self.replay_spk_t
+
+    
+    def on_replay(self, event):
+        last_time = self.replay_time
+        self.replay_time += self.replay_speed * 0.01
+        idx = np.where(self.replay_t < self.replay_time)[0]
+        self.replay_trajectory.set_data(self.replay_pos[idx])
+        current_pos = self.replay_pos[idx[-1]].reshape(-1,3)
+        self.replay_current_pos.set_data(current_pos)
+
+        neuron_id = self.neuron_id
+        neuron_firing = np.where(np.logical_and(self.replay_spk_t[neuron_id] > last_time,
+                                                self.replay_spk_t[neuron_id] < self.replay_time))[0]
+        if neuron_firing.shape[0] > 0:
+            for i in range(neuron_firing.shape[0]):
+                sine(frequency=200.0, duration=0.001)
+            self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
+                                                          current_pos).reshape(-1, 3)
+            self.neurons.set_data(self.neuron_firing_pos[neuron_id], face_color=(1,1,0,0.5), size=8)
+
+
+
 
     @property
     def current_pos(self):
@@ -291,15 +342,16 @@ class maze_view(scene.SceneCanvas):
             self.set_range()
 
     def on_mouse_release(self, e):
-        with Timer('click',verbose=False):
-            modifiers = e.modifiers
-            if keys.CONTROL in e.modifiers and e.button == 1:
-                self.marker.pos = self.imap(e.pos)
-            if keys.CONTROL in e.modifiers and e.button == 2:
-                with Timer('cue moving', verbose=False):
-                    target_maze_pos = self.imap(e.pos)
-                    self.cues[self._selected_cue].pos = target_maze_pos
-                    
+        if self.marker is not None:
+            with Timer('click',verbose=False):
+                modifiers = e.modifiers
+                if keys.CONTROL in e.modifiers and e.button == 1:
+                    self.marker.pos = self.imap(e.pos)
+                if keys.CONTROL in e.modifiers and e.button == 2:
+                    with Timer('cue moving', verbose=False):
+                        target_maze_pos = self.imap(e.pos)
+                        self.cues[self._selected_cue].pos = target_maze_pos
+                        
 
     def run(self):
         self.show()
