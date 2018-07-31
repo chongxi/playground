@@ -276,15 +276,17 @@ class maze_view(scene.SceneCanvas):
     def _to_maze_coord(self, pos):
         '''transform back to maze coord (0,0,0)
         '''
-        if pos.shape[1] == 2:
-            pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
+        if pos.ndim == 2:
+            if pos.shape[1] == 2:
+                pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
         return (pos-self.origin)/self.scale_factor
 
     def _to_jovian_coord(self, pos):
         '''transform to mouseover coord at origin
         '''
-        if pos.shape[1] == 2:
-            pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
+        if pos.ndim == 2:
+            if pos.shape[1] == 2:
+                pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
         return (pos*self.scale_factor)+self.origin
 
 
