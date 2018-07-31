@@ -18,6 +18,8 @@ from ..view import Maze, Line, Animal, Cue
 from torch import multiprocessing
 from pysine import sine
 
+
+
 class maze_view(scene.SceneCanvas):
     """
         docstring for navigation_view
@@ -144,11 +146,15 @@ class maze_view(scene.SceneCanvas):
             
             
     def load_replay_file(self, file_name, var='pos', show=True):
-        pos = np.load(file_name)[var]
-        pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
+        # pos = np.load(file_name)[var]
+        t = np.load(file_name)['time']
+        pos = np.load(file_name)['pos']
+        t, pos = interp_pos(t, pos)
+
         if self.replay_coord == 'jovian':
             pos = self._to_jovian_coord(pos).astype(np.float32)
-        self.replay_t = np.load(file_name)['time']
+        
+        self.replay_t = t
         self.replay_pos = pos
         if show:
             self.replay_trajectory.set_data(self.replay_pos)
@@ -270,11 +276,15 @@ class maze_view(scene.SceneCanvas):
     def _to_maze_coord(self, pos):
         '''transform back to maze coord (0,0,0)
         '''
+        if pos.shape[1] == 2:
+            pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
         return (pos-self.origin)/self.scale_factor
 
     def _to_jovian_coord(self, pos):
         '''transform to mouseover coord at origin
         '''
+        if pos.shape[1] == 2:
+            pos = np.hstack((pos, np.zeros((pos.shape[0],1))))
         return (pos*self.scale_factor)+self.origin
 
 
