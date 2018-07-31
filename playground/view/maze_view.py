@@ -182,7 +182,7 @@ class maze_view(scene.SceneCanvas):
                                                 self.replay_spk_t[neuron_id] < self.replay_time))[0]
         if neuron_firing.shape[0] > 0:
             for i in range(neuron_firing.shape[0]):
-                sine(frequency=200.0, duration=0.001)
+                sine(frequency=250.0, duration=0.011)
             self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
                                                           current_pos).reshape(-1, 3)
             self.neurons.set_data(self.neuron_firing_pos[neuron_id], face_color=(1,1,0,0.5), size=8)
