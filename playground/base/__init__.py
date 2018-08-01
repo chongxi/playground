@@ -5,6 +5,10 @@ from torch import multiprocessing
 import logging
 import pandas as pd
 import numpy as np
+from ..utils import interp_pos
+
+_origin = np.array([-1309.17, -1258.14])
+_scale  = 100.
 
 def create_logger():
     multiprocessing.log_to_stderr()
@@ -61,7 +65,7 @@ class logger():
         return log_sessions
 
 
-    def to_trajectory(self, session_id):
+    def to_trajectory(self, session_id, interpolate=True, to_jovian_coord=True):
         log = self.log_sessions[session_id]
         sync_time = self.sync_time
         locs = log[log['func']=='_jovian_process']['msg'].values
@@ -73,8 +77,17 @@ class logger():
                 start_idx = np.where(ts==sync_time)[0][0]
                 ts = datum[start_idx:,0]
                 pos = datum[start_idx:, 1:]
-                return (ts-ts[0])/1e3, pos
+                ts, pos = (ts-ts[0])/1e3, pos
             except:
                 print('sync_time {} not in session {}'.format(sync_time, session_id))
+                return None
         else:
-            return (ts-ts[0])/1e3, pos 
+            ts, pos = (ts-ts[0])/1e3, pos 
+
+        if interpolate:
+            ts, pos = interp_pos(ts, pos) 
+
+        if to_jovian_coord is True:
+            pos = pos/_scale + _origin
+
+        return ts, pos
