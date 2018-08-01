@@ -5,6 +5,7 @@ from torch import multiprocessing
 import logging
 import pandas as pd
 import numpy as np
+from scipy import signal
 from ..utils import interp_pos
 
 _origin = np.array([-1309.17, -1258.14])
@@ -91,3 +92,27 @@ class logger():
             pos = pos/_scale + _origin
 
         return ts, pos
+
+
+    def get_speed(self, ts, pos):
+        v = np.linalg.norm(np.diff(pos, axis=0), axis=1)/np.diff(ts)
+        w = signal.gaussian(59, 6) # frame rate 60
+        w/=sum(w)
+        v_smoothed = np.convolve(v, w, mode='same')
+
+        v = np.hstack((0.01, v))
+        v_smoothed = np.hstack((0.01, v_smoothed))
+
+        '''
+        # check speed:
+        f, ax = plt.subplots(1,1, figsize=(18,8))
+        offset=20000
+        plot(ts[offset:1000+offset], v[offset:1000+offset])
+        plot(ts[offset:1000+offset], v_smoothed[offset:1000+offset])
+        ax.axhline(5, c='m', ls='-.')
+        '''
+
+        return v_smoothed, v
+
+
+
