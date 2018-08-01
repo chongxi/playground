@@ -94,9 +94,9 @@ class logger():
         return ts, pos
 
 
-    def get_speed(self, ts, pos):
+    def get_speed(self, ts, pos, smooth_window=59, std=6):
         v = np.linalg.norm(np.diff(pos, axis=0), axis=1)/np.diff(ts)
-        w = signal.gaussian(59, 6) # frame rate 60
+        w = signal.gaussian(smooth_window, std) # window size 59 frame (roughly 1 sec), std = 6 frame
         w/=sum(w)
         v_smoothed = np.convolve(v, w, mode='same')
 
