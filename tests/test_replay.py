@@ -16,8 +16,7 @@ if __name__ == '__main__':
     nav_view.load_replay_file('./task_replay.npz', show=False)
     nav_view.load_neurons('./timing.npz', 'timing')
     nav_view.replay_speed = 10
-    nav_view.replay_time = 1000
-    nav_view.neuron_id = 8
-    nav_view.replay_timer.start(0.01)
+    nav_view.replay_time = 0
+    nav_view.neuron_id = range(1,9)
+    # nav_view.replay_timer.start(0.01)
     nav_view.run()
-    

@@ -17,8 +17,10 @@ from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 from torch import multiprocessing
 from pysine import sine
+from spiketag.view.color_scheme import palette
 
 
+neuro_colors = np.array(palette)
 
 class maze_view(scene.SceneCanvas):
     """
@@ -76,7 +78,7 @@ class maze_view(scene.SceneCanvas):
         # self.freeze()
 
 
-    def load_maze(self, maze_file, maze_coord_file=None, border=[-100,-100,100,100]):
+    def load_maze(self, maze_file, maze_coord_file=None, border=[-100,-100,100,100], mirror=True):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
         self.scale_factor = 100
@@ -90,7 +92,8 @@ class maze_view(scene.SceneCanvas):
         ### MatrixTransform perform Affine Transform
         transform = MatrixTransform()
         transform.rotate(angle=90, axis=(1, 0, 0))  # rotate around x-axis for 90, the maze lay down
-        transform.matrix[:,2] = - transform.matrix[:,2]  # reflection matrix, mirror image on x-y plane
+        if mirror:
+            transform.matrix[:,2] = - transform.matrix[:,2]  # reflection matrix, mirror image on x-y plane
         transform.scale(scale=4*[self.scale_factor]) # scale at all 4 dim for scale_factor
         transform.translate(pos=self.origin) # translate to origin
 
@@ -160,14 +163,22 @@ class maze_view(scene.SceneCanvas):
             self.replay_trajectory.set_data(self.replay_pos)
             self.replay_current_pos.set_data(self.replay_pos[0].reshape(-1,3))
 
-    def load_neurons(self, file_name, var='spk_time'):
-        self.replay_spk_t = np.load(file_name)[var].item()
-        self.neurons = scene.visuals.Markers(parent=self.view.scene)
-        self.neuron_firing_pos = {}
-        for i in self.replay_spk_t.keys():
-            self.neuron_firing_pos[i] = np.array([])
-        # print self.replay_spk_t
+    def load_spktime_file(self, file_name, var='spk_time'):
+        self.replay_spk_t = np.load(file_name)[var].item()        
 
+    def load_neurons(self, file_name=None, var='spk_time', spk_time=None):
+        if file_name is None:
+            self.replay_spk_t = spk_time
+        else:
+            self.load_spktime_file(file_name, var)
+        self.neurons = {}
+        self.neuron_firing_pos = {}
+        self.neuron_color = {}
+        for i in self.replay_spk_t.keys():
+            self.neurons[i] = scene.visuals.Markers(parent=self.view.scene)
+            self.neuron_firing_pos[i] = np.array([])
+            self.neuron_color[i] = np.array([])
+        # print self.replay_spk_t
     
     def on_replay(self, event):
         last_time = self.replay_time
@@ -177,16 +188,27 @@ class maze_view(scene.SceneCanvas):
         current_pos = self.replay_pos[idx[-1]].reshape(-1,3)
         self.replay_current_pos.set_data(current_pos)
 
-        neuron_id = self.neuron_id
-        neuron_firing = np.where(np.logical_and(self.replay_spk_t[neuron_id] > last_time,
-                                                self.replay_spk_t[neuron_id] < self.replay_time))[0]
-        if neuron_firing.shape[0] > 0:
-            for i in range(neuron_firing.shape[0]):
-                sine(frequency=250.0, duration=0.011)
-            self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
-                                                          current_pos).reshape(-1, 3)
-            self.neurons.set_data(self.neuron_firing_pos[neuron_id], face_color=(1,1,0,0.5), size=8)
-
+        ## neuron_id is the list of neurons to replay
+        # neuron_id = self.neuron_id
+        for neuron_id in self.neuron_id:
+            neuron_firing = np.where(np.logical_and(self.replay_spk_t[neuron_id] > last_time,
+                                                    self.replay_spk_t[neuron_id] < self.replay_time))[0]
+            if neuron_firing.shape[0] > 0:
+                for i in range(neuron_firing.shape[0]):
+                    sine(frequency=250.0, duration=0.011)
+                self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
+                                                              current_pos).reshape(-1, 3)
+                intensity = neuron_firing.shape[0]*0.2
+                intensity = intensity if intensity<=1 else 1.0
+                # intensity = 1
+                self.neuron_color[neuron_id] = np.append(self.neuron_color[neuron_id], 
+                                                         np.array([neuro_colors[neuron_id][0], 
+                                                                   neuro_colors[neuron_id][1], 
+                                                                   neuro_colors[neuron_id][2] , 
+                                                                   intensity])).reshape(-1,4)
+                self.neurons[neuron_id].set_data(self.neuron_firing_pos[neuron_id], 
+                                                 face_color=self.neuron_color[neuron_id], 
+                                                 size=20)
 
 
 
@@ -331,6 +353,11 @@ class maze_view(scene.SceneCanvas):
         if keys.CONTROL in e.modifiers:
             self.view.events.mouse_wheel.disconnect(self.view.camera
                     .viewbox_mouse_event)
+        elif e.text == ' ':
+            if self.replay_timer.running:
+                self.replay_timer.stop()
+            else:
+                self.replay_timer.start(0.01)
         elif e.text == 'r':
             self.set_range() 
         elif e.text == 'h':
