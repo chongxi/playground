@@ -13,7 +13,7 @@ from base import Jovian
 from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
-from spiketag.probe import prb_bowtie_L as prb 
+from spiketag.probe import prb_bowtie_LL as prb 
 from spiketag.view import probe_view
 from utils import Timer
 
@@ -93,7 +93,7 @@ class play_GUI(QWidget):
 
         #5. Probe View
         self.prb_view = probe_view()
-        self.prb_view.set_data(prb, font_size=20)
+        self.prb_view.set_data(prb, font_size=23)
 
         #6. Unit Table
         self.unit_table = QTableWidget()
