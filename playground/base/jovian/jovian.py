@@ -72,11 +72,13 @@ class Jovian(EventEmitter):
 
 
     def shared_mem_init(self):
-        # current position of animal
+        # trigger task using frame counter
         self.cnt = torch.empty(1,)
         self.cnt.share_memory_()
+        # current position of animal
         self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
+        # the influence radius of the animal
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
 

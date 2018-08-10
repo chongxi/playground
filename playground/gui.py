@@ -10,6 +10,7 @@ from datetime import datetime
 
 #---------new module---------
 from base import Jovian
+from base import Fpga
 from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
@@ -26,10 +27,11 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, logger):
+    def __init__(self, logger, fpga):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
         self.log = logger
+        self.fpga = fpga
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
@@ -71,8 +73,14 @@ class play_GUI(QWidget):
         self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.vrBtn.toggled.connect(self.jovian_process_toggle)
 
+        self.fpgaBtn = QPushButton("FPGA Stream Off",self)
+        self.fpgaBtn.setCheckable(True)
+        self.fpgaBtn.setStyleSheet("background-color: darkgrey")
+        self.fpgaBtn.toggled.connect(self.fpga_process_toggle)
+
         BtnLayout = QGridLayout()
-        BtnLayout.addWidget(self.vrBtn,0,0)
+        BtnLayout.addWidget(self.vrBtn,0,1)
+        BtnLayout.addWidget(self.fpgaBtn,0,0)
 
         #4 Reward Parameter
         self.reward_time_label   = QLabel('Reward Time: 1s')
@@ -257,3 +265,33 @@ class play_GUI(QWidget):
                 self.nav_view.current_pos = self.jov.current_pos.numpy()
                 self.nav_view.cue_update()
 
+
+    #------------------------------------------------------------------------------
+    # fpga process (input, task fsm, output) in another CPU
+    #------------------------------------------------------------------------------
+
+    def fpga_process_toggle(self, checked):
+        if checked:
+            self.fpga_process_start()
+        else:
+            self.fpga_process_stop()
+
+
+    def fpga_process_start(self):
+        self.log.info('---------------------------------')
+        self.log.info('fpga_process_start')
+        self.log.info('---------------------------------')
+        self.fpgaBtn.setText('FPGA Stream ON')
+        self.fpgaBtn.setStyleSheet("background-color: green")
+        self.fpga.start()
+        # self._view_timer.start(20)
+
+
+    def fpga_process_stop(self):
+        self.log.info('---------------------------------')
+        self.log.info('jovian_process_stop')
+        self.log.info('---------------------------------')
+        self.fpgaBtn.setText('FPGA Stream Off')
+        self.fpgaBtn.setStyleSheet("background-color: darkgrey")
+        self.fpga.stop()
+        # self.nav_view_timer.stop()

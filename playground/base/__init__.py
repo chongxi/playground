@@ -1,5 +1,6 @@
 from jovian import Jovian
 from task import one_cue_task, two_cue_task, one_cue_moving_task
+from fpga import Fpga
 
 from torch import multiprocessing
 import logging
@@ -8,8 +9,10 @@ import numpy as np
 from scipy import signal
 from ..utils import interp_pos
 
+
 _origin = np.array([-1309.17, -1258.14])
 _scale  = 100.
+
 
 def create_logger():
     multiprocessing.log_to_stderr()
