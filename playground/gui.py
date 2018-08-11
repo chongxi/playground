@@ -15,7 +15,7 @@ from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
 from spiketag.probe import prb_bowtie_LL as prb 
-from spiketag.view import probe_view
+from spiketag.view import probe_view, scatter_3d_view
 from utils import Timer
 
 import os 
@@ -27,14 +27,19 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, logger, fpga):
+    def __init__(self, logger, fpga=None):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
         self.log = logger
-        self.fpga = fpga
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
+
+        if fpga is not None:
+            self.fpga = fpga
+            self.fpga.log = self.log
+            self.fet_view_timer = QtCore.QTimer(self)
+            self.fet_view_timer.timeout.connect(self.fet_view_update)
 
     #------------------------------------------------------------------------------
     # gui layout
@@ -100,13 +105,18 @@ class play_GUI(QWidget):
         ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
 
         #5. Probe View
+        self.prb = prb
         self.prb_view = probe_view()
-        self.prb_view.set_data(prb, font_size=23)
+        self.prb_view.set_data(self.prb, font_size=23)
 
-        #6. Unit Table
-        self.unit_table = QTableWidget()
-        self.unit_table.setColumnCount(5)
-        self.unit_table.setRowCount(8)
+        #6. Feature View
+        N=5000
+        self.fet_view0 = scatter_3d_view()
+        self.fet_view0.set_data(np.zeros((N,4), dtype=np.float32))
+        # self.fet_view1 = scatter_3d_view()
+        # self.unit_table = QTableWidget()
+        # self.unit_table.setColumnCount(5)
+        # self.unit_table.setRowCount(8)
 
         #7. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
@@ -118,7 +128,8 @@ class play_GUI(QWidget):
         leftlayout.addLayout(DirLayout)
         leftlayout.addLayout(BtnLayout)
         leftlayout.addWidget(self.prb_view.native)
-        leftlayout.addWidget(self.unit_table)
+        leftlayout.addWidget(self.fet_view0.native)
+        # leftlayout.addWidget(self.fet_view1.native) 
         leftside = QWidget()
         leftside.setLayout(leftlayout)
 
@@ -135,6 +146,15 @@ class play_GUI(QWidget):
         pLayout = QHBoxLayout()
         pLayout.addWidget(splitter)
         self.setLayout(pLayout)
+
+
+        #########################
+        # action 
+        #########################
+        self.current_group=0
+        @self.prb.connect
+        def on_select(group_id, chs):
+            self.current_group = group_id
 
     #------------------------------------------------------------------------------
     # gui function
@@ -159,6 +179,7 @@ class play_GUI(QWidget):
                 self.jov.pynq.shutdown(2)
             except:
                 pass
+            self.log.info('initiate Jovian and its socket connection')
             self.jov = Jovian()
             self.jov.log = self.log
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
@@ -208,7 +229,7 @@ class play_GUI(QWidget):
             self.reward_time_label.setText('Reward Time: {}'.format(str(value/10.)))
             self.task.reward_time = value/10. 
         else:
-            self.log.warn('select Task First')
+            self.log.warn('select Task First: Jovian initiate when selecting task')
 
 
     def touch_radius_changed(self, value):
@@ -284,14 +305,41 @@ class play_GUI(QWidget):
         self.fpgaBtn.setText('FPGA Stream ON')
         self.fpgaBtn.setStyleSheet("background-color: green")
         self.fpga.start()
-        # self._view_timer.start(20)
+        self.fet_view_timer.start(100)
 
 
     def fpga_process_stop(self):
         self.log.info('---------------------------------')
-        self.log.info('jovian_process_stop')
+        self.log.info('fpga_process_stop')
         self.log.info('---------------------------------')
         self.fpgaBtn.setText('FPGA Stream Off')
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.fpga.stop()
-        # self.nav_view_timer.stop()
+        self.fet_view_timer.stop()
+
+
+    def fet_view_update(self):
+        # with Timer('update fet', verbose=False):
+        # 
+        try:
+            N = 5000
+            fet = np.fromfile('./fet.bin', dtype=np.int32)
+            fet = np.memmap('./fet.bin', dtype='int32', mode='r')
+            fet = fet.reshape(-1, 7)
+            fet_info = fet[:,:2]
+            fet_val = fet[:,2:6]
+            idx = np.where(fet_info[:,1]==self.current_group)[0]
+            fet = fet_val[idx, :]
+            if len(idx)>N:
+                fet = fet[-N:, :]
+            clu = np.zeros((fet.shape[0],), dtype=np.int32)
+            clu[-30:] = 1
+            self.log.info('get_fet{}'.format(idx.shape))
+            if len(fet)>0:
+                try:
+                    self.fet_view0.stream_in(fet, clu, highlight_no=30)
+                except:
+                    self.log.warn('fet not update')
+                    pass
+        except:
+            pass 

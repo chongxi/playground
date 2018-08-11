@@ -1,10 +1,11 @@
 import sys
 import socket
+import numpy as np
 import torch as torch
 from torch.multiprocessing import Process, Pipe
 from ...utils import Timer
 from ...utils import EventEmitter
-import numpy as np
+
 # from .task import *
 
 

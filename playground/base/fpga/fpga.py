@@ -1,4 +1,13 @@
 import io
+import os
+
+import sys
+import socket
+import numpy as np
+import torch as torch
+from torch.multiprocessing import Process, Pipe
+from ...utils import Timer
+from ...utils import EventEmitter
 
 
 
@@ -19,7 +28,7 @@ class Fpga(object):
         self._size = 7*4  # 6 samples, 4 bytes/sample
 
 
-    def _fpga_process(info=False, vis=False):
+    def _fpga_process(self):
         '''
         A daemon process dedicated on reading data from PCIE and update
         the shared memory with other processors: shared_arr 
@@ -28,24 +37,24 @@ class Fpga(object):
             # with shared_arr.get_lock():
             # tic = time.time() * 1000
             # buf = r32_buf.read(_size)
-            buf = r32.read(self._size)
+            buf = self.r32.read(self._size)
             # f.write(buf)
             os.write(self.fd, buf)
             # toc = time.time() * 1000
             # print '{0} ms'.format(toc-tic)
             # if info == True:
-            #     fet = np.frombuffer(buf,dtype=np.int32).reshape(-1,7)
-            #     fet_info = fet[:,:2]
-            #     print fet_info
+            # fet = np.frombuffer(buf,dtype=np.int32).reshape(-1,7)
+            # fet_info = fet[:,:2]
+            # self.log.info('{}'.format(fet_info[0]))
 
 
     def start(self):
-        self.fpga_process = Process(target=self._fpga_process, name='jovian') #, args=(self.pipe_jovian_side,)
+        self.fpga_process = Process(target=self._fpga_process, name='fpga') #, args=(self.pipe_jovian_side,)
         self.fpga_process.daemon = True
         self.fpga_process.start()  
 
 
     def stop(self):
-        self.jovian_process.terminate()
-        self.jovian_process.join()
+        self.fpga_process.terminate()
+        self.fpga_process.join()
 

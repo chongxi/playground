@@ -6,11 +6,13 @@ import time
 from PyQt5.QtWidgets import QApplication
 from gui import play_GUI
 from base import create_logger
+from base import Fpga
 
 def main():
     logger = create_logger()
+    fpga   = Fpga()
     app = QApplication(sys.argv)
-    gui = play_GUI(logger)
+    gui = play_GUI(logger, fpga)
     gui.show()
     sys.exit(app.exec_())
 
