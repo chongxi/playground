@@ -14,7 +14,6 @@ from base import Fpga
 from base import task
 from base.task import one_cue_task, two_cue_task, one_cue_moving_task
 from view import maze_view
-from spiketag.probe import prb_bowtie_LL as prb 
 from spiketag.view import probe_view, scatter_3d_view
 from utils import Timer
 
@@ -27,10 +26,16 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, logger, fpga=None):
+    def __init__(self, logger, prb, fpga=None):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
         self.log = logger
+        self.current_group=0
+        self.prb = prb
+        @self.prb.connect
+        def on_select(group_id, chs):
+            self.current_group = group_id
+
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
@@ -38,9 +43,12 @@ class play_GUI(QWidget):
         if fpga is not None:
             self.fpga = fpga
             self.fpga.log = self.log
+            self.fpga.prb = self.prb
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
-
+            self.prb_view_timer = QtCore.QTimer(self)
+            self.prb_view_timer.timeout.connect(self.prb_view_update)
+            self.prb_view_frame = 1
     #------------------------------------------------------------------------------
     # gui layout
     #------------------------------------------------------------------------------
@@ -105,9 +113,10 @@ class play_GUI(QWidget):
         ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
 
         #5. Probe View
-        self.prb = prb
         self.prb_view = probe_view()
         self.prb_view.set_data(self.prb, font_size=23)
+        # scv = np.linspace(0,1000,128)
+        # self.prb_view.set_scv(scv, 1000)
 
         #6. Feature View
         N=5000
@@ -148,13 +157,6 @@ class play_GUI(QWidget):
         self.setLayout(pLayout)
 
 
-        #########################
-        # action 
-        #########################
-        self.current_group=0
-        @self.prb.connect
-        def on_select(group_id, chs):
-            self.current_group = group_id
 
     #------------------------------------------------------------------------------
     # gui function
@@ -306,6 +308,7 @@ class play_GUI(QWidget):
         self.fpgaBtn.setStyleSheet("background-color: green")
         self.fpga.start()
         self.fet_view_timer.start(100)
+        self.prb_view_timer.start(200)
 
 
     def fpga_process_stop(self):
@@ -316,6 +319,15 @@ class play_GUI(QWidget):
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.fpga.stop()
         self.fet_view_timer.stop()
+        self.prb_view_timer.stop()
+
+
+    def prb_view_update(self):
+        self.prb_view.set_scv(self.fpga.spike_count_vector.numpy(), 30)
+        # self.fpga.spike_count_vector.div_(self.prb_view_frame)
+        self.fpga.spike_count_vector[:] = 0
+        self.prb_view_frame += 1
+        # self.log.info('{}'.format(self.fpga.spike_count_vector.numpy()))
 
 
     def fet_view_update(self):
@@ -323,7 +335,7 @@ class play_GUI(QWidget):
         # 
         try:
             N = 5000
-            fet = np.fromfile('./fet.bin', dtype=np.int32)
+            # fet = np.fromfile('./fet.bin', dtype=np.int32)
             fet = np.memmap('./fet.bin', dtype='int32', mode='r')
             fet = fet.reshape(-1, 7)
             fet_info = fet[:,:2]
