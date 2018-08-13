@@ -16,8 +16,9 @@ class Fpga(object):
     """docstring for FPGA"""
     def __init__(self, prb):
         self.prb = prb
-        self.group_idx = np.array(self.prb.grp_dict.keys())
+        # self.group_idx = np.array(self.prb.grp_dict.keys())
         self.reset()
+        # self.load_vq()
 
 
     def close(self):
@@ -31,12 +32,28 @@ class Fpga(object):
         self._size = 7*4  # 6 samples, 4 bytes/sample
         self.shared_mem_init()
 
+        self.labels = {}
+        self.spk_times = {}
+        for grp_id in self.prb.grp_dict.keys():
+            self.labels[grp_id] = np.array([])
+            self.spk_times[grp_id] = np.array([])
+
 
     def shared_mem_init(self):
         n_spike_count_vector = len(self.prb.grp_dict.keys())
         # trigger task using frame counter
         self.spike_count_vector = torch.zeros(n_spike_count_vector,)
         self.spike_count_vector.share_memory_()
+
+
+    def load_vq(self, vq_file='vq.npy'):
+        self.vq = np.load(vq_file).item(0)
+        self.vq_grp_idx = self.vq['labels'].keys()
+        self.log.info('vq from group:{} loaded'.format(self.vq_grp_idx))
+
+
+    def nnid_2_label(self, group_id, nn_id):
+        return self.vq['labels'][group_id][nn_id]
 
 
     def _fpga_process(self):
@@ -55,14 +72,29 @@ class Fpga(object):
             os.write(self.fd, buf)
             toc = time.time() * 1000
             # self.log.info('{} elapsed'.format(toc-tic))
-            # print '{0} ms'.format(toc-tic)
-            # if info == True:
             fet = np.frombuffer(buf,dtype=np.int32).reshape(-1,7)
-            fet_info = fet[:,:2]
-            for group_id in fet_info[:,1]:
-                if group_id in self.group_idx:
-                    self.spike_count_vector[group_id] += 1
-                    self.log.info('{}'.format(self.spike_count_vector.numpy()))
+
+            for _fet in fet:
+                spk_time = _fet[0]/25.   #ms
+                group_id = _fet[1]
+                if group_id in self.vq_grp_idx: # only calculate for vq group
+                    # self.log.info(self.vq['labels'][group_id])
+                    # self.log.info(_fet)
+                    _nnid  = _fet[-1]
+                    _label = self.nnid_2_label(group_id, _nnid)
+                    # self.spk_times[group_id] = np.append(self.spk_times[group_id], spk_time)
+                    # self.labels[group_id] = np.append(self.labels[group_id], _label)
+                    if _label != 0 and _label != 1:
+                        self.spike_count_vector[group_id] += 1
+                        self.log.info('{}'.format(self.spike_count_vector.numpy()))
+
+            # for group_id in fet_info[:,1]:
+            #     if group_id in self.group_idx:
+            #         self.spk_times[group_id].append(fet_info[:, 0])
+            #         _label = self.vq['labels'][group_id][fet[group_id]]
+            #         self.label[group_id].append(fet_info[:, -1]) 
+            #         self.spike_count_vector[group_id] += 1
+            #         self.log.info('{}'.format(self.spike_count_vector.numpy()))
             # _unique, _counts =  np.unique(fet_info[:,1], return_counts=True) 
             # for i in _unique:
             #     if i in self.group_idx:

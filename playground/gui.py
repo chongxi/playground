@@ -306,6 +306,7 @@ class play_GUI(QWidget):
         self.log.info('---------------------------------')
         self.fpgaBtn.setText('FPGA Stream ON')
         self.fpgaBtn.setStyleSheet("background-color: green")
+        self.fpga.load_vq()  ### critical!! ###
         self.fpga.start()
         self.fet_view_timer.start(100)
         self.prb_view_timer.start(200)
@@ -323,7 +324,7 @@ class play_GUI(QWidget):
 
 
     def prb_view_update(self):
-        self.prb_view.set_scv(self.fpga.spike_count_vector.numpy(), 30)
+        self.prb_view.set_scv(self.fpga.spike_count_vector.numpy(), 15)
         # self.fpga.spike_count_vector.div_(self.prb_view_frame)
         self.fpga.spike_count_vector[:] = 0
         self.prb_view_frame += 1
@@ -333,25 +334,44 @@ class play_GUI(QWidget):
     def fet_view_update(self):
         # with Timer('update fet', verbose=False):
         # 
-        try:
+        # try:
             N = 5000
-            # fet = np.fromfile('./fet.bin', dtype=np.int32)
-            fet = np.memmap('./fet.bin', dtype='int32', mode='r')
-            fet = fet.reshape(-1, 7)
-            fet_info = fet[:,:2]
-            fet_val = fet[:,2:6]
-            idx = np.where(fet_info[:,1]==self.current_group)[0]
-            fet = fet_val[idx, :]
-            if len(idx)>N:
-                fet = fet[-N:, :]
-            clu = np.zeros((fet.shape[0],), dtype=np.int32)
-            clu[-30:] = 1
-            self.log.info('get_fet{}'.format(idx.shape))
-            if len(fet)>0:
+            fet = np.fromfile('./fet.bin', dtype=np.int32)
+            # try:
+                # fet = np.memmap('./fet.bin', dtype='int32', mode='r')
+            if fet.shape[0] > 0:
                 try:
-                    self.fet_view0.stream_in(fet, clu, highlight_no=30)
+                    fet = fet.reshape(-1, 7)
+                    fet_info = fet[:,:2]
+                    fet_val = fet[:,2:6]
+                    labels  = fet[:, -1]
+                    # get idx of fet from current selected group
+                    idx = np.where(fet_info[:,1]==self.current_group)[0]
+                    if len(idx)>N:
+                        idx = idx[-N:]
+
+                    if self.current_group in self.fpga.vq_grp_idx:
+                        fet = fet_val[idx, :]
+                        clu = self.fpga.vq['labels'][self.current_group][labels[idx]]
+                        # # self.log.info(clu)
+                        # if len(idx)>N:
+                        #     fet = fet[-N:, :]
+                        #     clu = clu[-N:, :]
+                    else:
+                        fet = fet_val[idx, :]
+                        # if len(idx)>N:
+                        #     fet = fet[-N:, :]
+                        clu = np.zeros((fet.shape[0],), dtype=np.int32)
+                        clu[-30:] = 1
+
+
+                    # self.log.info('get_fet{}'.format(idx.shape))
+                    if len(fet)>0:
+                        try:
+                            self.fet_view0.stream_in(fet, clu, highlight_no=30)
+                        except:
+                            self.log.warn('fet not update')
+                            pass
+
                 except:
-                    self.log.warn('fet not update')
-                    pass
-        except:
-            pass 
+                    pass 
