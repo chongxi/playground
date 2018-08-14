@@ -325,10 +325,11 @@ class play_GUI(QWidget):
 
     def prb_view_update(self):
         self.prb_view.set_scv(self.fpga.spike_count_vector.numpy(), 15)
-        # self.fpga.spike_count_vector.div_(self.prb_view_frame)
+        scv = np.append(self.prb_view_frame, self.fpga.spike_count_vector.numpy())
+        scv.tofile('./scv.bin')
         self.fpga.spike_count_vector[:] = 0
         self.prb_view_frame += 1
-        # self.log.info('{}'.format(self.fpga.spike_count_vector.numpy()))
+        self.log.info('{}'.format(self.fpga.spike_count_vector.numpy()))
 
 
     def fet_view_update(self):

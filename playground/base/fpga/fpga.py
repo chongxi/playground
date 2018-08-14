@@ -39,6 +39,21 @@ class Fpga(object):
             self.spk_times[grp_id] = np.array([])
 
 
+        # Create a TCP/IP socket
+        # self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        # self.server_address = ('localhost', 10000)
+        # print >> sys.stderr, 'starting up on %s port %s' % self.server_address
+        # self.sock.bind(self.server_address)
+
+        # # Listen for incoming connections
+        # self.sock.listen(1)
+        # print >> sys.stderr, 'waiting for a connection'
+        # self.connection, self.client_address = self.sock.accept()
+        # print >> sys.stderr, 'connection from', self.client_address
+
+
+
     def shared_mem_init(self):
         n_spike_count_vector = len(self.prb.grp_dict.keys())
         # trigger task using frame counter
@@ -86,7 +101,7 @@ class Fpga(object):
                     # self.labels[group_id] = np.append(self.labels[group_id], _label)
                     if _label != 0 and _label != 1:
                         self.spike_count_vector[group_id] += 1
-                        self.log.info('{}'.format(self.spike_count_vector.numpy()))
+                        # self.log.info('{}'.format(self.spike_count_vector.numpy()))
 
             # for group_id in fet_info[:,1]:
             #     if group_id in self.group_idx:
