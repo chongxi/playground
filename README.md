@@ -3,7 +3,7 @@ Control Console that integrate Jovian (Virtual Reality Platform) and Spiketag (R
 
 Mouse and Rats or even human play in playground 
 - It bidirectionally communicate with `Jovian` (through socket)
-- It bidirectionally communicate `Spiketag` (through socket) 
+- It bidirectionally communicate `FPGA` (through PCIE interface) 
 - It bidirectionally communicate `user` (through low-latency rendering and interaction)  
 
 
