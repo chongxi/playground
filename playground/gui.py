@@ -91,9 +91,14 @@ class play_GUI(QWidget):
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.fpgaBtn.toggled.connect(self.fpga_process_toggle)
 
+        self.toggle_motion_Btn = QPushButton("Motion toggle", self)
+        # self.toggle_motion_Btn.setCheckable(True)
+        self.toggle_motion_Btn.setStyleSheet("background-color: darkgrey")
+
         BtnLayout = QGridLayout()
         BtnLayout.addWidget(self.vrBtn,0,1)
         BtnLayout.addWidget(self.fpgaBtn,0,0)
+        BtnLayout.addWidget(self.toggle_motion_Btn, 1,0)
 
         #4 Reward Parameter
         self.reward_time_label   = QLabel('Reward Time: 1s')
@@ -185,7 +190,8 @@ class play_GUI(QWidget):
             self.jov = Jovian()
             self.jov.log = self.log
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
-            
+            self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
+
             # 2. Init Task
             try:
                 self.task = globals()[self.task_name](self.jov)

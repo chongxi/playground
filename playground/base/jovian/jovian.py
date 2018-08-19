@@ -22,9 +22,13 @@ class Jovian_Stream(str):
     def parse(self):
         line = self.__str__()
         _line = line.split(',')
-        _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
-        _coord = [_x, _y, 0]
-        return _t, _coord
+        try:
+            _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
+            _coord = [_x, _y, 0]
+            return _t, _coord
+        except:
+            _t,_info = int(_line[0]), _line[1]
+            return _t, _info
 
 
 class Jovian(EventEmitter):
@@ -131,8 +135,9 @@ class Jovian(EventEmitter):
             with Timer('', verbose=ENABLE_PROFILER):
                 self._t, self._coord = self.readline().parse()
                 self.log.info('{}, {}'.format(self._t, self._coord))
-                self.current_pos[:]  = torch.tensor(self._coord)
-                self.task_routine()
+                if type(self._coord) is list:
+                    self.current_pos[:]  = torch.tensor(self._coord)
+                    self.task_routine()
                 # self.pipe_jovian_side.send((self._t, self._coord))
 
 
@@ -187,7 +192,7 @@ class Jovian(EventEmitter):
 
 
     def toggle_motion(self):
-        cmd = "console.toggle_motion()"
+        cmd = "console.toggle_motion()\n"
         self.output.send(cmd)
 
 
