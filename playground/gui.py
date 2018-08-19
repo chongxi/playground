@@ -120,8 +120,6 @@ class play_GUI(QWidget):
         #5. Probe View
         self.prb_view = probe_view()
         self.prb_view.set_data(self.prb, font_size=23)
-        # scv = np.linspace(0,1000,128)
-        # self.prb_view.set_scv(scv, 1000)
 
         #6. Feature View
         N=5000
@@ -275,7 +273,8 @@ class play_GUI(QWidget):
         self.vrBtn.setText('VR Stream ON')
         self.vrBtn.setStyleSheet("background-color: green")
         self.jov.start()
-        self.nav_view_timer.start(20)
+        time.sleep(0.1)
+        self.nav_view_timer.start(30)
 
 
     def jovian_process_stop(self):
@@ -289,10 +288,10 @@ class play_GUI(QWidget):
 
 
     def nav_view_update(self):
-        with Timer('', verbose=False):
-            if self.jov.cnt>0:
-                self.nav_view.current_pos = self.jov.current_pos.numpy()
-                self.nav_view.cue_update()
+        # with Timer('', verbose=False):
+        if self.jov.cnt>0:
+            self.nav_view.current_pos = self.jov.current_pos.numpy()
+            self.nav_view.cue_update()
 
 
     #------------------------------------------------------------------------------
@@ -314,7 +313,7 @@ class play_GUI(QWidget):
         self.fpgaBtn.setStyleSheet("background-color: green")
         self.fpga.load_vq()  ### critical!! ###
         self.fpga.start()
-        self.fet_view_timer.start(100)
+        self.fet_view_timer.start(200)
         self.prb_view_timer.start(200)
 
 
@@ -330,12 +329,13 @@ class play_GUI(QWidget):
 
 
     def prb_view_update(self):
-        self.prb_view.set_scv(self.fpga.spike_count_vector.numpy(), 15)
-        scv = np.append(self.prb_view_frame, self.fpga.spike_count_vector.numpy())
+        scv = self.fpga.spike_count_vector.numpy()
+        # self.log.info('{}:{}'.format('scv', scv))
+        self.prb_view.set_scv(scv, 15)
+        scv = np.append(self.prb_view_frame, scv)
         scv.tofile('./scv.bin')
         self.fpga.spike_count_vector[:] = 0
         self.prb_view_frame += 1
-        self.log.info('{}'.format(self.fpga.spike_count_vector.numpy()))
 
 
     def fet_view_update(self):

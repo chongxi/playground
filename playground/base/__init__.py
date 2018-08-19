@@ -39,7 +39,10 @@ class logger():
             for line in (f): 
                 text.append(line)
                 if line != 'SY\n':
-                    asctime, processName, levelname, funcName, message = line.split(' - ')
+                    try:
+                        asctime, processName, levelname, funcName, message = line.split(' - ')
+                    except:
+                        print('{} cannot be parsed'.format(line))
         #             print asctime, processName, levelname, funcName, message
                     time.append(asctime.strip())
                     process.append(processName.strip())
