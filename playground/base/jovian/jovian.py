@@ -186,6 +186,11 @@ class Jovian(EventEmitter):
         return is_close(pos, cue_pos, radius)
 
 
+    def toggle_motion(self):
+        cmd = "console.toggle_motion()"
+        self.output.send(cmd)
+
+
     def teleport(self, prefix, target_pos, target_item=None):
         '''
            Core function: This is the only function that send `events` back to Jovian from interaction 
