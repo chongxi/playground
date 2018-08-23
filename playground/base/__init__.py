@@ -76,7 +76,15 @@ class logger():
         log = self.log_sessions[session_id]
         sync_time = self.sync_time
         locs = log[log['func']=='_jovian_process']['msg'].values
-        datum = np.array([[int(_) for _ in loc.replace('[','').replace(']','').split(',')] for loc in locs])
+        # datum = np.array([[int(_) for _ in loc.replace('[','').replace(']','').split(',')] for loc in locs])
+        datum = []
+        for i, loc in enumerate(locs):
+            dd = loc.replace('[','').replace(']','').split(',')
+            if len(dd[1:])<3:
+                print(loc)
+            else:
+                datum.append([int(_) for _ in dd])
+        datum = np.array(datum)
         ts = datum[:,0]
         pos = datum[:, 1:]
         if sync_time is not None:

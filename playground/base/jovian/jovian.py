@@ -220,4 +220,7 @@ class Jovian(EventEmitter):
 
 
     def reward(self, time):
-        self.pynq.send('reward, {}'.format(time))
+        try:
+            self.pynq.send('reward, {}'.format(time))
+        except:
+            pass
