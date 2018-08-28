@@ -80,6 +80,7 @@ class Jovian(EventEmitter):
         # trigger task using frame counter
         self.cnt = torch.empty(1,)
         self.cnt.share_memory_()
+        self.cnt.fill_(0)
         # current position of animal
         self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
@@ -134,7 +135,10 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
                 self._t, self._coord = self.readline().parse()
-                self.log.info('{}, {}'.format(self._t, self._coord))
+                if type(self._coord) is list:
+                    self.log.info('{}, {}'.format(self._t, self._coord))
+                else:
+                    self.log.warn('{}, {}'.format(self._t, self._coord))
                 if type(self._coord) is list:
                     self.current_pos[:]  = torch.tensor(self._coord)
                     self.task_routine()
@@ -163,7 +167,7 @@ class Jovian(EventEmitter):
 
     def examine_trigger(self):
         for _cue_name in self.shared_cue_dict.keys():
-            # self.log.info('{},{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
+            self.log.info('{},{}'.format(_cue_name, list(self.shared_cue_dict[_cue_name])))
             if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
                 # self.log.info('touch {}@{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
                 self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))

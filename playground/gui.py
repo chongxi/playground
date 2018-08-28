@@ -187,6 +187,7 @@ class play_GUI(QWidget):
             self.log.info('initiate Jovian and its socket connection')
             self.jov = Jovian()
             self.jov.log = self.log
+            self.jov.cnt.fill_(0)
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
 
