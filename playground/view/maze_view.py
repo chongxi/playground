@@ -146,6 +146,13 @@ class maze_view(scene.SceneCanvas):
         if file[-3:] == 'npy':
             pos = np.load(file).astype(np.float32)
             self.pos = pos
+
+
+    def show_trajectory(self, pos):
+        if self.replay_coord == 'jovian':
+            pos = self._to_jovian_coord(pos).astype(np.float32)
+        self.replay_trajectory.set_data(pos)
+        self.replay_current_pos.set_data(pos[0].reshape(-1,3))
             
             
     def load_replay_file(self, file_name, var='pos', show=True):
