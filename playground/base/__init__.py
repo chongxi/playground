@@ -27,7 +27,7 @@ def create_logger():
 
 
 class logger():
-    def __init__(self, filename):
+    def __init__(self, filename, sync=True):
         text=[]
         time = []
         process = []
@@ -52,7 +52,11 @@ class logger():
                 if line == 'SY\n':
                     SY.append(msg[-1])
                     
-        self.sync_time = int(SY[0].split(',')[0])
+        if sync:
+            self.sync_time = int(SY[0].split(',')[0])
+        else:
+            self.sync_time = None
+            
         self.log = pd.DataFrame(
             {'time': time,
              'process': process,
@@ -72,7 +76,7 @@ class logger():
         return log_sessions
 
 
-    def to_trajectory(self, session_id, interpolate=True, to_jovian_coord=True):
+    def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True):
         log = self.log_sessions[session_id]
         sync_time = self.sync_time
         locs = log[log['func']=='_jovian_process']['msg'].values
