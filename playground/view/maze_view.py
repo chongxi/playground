@@ -91,7 +91,7 @@ class maze_view(scene.SceneCanvas):
 
         ### MatrixTransform perform Affine Transform
         transform = MatrixTransform()
-        transform.rotate(angle=90, axis=(1, 0, 0))  # rotate around x-axis for 90, the maze lay down
+        # transform.rotate(angle=90, axis=(1, 0, 0))  # rotate around x-axis for 90, the maze lay down
         if mirror:
             transform.matrix[:,2] = - transform.matrix[:,2]  # reflection matrix, mirror image on x-y plane
         transform.scale(scale=4*[self.scale_factor]) # scale at all 4 dim for scale_factor
