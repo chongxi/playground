@@ -56,7 +56,7 @@ class maze_view(scene.SceneCanvas):
         ### 4. replay
         self.replay_current_pos = scene.visuals.Markers(parent=self.view.scene)
         self.replay_current_pos.set_data(np.array([0,0,0]).reshape(-1,3))
-        self.replay_trajectory  = scene.visuals.Line(parent=self.view.scene)
+        self.replay_trajectory  = scene.visuals.Line(parent=self.view.scene, color=(0.7, 0.7, 0.7, 1))
         self.replay_time = 0.0
         self.replay_coord      = 'jovian'
         self.replay_timer = app.Timer()
