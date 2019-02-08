@@ -69,7 +69,7 @@ class Task(object):
                     _pace, _animation = _action_queue[0]
                     if self.jov.cnt % _pace == 0:
                         try:
-                            _animation.next()
+                            _animation.__next__()
                         except StopIteration:
                             __pace__, __animation__ = _action_queue.popleft()
                             self.ani.emit('animation_finish', animation_name=__animation__.__name__)

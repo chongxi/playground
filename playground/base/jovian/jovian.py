@@ -107,10 +107,10 @@ class Jovian(EventEmitter):
 
 
     def readbuffer(self):
-        self.buffer = self.input.recv(256)
+        self.buffer = self.input.recv(256).decode("utf-8")
         self.buffering = True
         while self.buffering:
-            if "\n" in self.buffer:
+            if '\n' in self.buffer:
                 (line, self.buffer) = self.buffer.split("\n", 1)
                 yield Jovian_Stream(line + "\n")
             else:
@@ -126,9 +126,9 @@ class Jovian(EventEmitter):
     def readline(self):
         if self.buf is None:
             self.buf = self.readbuffer()
-            return self.buf.next()
+            return self.buf.__next__()
         else:
-            return self.buf.next()
+            return self.buf.__next__()
 
 
     def _jovian_process(self):
