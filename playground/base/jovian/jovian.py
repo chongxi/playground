@@ -114,7 +114,7 @@ class Jovian(EventEmitter):
                 (line, self.buffer) = self.buffer.split("\n", 1)
                 yield Jovian_Stream(line + "\n")
             else:
-                more = self.input.recv(256)
+                more = self.input.recv(256).decode("utf-8")
                 if not more:
                     self.buffering = False
                 else:
@@ -192,7 +192,7 @@ class Jovian(EventEmitter):
 
 
     def get(self):
-        return self.pipe_gui_side.recv()
+        return self.pipe_gui_side.recv().decode("utf-8")
 
 
     def _is_close(self, pos, cue_pos, radius):
@@ -201,7 +201,7 @@ class Jovian(EventEmitter):
 
     def toggle_motion(self):
         cmd = "console.toggle_motion()\n"
-        self.output.send(cmd)
+        self.output.send(cmd.encode())
 
 
     def teleport(self, prefix, target_pos, target_item=None):
@@ -216,19 +216,20 @@ class Jovian(EventEmitter):
 
         if prefix == 'console':  # teleport animal, target_item is not needed
             cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,5,0)
-            self.output.send(cmd)
+            self.output.send(cmd.encode())
 
         elif prefix == 'model':  # move cue
             with Timer('', verbose = ENABLE_PROFILER):
                 z += self.shared_cue_height[target_item]
                 cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
-                self.output.send(cmd)
+                self.output.send(cmd.encode())
                 bottom = z - self.shared_cue_height[target_item]
                 self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom], dtype=np.float32))
 
 
     def reward(self, time):
         try:
-            self.pynq.send('reward, {}'.format(time))
+            cmd = 'reward, {}'.format(time)
+            self.pynq.send(cmd.encode())
         except:
-            pass
+            print('fail to send reward command')
