@@ -1,14 +1,13 @@
-from jovian import Jovian
-from task import one_cue_task, two_cue_task, one_cue_moving_task
-from fpga import Fpga
+from .jovian import Jovian
+from .task import one_cue_task, two_cue_task, one_cue_moving_task
+from .fpga import Fpga
+from .behaviour import interp_pos
 
 from torch import multiprocessing
 import logging
 import pandas as pd
 import numpy as np
 from scipy import signal
-from ..utils import interp_pos
-
 
 _origin = np.array([-1309.17, -1258.14])
 _scale  = 100.

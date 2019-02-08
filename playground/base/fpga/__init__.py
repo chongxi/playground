@@ -1,1 +1,1 @@
-from fpga import Fpga
+from .fpga import Fpga

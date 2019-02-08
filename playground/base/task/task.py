@@ -1,6 +1,6 @@
 import numpy as np
 from ..jovian import Jovian
-from ...utils import EventEmitter
+from spiketag.utils import EventEmitter
 import time
 import torch
 from itertools import chain

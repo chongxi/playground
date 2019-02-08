@@ -3,8 +3,12 @@ import socket
 import numpy as np
 import torch as torch
 from torch.multiprocessing import Process, Pipe
-from ...utils import Timer
-from ...utils import EventEmitter
+from spiketag.utils import Timer
+from spiketag.utils import EventEmitter
+# from ..utils import Timer
+# from utils import Timer
+# from playground import utils
+# from utils import EventEmitter
 
 # from .task import *
 
