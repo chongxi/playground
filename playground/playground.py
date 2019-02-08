@@ -4,8 +4,8 @@
 import sys
 import time
 from PyQt5.QtWidgets import QApplication
-from gui import play_GUI
-from base import create_logger, Fpga
+from .gui import play_GUI
+from .base import create_logger, Fpga
 from spiketag.probe import prb_bowtie_LL as prb 
 
 
