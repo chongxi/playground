@@ -16,7 +16,6 @@ from vispy.visuals.transforms import STTransform, MatrixTransform
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 from torch import multiprocessing
-from pysine import sine
 from spiketag.view.color_scheme import palette
 
 
@@ -202,7 +201,7 @@ class maze_view(scene.SceneCanvas):
                                                     self.replay_spk_t[neuron_id] < self.replay_time))[0]
             if neuron_firing.shape[0] > 0:
                 for i in range(neuron_firing.shape[0]):
-                    sine(frequency=250.0, duration=0.011)
+                    neuron_sound(frequency=250.0, duration=0.011)
                 self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
                                                               current_pos).reshape(-1, 3)
                 intensity = neuron_firing.shape[0]*0.2
