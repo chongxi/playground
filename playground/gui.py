@@ -19,7 +19,7 @@ from spiketag.view import probe_view, scatter_3d_view
 
 import os 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path += '/base/maze/obj/'
+dir_path += '/base/maze/complex/'
 
 
 class play_GUI(QWidget):
