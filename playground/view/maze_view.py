@@ -170,7 +170,7 @@ class maze_view(scene.SceneCanvas):
             self.replay_current_pos.set_data(self.replay_pos[0].reshape(-1,3))
 
     def load_spktime_file(self, file_name, var='spk_time'):
-        self.replay_spk_t = np.load(file_name)[var].item()        
+        self.replay_spk_t = np.load(file_name, encoding='bytes')[var].item()        
 
     def load_neurons(self, file_name=None, var='spk_time', spk_time=None):
         if file_name is None:
@@ -196,6 +196,7 @@ class maze_view(scene.SceneCanvas):
 
         ## neuron_id is the list of neurons to replay
         # neuron_id = self.neuron_id
+        # print("replay neuron ids={}".format(self.neuron_id))
         for neuron_id in self.neuron_id:
             neuron_firing = np.where(np.logical_and(self.replay_spk_t[neuron_id] > last_time,
                                                     self.replay_spk_t[neuron_id] < self.replay_time))[0]
