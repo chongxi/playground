@@ -15,8 +15,8 @@ from spiketag.utils import EventEmitter
 
 ENABLE_PROFILER = False
 
-host_ip = '10.102.20.26'
-pynq_ip = '10.102.20.105'
+host_ip = '10.102.20.42'
+pynq_ip = '10.102.20.75'
 verbose = True
 
 is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius

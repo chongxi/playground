@@ -44,7 +44,7 @@ class Task(object):
         self.jov = jov
         self.log = jov.log
         self.fsm = fsm 
-        self.transition_enable = namedtuple("transition_enable", ['behave', 'env', 'ephys'], verbose=False)
+        self.transition_enable = namedtuple("transition_enable", ['behave', 'env', 'ephys']) # verbose = False
         self.transition_enable.behave, self.transition_enable.ephys = True, False
         self.ani = EventEmitter()
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
