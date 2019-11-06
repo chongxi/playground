@@ -375,10 +375,10 @@ class maze_view(scene.SceneCanvas):
         elif e.text == '0':
             self._selected_cue = None
         elif e.text == '1':
-            self._selected_cue = self.cues.keys()[0]
+            self._selected_cue = list(self.cues.keys())[0]
             # print('{} is selected'.format(self._selected_cue))
         elif e.text == '2':
-            self._selected_cue = self.cues.keys()[1]
+            self._selected_cue = list(self.cues.keys())[1]
             # print('{} is selected'.format(self._selected_cue))
         elif e.text == '.':
             self.view.camera = 'fly'
@@ -396,6 +396,7 @@ class maze_view(scene.SceneCanvas):
                 if keys.CONTROL in e.modifiers and e.button == 2:
                     with Timer('cue moving', verbose=False):
                         target_maze_pos = self.imap(e.pos)
+                        # print(target_maze_pos)
                         self.cues[self._selected_cue].pos = target_maze_pos
                         
 
