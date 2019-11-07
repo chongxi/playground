@@ -42,8 +42,6 @@ class play_GUI(QWidget):
 
         if bmi is not None:
             self.bmi = bmi
-            bin_size, B_bins = 25e-3, 10
-            self.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
             self.prb_view.highlight(self.bmi.fpga.configured_groups)
@@ -322,7 +320,7 @@ class play_GUI(QWidget):
         self.log.info('---------------------------------')
         self.log.info('fpga_process_stop')
         self.log.info('---------------------------------')
-        self.fpgaBtn.setText('FPGA Stream Off')
+        self.fpgaBtn.setText('BMI Stream Off')
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.bmi.stop()
         self.fet_view_timer.stop()
