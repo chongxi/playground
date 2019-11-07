@@ -11,13 +11,14 @@ import playground
 @click.option('--maze', prompt='maze', default='2D', help='maze name')
 @click.option('--task', prompt='task', default='two cue', help='task name')
 @click.option('--fpga', prompt='fpga', default='n', help='y/n')
-def main(name, maze, task, fpga):
+@click.option('--prb_file', prompt='probe file', help='probe file')
+def main(name, maze, task, fpga, prb_file):
     """Console script for playground."""
     click.echo("rat #{} in {} maze doing {} task".format(name, maze, task))
     if fpga=='y':
-        playground.run(fpga=True)
+        playground.run(prb_file, BMI_ON=True)
     elif fpga=='n':
-        playground.run(fpga=False)
+        playground.run(prb_file, BMI_ON=False)
     return 0
 
 

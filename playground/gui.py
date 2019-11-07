@@ -26,7 +26,7 @@ class play_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, logger, prb, fpga=None):
+    def __init__(self, logger, prb, bmi=None):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
         self.log = logger
@@ -40,14 +40,14 @@ class play_GUI(QWidget):
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
 
-        if fpga is not None:
-            self.fpga = fpga
-            self.fpga.log = self.log
-            self.fpga.prb = self.prb
+        if bmi is not None:
+            self.bmi = bmi
+            bin_size, B_bins = 25e-3, 10
+            self.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
-            self.prb_view_timer = QtCore.QTimer(self)
-            self.prb_view_timer.timeout.connect(self.prb_view_update)
+            # self.prb_view_timer = QtCore.QTimer(self)
+            # self.prb_view_timer.timeout.connect(self.prb_view_update)
             self.prb_view_frame = 1
     #------------------------------------------------------------------------------
     # gui layout
@@ -86,7 +86,7 @@ class play_GUI(QWidget):
         self.vrBtn.setStyleSheet("background-color: darkgrey")
         self.vrBtn.toggled.connect(self.jovian_process_toggle)
 
-        self.fpgaBtn = QPushButton("FPGA Stream Off",self)
+        self.fpgaBtn = QPushButton("BMI Stream Off",self)
         self.fpgaBtn.setCheckable(True)
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
         self.fpgaBtn.toggled.connect(self.fpga_process_toggle)
@@ -310,12 +310,11 @@ class play_GUI(QWidget):
         self.log.info('---------------------------------')
         self.log.info('fpga_process_start')
         self.log.info('---------------------------------')
-        self.fpgaBtn.setText('FPGA Stream ON')
+        self.fpgaBtn.setText('BMI Stream ON')
         self.fpgaBtn.setStyleSheet("background-color: green")
-        self.fpga.load_vq()  ### critical!! ###
-        self.fpga.start()
-        self.fet_view_timer.start(200)
-        self.prb_view_timer.start(200)
+        self.bmi.start(gui_queue=False)
+        self.fet_view_timer.start(60)
+        # self.prb_view_timer.start(60)
 
 
     def fpga_process_stop(self):
@@ -324,9 +323,9 @@ class play_GUI(QWidget):
         self.log.info('---------------------------------')
         self.fpgaBtn.setText('FPGA Stream Off')
         self.fpgaBtn.setStyleSheet("background-color: darkgrey")
-        self.fpga.stop()
+        self.bmi.stop()
         self.fet_view_timer.stop()
-        self.prb_view_timer.stop()
+        # self.prb_view_timer.stop()
 
 
     def prb_view_update(self):
@@ -340,46 +339,22 @@ class play_GUI(QWidget):
 
 
     def fet_view_update(self):
-        # with Timer('update fet', verbose=False):
-        # 
-        # try:
-            N = 5000
-            fet = np.fromfile('./fet.bin', dtype=np.int32)
-            # try:
-                # fet = np.memmap('./fet.bin', dtype='int32', mode='r')
-            if fet.shape[0] > 0:
-                try:
-                    fet = fet.reshape(-1, 7)
-                    fet_info = fet[:,:2]
-                    fet_val = fet[:,2:6]
-                    labels  = fet[:, -1]
-                    # get idx of fet from current selected group
-                    idx = np.where(fet_info[:,1]==self.current_group)[0]
-                    if len(idx)>N:
-                        idx = idx[-N:]
+        N = 5000
+        fet = np.fromfile('./fet.bin', dtype=np.int32)
+        if fet.shape[0] > 0:
+            fet = fet.reshape(-1, 7)
+            fet_info = fet[:,:2]
+            fet_val = fet[:,2:6]
+            labels  = fet[:, -1]
+            # get idx of fet from current selected group
+            idx = np.where(fet_info[:,1]==self.current_group)[0]
+            if len(idx)>N:
+                idx = idx[-N:]
 
-                    if self.current_group in self.fpga.vq_grp_idx:
-                        fet = fet_val[idx, :]
-                        clu = self.fpga.vq['labels'][self.current_group][labels[idx]]
-                        # # self.log.info(clu)
-                        # if len(idx)>N:
-                        #     fet = fet[-N:, :]
-                        #     clu = clu[-N:, :]
-                    else:
-                        fet = fet_val[idx, :]
-                        # if len(idx)>N:
-                        #     fet = fet[-N:, :]
-                        clu = np.zeros((fet.shape[0],), dtype=np.int32)
-                        clu[-30:] = 1
+            if self.current_group in self.bmi.fpga.configured_groups:
+                fet = fet_val[idx, :]/float(2**16)
+                clu = labels[idx]
 
-
-                    # self.log.info('get_fet{}'.format(idx.shape))
-                    if len(fet)>0:
-                        try:
-                            self.fet_view0.stream_in(fet, clu, highlight_no=30)
-                        except:
-                            self.log.warn('fet not update')
-                            pass
-
-                except:
-                    pass 
+            # self.log.info('get_fet{}'.format(idx.shape))
+            if len(fet)>0:
+                self.fet_view0.stream_in(fet, clu, highlight_no=30)
