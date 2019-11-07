@@ -46,6 +46,7 @@ class play_GUI(QWidget):
             self.bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
+            self.prb_view.highlight(self.bmi.fpga.configured_groups)
             # self.prb_view_timer = QtCore.QTimer(self)
             # self.prb_view_timer.timeout.connect(self.prb_view_update)
             self.prb_view_frame = 1
@@ -340,21 +341,24 @@ class play_GUI(QWidget):
 
     def fet_view_update(self):
         N = 5000
-        fet = np.fromfile('./fet.bin', dtype=np.int32)
-        if fet.shape[0] > 0:
-            fet = fet.reshape(-1, 7)
-            fet_info = fet[:,:2]
-            fet_val = fet[:,2:6]
-            labels  = fet[:, -1]
-            # get idx of fet from current selected group
-            idx = np.where(fet_info[:,1]==self.current_group)[0]
-            if len(idx)>N:
-                idx = idx[-N:]
+        try:
+            fet = np.fromfile('./fet.bin', dtype=np.int32)
+            if fet.shape[0] > 0:
+                fet = fet.reshape(-1, 7)
+                fet_info = fet[:,:2]
+                fet_val = fet[:,2:6]
+                labels  = fet[:, -1]
+                # get idx of fet from current selected group
+                idx = np.where(fet_info[:,1]==self.current_group)[0]
+                if len(idx)>N:
+                    idx = idx[-N:]
 
-            if self.current_group in self.bmi.fpga.configured_groups:
-                fet = fet_val[idx, :]/float(2**16)
-                clu = labels[idx]
+                if self.current_group in self.bmi.fpga.configured_groups:
+                    fet = fet_val[idx, :]/float(2**16)
+                    clu = labels[idx]
 
-            # self.log.info('get_fet{}'.format(idx.shape))
-            if len(fet)>0:
-                self.fet_view0.stream_in(fet, clu, highlight_no=30)
+                # self.log.info('get_fet{}'.format(idx.shape))
+                if len(fet)>0:
+                    self.fet_view0.stream_in(fet, clu, highlight_no=30)
+        except:
+            pass
