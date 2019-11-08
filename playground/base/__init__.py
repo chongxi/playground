@@ -109,27 +109,3 @@ class logger():
             pos = pos/_scale + _origin
 
         return ts, pos
-
-
-    def get_speed(self, ts, pos, smooth_window=59, std=6):
-        v = np.linalg.norm(np.diff(pos, axis=0), axis=1)/np.diff(ts)
-        w = signal.gaussian(smooth_window, std) # window size 59 frame (roughly 1 sec), std = 6 frame
-        w/=sum(w)
-        v_smoothed = np.convolve(v, w, mode='same')
-
-        v = np.hstack((0.01, v))
-        v_smoothed = np.hstack((0.01, v_smoothed))
-
-        '''
-        # check speed:
-        f, ax = plt.subplots(1,1, figsize=(18,8))
-        offset=20000
-        plot(ts[offset:1000+offset], v[offset:1000+offset])
-        plot(ts[offset:1000+offset], v_smoothed[offset:1000+offset])
-        ax.axhline(5, c='m', ls='-.')
-        '''
-
-        return v_smoothed, v
-
-
-
