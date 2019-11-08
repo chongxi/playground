@@ -148,6 +148,15 @@ class Jovian(EventEmitter):
                     self.task_routine()
 
     def set_bmi(self, bmi, bmi_buffer_len=60):
+        '''
+        This set BMI, Its binner and decoder event for JOV to act on. The event flow:
+        bmi.binner.emit('decode', X) ==> jov
+        jov.emit('bmi_update', y)    ==> task (e.g. JEDI, JUMPER etc.)
+
+        set_bmi connect the event flow from
+                decode(X)               bmi_update(y)
+        bmi ==================> jov ====================> task
+        '''
         self.bmi = bmi
         self.bmi_pos_buf = np.zeros((bmi_buffer_len, 2))
         self.log.info('initiate the BMI decoder and playground jov connection')
@@ -165,7 +174,8 @@ class Jovian(EventEmitter):
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                 # decide the output (not necessarily to be the mean)
                 self.teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
-                self.emit('bmi_decode', pos=self.teleport_pos)
+                self.emit('bmi_update', pos=self.teleport_pos)
+                
 
     def set_trigger(self, shared_cue_dict):
         '''shared_cue_dict is a a shared memory dict between processes contains cue name and position:

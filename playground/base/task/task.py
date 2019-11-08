@@ -365,7 +365,7 @@ class JEDI(Task):
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
         @self.jov.connect
-        def on_bmi_decode(pos):
+        def on_bmi_update(pos):
             self.jov.teleport(prefix='model', target_pos=(pos[0], pos[1], 15), target_item='_dcue_001')
         #------------------------------------------------------------------------------
 
@@ -407,7 +407,7 @@ class JUMPER(Task):
         #------------------------------------------------------------------------------
         # core of JUMPER: teleport itself when bmi_decode event happens
         @self.jov.connect
-        def on_bmi_decode(pos):
+        def on_bmi_update(pos):
             self.jov.teleport(prefix='console', target_pos=(pos[0], pos[1], 15))
         #------------------------------------------------------------------------------
 
