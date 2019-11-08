@@ -12,7 +12,7 @@ from datetime import datetime
 from .base import Jovian
 from .base import Fpga
 from .base import task
-from .base.task import one_cue_task, two_cue_task, one_cue_moving_task
+from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI
 from .view import maze_view
 from .utils import Timer
 from spiketag.view import probe_view, scatter_3d_view
@@ -42,6 +42,24 @@ class play_GUI(QWidget):
 
         if bmi is not None:
             self.bmi = bmi
+            smooth_taps = 60 #int(2/200e-3)
+            self.bmi_pos = np.zeros((smooth_taps, 2))
+            self.log.info('initiate the BMI decoder and playground jov connection')
+            @self.bmi.binner.connect
+            def on_decode(X):
+                # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
+                with Timer('decoding', verbose=False):
+                    if self.bmi.dec.name == 'NaiveBayes':
+                        X = np.sum(X, axis=0)
+                    self.bmi_pos = np.vstack((self.bmi_pos[1:, :], self.bmi.dec.predict(X)))
+                    y = np.mean(self.bmi_pos, axis=0)
+                    # !!! In the GUI: select task first. Otherwise jov is not initiated 
+                    self.jov.teleport(prefix='console', target_pos=(y[0], y[1], 15))
+                    # self.jov.teleport(prefix='model', target_pos=(y[0], y[1], 15), target_item='_dcue_001')
+                    print('pos:{0}, time:{1:.5f} secs'.format(y, self.bmi.binner.current_time))
+                    os.write(self.bmi.dec_result, np.hstack((self.bmi.binner.last_bin, y)))
+
+
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
             self.prb_view.highlight(self.bmi.fpga.configured_groups)
@@ -327,14 +345,14 @@ class play_GUI(QWidget):
         # self.prb_view_timer.stop()
 
 
-    def prb_view_update(self):
-        scv = self.fpga.spike_count_vector.numpy()
-        # self.log.info('{}:{}'.format('scv', scv))
-        self.prb_view.set_scv(scv, 15)
-        scv = np.append(self.prb_view_frame, scv)
-        scv.tofile('./scv.bin')
-        self.fpga.spike_count_vector[:] = 0
-        self.prb_view_frame += 1
+    # def prb_view_update(self):
+    #     scv = self.fpga.spike_count_vector.numpy()
+    #     # self.log.info('{}:{}'.format('scv', scv))
+    #     self.prb_view.set_scv(scv, 15)
+    #     scv = np.append(self.prb_view_frame, scv)
+    #     scv.tofile('./scv.bin')
+    #     self.fpga.spike_count_vector[:] = 0
+    #     self.prb_view_frame += 1
 
 
     def fet_view_update(self):

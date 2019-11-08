@@ -214,14 +214,14 @@ class Jovian(EventEmitter):
             x, y = target_pos
             z = 0
 
-        if prefix == 'console':  # teleport animal, target_item is not needed
-            cmd = "{}.teleport({},{},{},{})\n".format(prefix, x,y,5,0)
+        if prefix == 'console':  # teleport animal, target_item is None
+            cmd = "{}.teleport({},{},{},{})\n".format('console', x, y, 5, 0)
             self.output.send(cmd.encode())
 
         elif prefix == 'model':  # move cue
             with Timer('', verbose = ENABLE_PROFILER):
                 z += self.shared_cue_height[target_item]
-                cmd = "{}.move('{}',{},{},{})\n".format(prefix, target_item, x, y, z)
+                cmd = "{}.move('{}',{},{},{})\n".format('model', target_item, x, y, z)
                 self.output.send(cmd.encode())
                 bottom = z - self.shared_cue_height[target_item]
                 self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom], dtype=np.float32))

@@ -12,8 +12,7 @@ import numpy as np
 from spiketag.analysis import *
 from spiketag.analysis.decoder import NaiveBayes
 
-
-bin_size, B_bins = 25e-3, 10
+bin_size, B_bins = 125e-3, 2
 
 def run(prb_file, BMI_ON=False, DEC_ON=False):
     logger = create_logger()
@@ -48,4 +47,3 @@ def realtime_decode(bmi, pos_file):
 
 if __name__ == '__main__':
     run()
-
