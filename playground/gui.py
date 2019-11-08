@@ -12,7 +12,7 @@ from datetime import datetime
 from .base import Jovian
 from .base import Fpga
 from .base import task
-from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI
+from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI, JUMPER
 from .view import maze_view
 from .utils import Timer
 from spiketag.view import probe_view, scatter_3d_view

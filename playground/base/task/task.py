@@ -372,10 +372,46 @@ class JEDI(Task):
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
+#------------------------------------------------------------------------------
+# JUMPER
+#------------------------------------------------------------------------------
+class JUMPER(Task):
+
+    def __init__(self, jov):
+
+        fsm = {
+                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+              }
+
+        super(JUMPER, self).__init__(fsm, jov)
+
+        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
+
+        @self.ani.connect
+        def on_animation_finish(animation_name):
+            if animation_name == 'bury':
+                self.reset()
+
+    #---------------------------------------------------------------------------------------------------
+    # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
+    #---------------------------------------------------------------------------------------------------
+    def reset(self):
+        super(JUMPER, self).reset()
+        self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
+        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        self.state = '1cue'
+
+    def goal_cue_touched(self, args):
+        self.log.info(args)
+        self.jov.reward(self.reward_time)
+        self.transition_enable.behave = False
+        self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
+
+
 if __name__ == '__main__':
     from playground.base import Jovian
     jov = Jovian()
     task = two_cue_task('2cue', jov)
     jov.emit('touch', args=(0, (0,0,0)))
-
 
