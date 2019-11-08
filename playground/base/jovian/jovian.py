@@ -161,21 +161,30 @@ class Jovian(EventEmitter):
 
 
     def task_routine(self):
+        '''
+        jov emit necessary event to task by going through `task_routine` at each frame (check _jovian_process)
+        One can flexibly define his/her own task_routine. 
+        It provides the necessary event for the task fsm at frame rate. 
+        '''
         self.cnt.add_(1)
         if self.cnt == 1:
             self.emit('start')
         # if self.cnt%2 == 0:
         self.emit('frame')
-        self.examine_trigger()
+        self.check_touch_agent_to_cue()  # JUMPER, one_cue, two_cue, moving_cue etc..
+        self.check_touch_cue_to_cue()    # JEDI
 
-
-    def examine_trigger(self):
+    def check_touch_agent_to_cue(self):
         for _cue_name in self.shared_cue_dict.keys():
-            self.log.info('{},{}'.format(_cue_name, list(self.shared_cue_dict[_cue_name])))
             if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
-                # self.log.info('touch {}@{}'.format(_cue_name, self.shared_cue_dict[_cue_name]))
                 self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))
 
+    def check_touch_cue_to_cue(self):
+        # here let's assume that there are only two cues to check
+        _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
+        if self._is_close(torch.tensor(self.shared_cue_dict[_cue_name_0]), 
+                          torch.tensor(self.shared_cue_dict[_cue_name_1]), self.touch_radius):
+            self.emit('touch', args=((_cue_name_0, _cue_name_1), self.shared_cue_dict[_cue_name_0]))
 
     def start(self):
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()

@@ -38,10 +38,20 @@ class TrouchEvent(EventEmitter):
 class Task(object):
     '''Every task has the same jov to report event
        Every task has different fsm is defined in child task class
+       Key for the task is the fsm design, which is a dictionary:
+       At the very core: when jovian report an event, with what and where
+       ```
+        next_state, func, args = self.fsm[self.state][event.what]
+        func(args)
+       ```
     ''' 
     def __init__(self, fsm, jov):
         # jovian first
         self.jov = jov
+        # init pos for all the cues, after this, self.jov.shared_cue_dict will have all the cues
+        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_000')
+        self.jov.teleport(prefix='model', target_pos=(2000, 2000, 1000), target_item='_dcue_001')
+
         self.log = jov.log
         self.fsm = fsm 
         self.transition_enable = namedtuple("transition_enable", ['behave', 'env', 'ephys']) # verbose = False
@@ -100,12 +110,13 @@ class Task(object):
             if self.transition_enable.behave:
                 # try:
                 self.log.info('state: {}, {}: {}@{}'.format(self.state, event.type, event.what, event.where))
-                next_state, func, args = self.fsm[self.state][event.what]
-                func(args)
-                self.state = next_state
-                self.log.info('state: {}'.format(self.state))
-                # except:
-                    # self.log.warn('Your Finite State Machine is Incomplete or Wrong')
+                try:
+                    next_state, func, args = self.fsm[self.state][event.what]
+                    func(args)
+                    self.state = next_state
+                    self.log.info('state: {}'.format(self.state))
+                except:
+                    self.log.warn('A event not registered happened, will not process')
 
         elif event.type == 'ephys':
             #TODO: Add ephys API
@@ -209,8 +220,6 @@ class one_cue_task(Task):
 
         super(one_cue_task, self).__init__(fsm, jov)
 
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
-
         @self.ani.connect
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
@@ -246,8 +255,6 @@ class one_cue_moving_task(Task):
               }
 
         super(one_cue_moving_task, self).__init__(fsm, jov)
-
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
 
         @self.ani.connect
         def on_animation_finish(animation_name):
@@ -341,14 +348,19 @@ class empty_task(Task):
 class JEDI(Task):
 
     def __init__(self, jov):
+        '''
+        ('_dcue_000', '_dcue_001') meaning these two cue generate a touch event
+        The agent controls the _dcue_001 to touch _dcue_000
+        once this happen, state transition from `1cue` to `1cue` and goal_cue_touched function is triggered
+        in which, reward is given and `_dcue_000` goes to bury. 
+        once bury animation finished, task will reset() and a new trial start (trasition_enable becomes True)
+        '''
 
         fsm = {
-                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {('_dcue_000', '_dcue_001'): ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(JEDI, self).__init__(fsm, jov)
-
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
 
         @self.ani.connect
         def on_animation_finish(animation_name):
@@ -384,8 +396,6 @@ class JUMPER(Task):
               }
 
         super(JUMPER, self).__init__(fsm, jov)
-
-        self.jov.teleport(prefix='model', target_pos=(1000, 1000, 1000), target_item='_dcue_001')
 
         @self.ani.connect
         def on_animation_finish(animation_name):

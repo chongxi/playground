@@ -40,6 +40,10 @@ class play_GUI(QWidget):
         self.nav_view_timer.timeout.connect(self.nav_view_update)
         self.init_UI()
 
+        '''
+        temporary for JEDI and JUMPER experiment, needs to be refactored
+        for now change parameters here
+        '''
         if bmi is not None:
             self.bmi = bmi
             smooth_taps = 60 #int(2/200e-3)
@@ -54,8 +58,10 @@ class play_GUI(QWidget):
                     self.bmi_pos = np.vstack((self.bmi_pos[1:, :], self.bmi.dec.predict(X)))
                     y = np.mean(self.bmi_pos, axis=0)
                     # !!! In the GUI: select task first. Otherwise jov is not initiated 
-                    self.jov.teleport(prefix='console', target_pos=(y[0], y[1], 15))
-                    # self.jov.teleport(prefix='model', target_pos=(y[0], y[1], 15), target_item='_dcue_001')
+                    if self.task_name == 'JUMPER':
+                        self.jov.teleport(prefix='console', target_pos=(y[0], y[1], 15))
+                    elif self.task_name == 'JEDI':
+                        self.jov.teleport(prefix='model', target_pos=(y[0], y[1], 15), target_item='_dcue_001')
                     print('pos:{0}, time:{1:.5f} secs'.format(y, self.bmi.binner.current_time))
                     os.write(self.bmi.dec_result, np.hstack((self.bmi.binner.last_bin, y)))
 
