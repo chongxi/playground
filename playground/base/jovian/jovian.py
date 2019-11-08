@@ -153,6 +153,9 @@ class Jovian(EventEmitter):
         self.log.info('initiate the BMI decoder and playground jov connection')
         @self.bmi.binner.connect
         def on_decode(X):
+            '''
+            This event is triggered every time a new bin is filled (based on BMI output timestamp)
+            '''
             # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
             with Timer('decoding', verbose=False):
                 if self.bmi.dec.name == 'NaiveBayes':
