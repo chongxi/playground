@@ -41,31 +41,11 @@ class play_GUI(QWidget):
         self.init_UI()
 
         '''
-        temporary for JEDI and JUMPER experiment, needs to be refactored
-        for now change parameters here
+        Setting bmi for jov, jov will emit `bmi_decode` event to the `task`
         '''
         if bmi is not None:
             self.bmi = bmi
-            smooth_taps = 60 #int(2/200e-3)
-            self.bmi_pos = np.zeros((smooth_taps, 2))
-            self.log.info('initiate the BMI decoder and playground jov connection')
-            @self.bmi.binner.connect
-            def on_decode(X):
-                # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
-                with Timer('decoding', verbose=False):
-                    if self.bmi.dec.name == 'NaiveBayes':
-                        X = np.sum(X, axis=0)
-                    self.bmi_pos = np.vstack((self.bmi_pos[1:, :], self.bmi.dec.predict(X)))
-                    y = np.mean(self.bmi_pos, axis=0)
-                    # !!! In the GUI: select task first. Otherwise jov is not initiated 
-                    if self.task_name == 'JUMPER':
-                        self.jov.teleport(prefix='console', target_pos=(y[0], y[1], 15))
-                    elif self.task_name == 'JEDI':
-                        self.jov.teleport(prefix='model', target_pos=(y[0], y[1], 15), target_item='_dcue_001')
-                    print('pos:{0}, time:{1:.5f} secs'.format(y, self.bmi.binner.current_time))
-                    os.write(self.bmi.dec_result, np.hstack((self.bmi.binner.last_bin, y)))
-
-
+            self.BMI_ON = True
             self.fet_view_timer = QtCore.QTimer(self)
             self.fet_view_timer.timeout.connect(self.fet_view_update)
             self.prb_view.highlight(self.bmi.fpga.configured_groups)
@@ -200,26 +180,35 @@ class play_GUI(QWidget):
 
 
     def selectTask(self, task_name):
+        '''
+        order from 1-5 is important, wrong order will cause crash.
+        '''
         if self._maze_loaded:
             self.task_name = task_name
-            # 1. Init Jovian and connect to maze navigation view 
+            # 1. Init Jovian 
             try:  # in cause it is already loaded 
                 self.jov.pynq.shutdown(2)
             except:
                 pass
             self.log.info('initiate Jovian and its socket connection')
             self.jov = Jovian()
+
+            # 2. Init log and connect jov to maze navigation view, set counter cnt to 0
             self.jov.log = self.log
             self.jov.cnt.fill_(0)
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
 
-            # 2. Init Task
+            # 3. Init BMI if BMI_ON and log
+            if self.BMI_ON:
+                self.jov.set_bmi(self.bmi)
+
+            # 4. Init Task
             try:
                 self.task = globals()[self.task_name](self.jov)
                 self.log.info('task: {}'.format(self.task_name))
 
-                # 3. Task parameter
+                # 5. Task parameter
                 self.task.reward_time = self.reward_time.value()/10. 
                 self.jov.touch_radius.fill_(self.touch_radius.value())
                 self.log.info('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))

@@ -145,14 +145,24 @@ class Jovian(EventEmitter):
                     self.log.warn('{}, {}'.format(self._t, self._coord))
                 if type(self._coord) is list:
                     self.current_pos[:]  = torch.tensor(self._coord)
-                    self.dec_routine()
                     self.task_routine()
 
-    def set_decoder(self, dec):
-        self.dec = dec
-
-    def dec_routine(self):
-        
+    def set_bmi(self, bmi, bmi_buffer_len=60):
+        self.bmi = bmi
+        self.bmi_pos_buf = np.zeros((bmi_buffer_len, 2))
+        self.log.info('initiate the BMI decoder and playground jov connection')
+        @self.bmi.binner.connect
+        def on_decode(X):
+            # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
+            with Timer('decoding', verbose=False):
+                if self.bmi.dec.name == 'NaiveBayes':
+                    X = np.sum(X, axis=0)
+                # decode predict at current bin
+                y = self.bmi.dec.predict(X)
+                self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                # decide the output (not necessarily to be the mean)
+                self.teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                self.emit('bmi_decode', pos=self.teleport_pos)
 
     def set_trigger(self, shared_cue_dict):
         '''shared_cue_dict is a a shared memory dict between processes contains cue name and position:

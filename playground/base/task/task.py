@@ -362,6 +362,13 @@ class JEDI(Task):
 
         super(JEDI, self).__init__(fsm, jov)
 
+        #------------------------------------------------------------------------------
+        # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
+        @self.jov.connect
+        def on_bmi_decode(pos):
+            self.jov.teleport(prefix='model', target_pos=(pos[0], pos[1], 15), target_item='_dcue_001')
+        #------------------------------------------------------------------------------
+
         @self.ani.connect
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
@@ -396,6 +403,13 @@ class JUMPER(Task):
               }
 
         super(JUMPER, self).__init__(fsm, jov)
+
+        #------------------------------------------------------------------------------
+        # core of JUMPER: teleport itself when bmi_decode event happens
+        @self.jov.connect
+        def on_bmi_decode(pos):
+            self.jov.teleport(prefix='console', target_pos=(pos[0], pos[1], 15))
+        #------------------------------------------------------------------------------
 
         @self.ani.connect
         def on_animation_finish(animation_name):
