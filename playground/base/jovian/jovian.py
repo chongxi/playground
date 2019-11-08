@@ -145,9 +145,14 @@ class Jovian(EventEmitter):
                     self.log.warn('{}, {}'.format(self._t, self._coord))
                 if type(self._coord) is list:
                     self.current_pos[:]  = torch.tensor(self._coord)
+                    self.dec_routine()
                     self.task_routine()
-                # self.pipe_jovian_side.send((self._t, self._coord))
 
+    def set_decoder(self, dec):
+        self.dec = dec
+
+    def dec_routine(self):
+        
 
     def set_trigger(self, shared_cue_dict):
         '''shared_cue_dict is a a shared memory dict between processes contains cue name and position:
@@ -176,13 +181,13 @@ class Jovian(EventEmitter):
 
     def check_touch_agent_to_cue(self):
         for _cue_name in self.shared_cue_dict.keys():
-            if self._is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
+            if is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
                 self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))
 
     def check_touch_cue_to_cue(self):
         # here let's assume that there are only two cues to check
         _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
-        if self._is_close(torch.tensor(self.shared_cue_dict[_cue_name_0]), 
+        if is_close(torch.tensor(self.shared_cue_dict[_cue_name_0]), 
                           torch.tensor(self.shared_cue_dict[_cue_name_1]), self.touch_radius):
             self.emit('touch', args=((_cue_name_0, _cue_name_1), self.shared_cue_dict[_cue_name_0]))
 
@@ -202,10 +207,6 @@ class Jovian(EventEmitter):
 
     def get(self):
         return self.pipe_gui_side.recv().decode("utf-8")
-
-
-    def _is_close(self, pos, cue_pos, radius):
-        return is_close(pos, cue_pos, radius)
 
 
     def toggle_motion(self):
