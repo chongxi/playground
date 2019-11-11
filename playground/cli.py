@@ -21,12 +21,9 @@ def main(name, maze, task, fpga, decoder, prb_file, gui_type):
         if decoder=='y':
             playground.run(gui_type, prb_file, BMI_ON=True, DEC_ON=True)
         else:
-            playground.run(gui_type, prb_file, BMI_ON=True, DEC_ON=True)
+            playground.run(gui_type, prb_file, BMI_ON=True, DEC_ON=False)
     elif fpga=='n':
-        if decoder=='y':
-            playground.run(gui_type, prb_file, BMI_ON=False, DEC_ON=False)
-        else:
-            playground.run(gui_type, prb_file, BMI_ON=False, DEC_ON=False)
+        playground.run(gui_type, prb_file, BMI_ON=False, DEC_ON=False)
     return 0
 
 
