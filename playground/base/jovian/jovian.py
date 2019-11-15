@@ -58,8 +58,8 @@ class Jovian(EventEmitter):
     def socket_init(self):
         ### mouseover server connection
         self.input = socket.create_connection((host_ip, '22224'), timeout=1)
-        self.input.setblocking(1)
-        self.input.settimeout(0.8)
+        # self.input.setblocking(False)
+        # self.input.settimeout(0.8)
         self.input.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.output = socket.create_connection((host_ip, '22223'), timeout=1)
         self.output.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -239,6 +239,7 @@ class Jovian(EventEmitter):
 
     def teleport(self, prefix, target_pos, target_item=None):
         '''
+           Jovian abstract (output): https://github.com/chongxi/playground/issues/6
            Core function: This is the only function that send `events` back to Jovian from interaction 
         '''
         try:
@@ -247,8 +248,10 @@ class Jovian(EventEmitter):
             x, y = target_pos
             z = 0
 
+        v = 0
+
         if prefix == 'console':  # teleport animal, target_item is None
-            cmd = "{}.teleport({},{},{},{})\n".format('console', x, y, 5, 0)
+            cmd = "{}.teleport({},{},{},{})\n".format('console', x, y, 5, v)
             self.output.send(cmd.encode())
 
         elif prefix == 'model':  # move cue
