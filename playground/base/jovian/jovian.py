@@ -138,7 +138,10 @@ class Jovian(EventEmitter):
         '''
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
-                self._t, self._coord = self.readline().parse()
+                try:
+                    self._t, self._coord = self.readline().parse()
+                except:
+                    self.log.info('socket time out')
                 if type(self._coord) is list:
                     self.log.info('{}, {}'.format(self._t, self._coord))
                 else:
@@ -237,7 +240,7 @@ class Jovian(EventEmitter):
         self.output.send(cmd.encode())
 
 
-    def teleport(self, prefix, target_pos, target_item=None):
+    def teleport(self, prefix, target_pos, head_direction=None, target_item=None):
         '''
            Jovian abstract (output): https://github.com/chongxi/playground/issues/6
            Core function: This is the only function that send `events` back to Jovian from interaction 
@@ -248,7 +251,10 @@ class Jovian(EventEmitter):
             x, y = target_pos
             z = 0
 
-        v = 0
+        if head_direction is None:
+            v = 0
+        else:
+            v = head_direction
 
         if prefix == 'console':  # teleport animal, target_item is None
             cmd = "{}.teleport({},{},{},{})\n".format('console', x, y, 5, v)
