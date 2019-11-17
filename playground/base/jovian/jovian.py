@@ -92,6 +92,11 @@ class Jovian(EventEmitter):
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
 
+        # bmi position
+        self.bmi_pos = torch.empty(2,)
+        self.bmi_pos.share_memory_()
+        self.bmi_pos.fill_(0) 
+
 
     def reset(self):
         [conn.shutdown(2) for conn in self.socks]
@@ -177,7 +182,8 @@ class Jovian(EventEmitter):
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                 # decide the output (not necessarily to be the mean)
                 self.teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
-                self.emit('bmi_update', pos=self.teleport_pos)
+                self.bmi_pos[:] = torch.tensor(self.teleport_pos)
+                # self.emit('bmi_update', pos=self.teleport_pos)
                 
 
     def set_trigger(self, shared_cue_dict):

@@ -178,10 +178,15 @@ class Task(object):
                 print(pos)
                 theta = np.arctan(_y/_x)
                 print(theta)
-                _delta = np.pi/32
+                _delta = np.pi/64
                 while True:
                     theta  += _delta
-                    self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
+                    self.target_x, self.target_y = radius*np.cos(theta),  radius*np.sin(theta)
+                    # self.head_v = np.arccos((self.target_y-self.last_y)/(self.target_x-self.last_x))*180/np.pi
+                    # self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
+                    # self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0])
+                    self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0], head_direction=90-theta*180/np.pi)
+                    self.last_x, self.last_y = self.target_x, self.target_y
                     yield
 
 
@@ -205,6 +210,14 @@ class Task(object):
             self.jov.teleport(prefix='console', target_pos=pos)
             yield
 
+
+    def bmi_control(self, prefix='console', cue_name=None):
+        ''' usage:
+            self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
+        '''
+        for z in range(1000000):
+            self.jov.teleport(prefix=prefix, target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], target_item=cue_name)
+            yield
 
 
 #------------------------------------------------------------------------------
@@ -269,7 +282,7 @@ class one_cue_moving_task(Task):
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
         # self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000', direction='x')) ])
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (2, self.wander('_dcue_000')) ])
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.wander('_dcue_000')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
@@ -366,7 +379,9 @@ class JEDI(Task):
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
         @self.jov.connect
         def on_bmi_update(pos):
-            self.jov.teleport(prefix='model', target_pos=(pos[0], pos[1], 15), target_item='_dcue_001')
+            if self.jov.cnt > self._last_cnt:
+                self.jov.teleport(prefix='model', target_pos=(pos[0], pos[1], 15), target_item='_dcue_001')
+            self._last_cnt = self.jov.cnt
         #------------------------------------------------------------------------------
 
         @self.ani.connect
@@ -423,7 +438,7 @@ class JUMPER(Task):
         super(JUMPER, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
