@@ -165,7 +165,7 @@ class Jovian(EventEmitter):
                     self.current_pos[:]  = torch.tensor(self._coord)
                     self.task_routine()
 
-    def set_bmi(self, bmi, bmi_buffer_len=60):
+    def set_bmi(self, bmi, pos_buffer_len=80, hd_buffer_len=40):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
@@ -176,8 +176,8 @@ class Jovian(EventEmitter):
         bmi ==================> jov ====================> task
         '''
         self.bmi = bmi
-        self.bmi_pos_buf = np.zeros((bmi_buffer_len, 2))
-        self.bmi_hd_buf  = np.zeros((8, 2))
+        self.bmi_pos_buf = np.zeros((pos_buffer_len, 2))
+        self.bmi_hd_buf  = np.zeros((hd_buffer_len, 2))
         self.log.info('initiate the BMI decoder and playground jov connection')
         @self.bmi.binner.connect
         def on_decode(X):
@@ -203,8 +203,8 @@ class Jovian(EventEmitter):
                 delta_pos = np.diff(self.bmi_hd_buf, axis=0)
                 hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])*180/np.pi + 180
                 hd = np.mean(hd[hd!=0.])
-                speed = np.max(np.linalg.norm(delta_pos, axis=0))
-                if speed > 3:
+                speed = np.mean(np.linalg.norm(delta_pos, axis=0))
+                if speed > 1.5:
                     self.bmi_hd[:] = torch.tensor(hd)
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 self.log.info('\n')

@@ -12,7 +12,7 @@ import numpy as np
 from spiketag.analysis import *
 from spiketag.analysis.decoder import NaiveBayes
 
-bin_size, B_bins = 66.66e-3, 4
+bin_size, B_bins = 50e-3, 5
 
 def run(gui_type, prb_file, BMI_ON=False, DEC_ON=False):
     logger = create_logger()

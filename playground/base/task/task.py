@@ -220,7 +220,7 @@ class Task(object):
         ''' usage:
             self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
         '''
-        for z in range(1000000):
+        while True:
             self.jov.teleport(prefix=prefix, 
                               target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], 
                               head_direction=self.jov.bmi_hd[0], 
