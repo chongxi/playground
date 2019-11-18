@@ -180,13 +180,18 @@ class Task(object):
                 print(theta)
                 _delta = np.pi/64
                 while True:
-                    theta  += _delta
-                    self.target_x, self.target_y = radius*np.cos(theta),  radius*np.sin(theta)
+                    # theta  += _delta
+                    # self.target_x, self.target_y = radius*np.cos(theta),  radius*np.sin(theta)
                     # self.head_v = np.arccos((self.target_y-self.last_y)/(self.target_x-self.last_x))*180/np.pi
                     # self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
                     # self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0])
-                    self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0], head_direction=90-theta*180/np.pi)
-                    self.last_x, self.last_y = self.target_x, self.target_y
+                    # self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0], head_direction=90-theta*180/np.pi)
+
+                    # test rotation
+                    hd = self.jov.cnt[0]%360 - 180
+                    print(hd)
+                    # self.jov.info('head direction {}\n'.format(hd))
+                    self.jov.teleport(prefix='console', target_pos=[10, 20,  0], head_direction=hd)
                     yield
 
 
@@ -216,7 +221,10 @@ class Task(object):
             self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
         '''
         for z in range(1000000):
-            self.jov.teleport(prefix=prefix, target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], target_item=cue_name)
+            self.jov.teleport(prefix=prefix, 
+                              target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], 
+                              head_direction=self.jov.bmi_hd[0], 
+                              target_item=cue_name)
             yield
 
 

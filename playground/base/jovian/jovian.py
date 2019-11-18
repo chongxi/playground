@@ -92,10 +92,20 @@ class Jovian(EventEmitter):
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
 
-        # bmi position
+        # bmi position (decoded position of the animal)
         self.bmi_pos = torch.empty(2,)
         self.bmi_pos.share_memory_()
         self.bmi_pos.fill_(0) 
+
+        # bmi head-direction (inferred head direction at bmi_pos)
+        self.bmi_hd = torch.empty(1,)
+        self.bmi_hd.share_memory_()
+        self.bmi_hd.fill_(0)         
+
+        # bmi radius (largest teleportation range)
+        self.bmi_radius = torch.empty(1,)
+        self.bmi_radius.share_memory_()
+        self.bmi_radius.fill_(0)    
 
 
     def reset(self):
@@ -167,6 +177,7 @@ class Jovian(EventEmitter):
         '''
         self.bmi = bmi
         self.bmi_pos_buf = np.zeros((bmi_buffer_len, 2))
+        self.bmi_hd_buf  = np.zeros((8, 2))
         self.log.info('initiate the BMI decoder and playground jov connection')
         @self.bmi.binner.connect
         def on_decode(X):
@@ -179,11 +190,25 @@ class Jovian(EventEmitter):
                     X = np.sum(X, axis=0)
                 # decode predict at current bin
                 y = self.bmi.dec.predict(X)
+                #################### just for dusty test #########################
+                y -= np.array([318.5,195.7])
+                y /= 3
+                ##################################################################
+                # decide the output 
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
-                # decide the output (not necessarily to be the mean)
-                self.teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
-                self.bmi_pos[:] = torch.tensor(self.teleport_pos)
+                _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                # set shared variable
+                self.bmi_pos[:] = torch.tensor(_teleport_pos)
+                self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
+                delta_pos = np.diff(self.bmi_hd_buf, axis=0)
+                hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])*180/np.pi + 180
+                hd = np.mean(hd[hd!=0.])
+                speed = np.max(np.linalg.norm(delta_pos, axis=0))
+                if speed > 3:
+                    self.bmi_hd[:] = torch.tensor(hd)
                 # self.emit('bmi_update', pos=self.teleport_pos)
+                self.log.info('\n')
+                self.log.info('BMI Decoded Position: {}, Head-Direction: {}, Speed: {}'.format(_teleport_pos, hd, speed))
                 
 
     def set_trigger(self, shared_cue_dict):

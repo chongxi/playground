@@ -181,6 +181,7 @@ class play_GUI(QWidget):
 
     def selectTask(self, task_name):
         '''
+        Important: jov is always initialized before bmi. Hence, there is jov.set_bmi(bmi)
         order from 1-5 is important, wrong order will cause crash.
         '''
         if self._maze_loaded:
