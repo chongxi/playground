@@ -202,9 +202,13 @@ class Jovian(EventEmitter):
                 self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
                 delta_pos = np.diff(self.bmi_hd_buf, axis=0)
                 hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])*180/np.pi + 180
-                hd = np.mean(hd[hd!=0.])
-                speed = np.mean(np.linalg.norm(delta_pos, axis=0))
-                if speed > 1.5:
+                speed = np.linalg.norm(delta_pos, axis=1)
+                # print(hd.shape, speed.shape)
+                # assert(hd.shape[0] == speed.shape[0])
+                valid_idx = np.where(np.logical_and(hd!=0, speed>.6))[0]
+                hd = np.mean(hd[valid_idx])
+                speed = np.mean(speed[valid_idx])
+                if speed > .6:
                     self.bmi_hd[:] = torch.tensor(hd)
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 self.log.info('\n')
