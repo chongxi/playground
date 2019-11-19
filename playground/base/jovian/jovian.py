@@ -165,6 +165,7 @@ class Jovian(EventEmitter):
                     self.current_pos[:]  = torch.tensor(self._coord)
                     self.task_routine()
 
+
     def set_bmi(self, bmi, pos_buffer_len=80, hd_buffer_len=40):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
@@ -189,7 +190,7 @@ class Jovian(EventEmitter):
                 if self.bmi.dec.name == 'NaiveBayes':
                     X = np.sum(X, axis=0)
                 # decode predict at current bin
-                y = self.bmi.dec.predict(X)
+                y = self.bmi.dec.predict_rt(X)
                 #################### just for dusty test #########################
                 y -= np.array([318.5,195.7])
                 y /= 3
