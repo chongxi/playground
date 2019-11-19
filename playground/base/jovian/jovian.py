@@ -88,6 +88,11 @@ class Jovian(EventEmitter):
         # current position of animal
         self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
+
+        # current angle of animal
+        self.current_hd = torch.empty(1,)
+        self.current_hd.share_memory_()
+
         # the influence radius of the animal
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
@@ -211,6 +216,7 @@ class Jovian(EventEmitter):
                 speed = np.mean(speed[valid_idx])
                 if speed > .6:
                     self.bmi_hd[:] = torch.tensor(hd)
+                    self.current_hd[:] = torch.tensor(hd)
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 self.log.info('\n')
                 self.log.info('BMI Decoded Position: {}, Head-Direction: {}, Speed: {}'.format(_teleport_pos, hd, speed))

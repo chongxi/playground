@@ -305,6 +305,8 @@ class play_GUI(QWidget):
         # with Timer('', verbose=False):
         if self.jov.cnt>0:
             self.nav_view.current_pos = self.jov.current_pos.numpy()
+            self.nav_view._current_hd = self.jov.bmi_hd.numpy()
+            self.log.info('hd:{}'.format(self.jov.bmi_hd.numpy()))
             self.nav_view.cue_update()
 
 
@@ -650,6 +652,7 @@ class play_raster_GUI(QWidget):
     def nav_view_update(self):
         # with Timer('', verbose=False):
         if self.jov.cnt>0:
+            self.nav_view.current_hd  = - self.jov.current_hd.numpy() 
             self.nav_view.current_pos = self.jov.current_pos.numpy()
             self.nav_view.cue_update()
 

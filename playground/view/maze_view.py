@@ -47,6 +47,7 @@ class maze_view(scene.SceneCanvas):
         self.ray_vector  = scene.visuals.Line(parent=self.view.scene)
 
         self._current_pos = None 
+        self._current_hd  = 0.0
         self.marker       = None
 
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
@@ -75,6 +76,8 @@ class maze_view(scene.SceneCanvas):
 
         # self.set_range()
         # self.freeze()
+        ### first person view
+        self.fpv = False
 
 
     def load_maze(self, maze_file, maze_coord_file=None, border=[-100,-100,100,100], mirror=True):
@@ -233,6 +236,18 @@ class maze_view(scene.SceneCanvas):
         self._current_pos = pos_in
         self.marker.transform.translate = self._current_pos
         self.stream_in_pos(pos_in)
+        if self.fpv is True:
+            self.view.camera._center = (pos_in[0], pos_in[1], 100)
+            self.view.camera.azimuth = self.current_hd
+            self.view.camera.view_changed()
+
+    @property
+    def current_hd(self):
+        return self._current_hd
+
+    @current_hd.setter
+    def current_hd(self, hd_in):
+        self._current_hd = hd_in
 
 
     def stream_in_pos(self, pos_in):
@@ -386,6 +401,8 @@ class maze_view(scene.SceneCanvas):
         elif e.text == ',':
             self.view.camera = 'turntable'
             self.set_range()
+        elif e.text == 'p':
+            self.fpv = not self.fpv
 
     def on_mouse_release(self, e):
         if self.marker is not None:
