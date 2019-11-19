@@ -370,8 +370,8 @@ class JEDI(Task):
 
     def __init__(self, jov):
         '''
-        ('_dcue_000', '_dcue_001') meaning these two cue generate a touch event
-        The agent controls the _dcue_001 to touch _dcue_000
+        ('_dcue_000', '_dcue_001') meaning these two cue generate a touch event (they collide)
+        In this task, the agent controls the _dcue_001 to touch _dcue_000
         once this happen, state transition from `1cue` to `1cue` and goal_cue_touched function is triggered
         in which, reward is given and `_dcue_000` goes to bury. 
         once bury animation finished, task will reset() and a new trial start (trasition_enable becomes True)
@@ -404,7 +404,7 @@ class JEDI(Task):
         super(JEDI, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('model','_dcue_001')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
