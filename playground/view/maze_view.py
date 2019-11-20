@@ -221,7 +221,6 @@ class maze_view(scene.SceneCanvas):
                                                  size=20)
 
 
-
     @property
     def current_pos(self):
         return self._current_pos

@@ -5,13 +5,7 @@ import torch as torch
 from torch.multiprocessing import Process, Pipe
 from spiketag.utils import Timer
 from spiketag.utils import EventEmitter
-# from ..utils import Timer
-# from utils import Timer
-# from playground import utils
-# from utils import EventEmitter
-
-# from .task import *
-
+from spiketag.analysis.core import get_hd
 
 ENABLE_PROFILER = False
 
@@ -89,10 +83,6 @@ class Jovian(EventEmitter):
         self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
 
-        # current angle of animal
-        self.current_hd = torch.empty(1,)
-        self.current_hd.share_memory_()
-
         # the influence radius of the animal
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
@@ -103,9 +93,14 @@ class Jovian(EventEmitter):
         self.bmi_pos.fill_(0) 
 
         # bmi head-direction (inferred head direction at bmi_pos)
-        self.bmi_hd = torch.empty(1,)
+        self.hd_window = torch.empty(1,)  # time window(seconds) used to calculate head direction
+        self.hd_window.share_memory_()
+        self.hd_window.fill_(1)
+        self.bmi_hd = torch.empty(1,)       # calculated hd sent to Jovian for VR rendering
         self.bmi_hd.share_memory_()
         self.bmi_hd.fill_(0)         
+        self.current_hd = torch.empty(1,)   # calculated hd (same as bmi_hd) sent to Mazeview for local playground rendering
+        self.current_hd.share_memory_()
 
         # bmi radius (largest teleportation range)
         self.bmi_radius = torch.empty(1,)
@@ -171,7 +166,7 @@ class Jovian(EventEmitter):
                     self.task_routine()
 
 
-    def set_bmi(self, bmi, pos_buffer_len=80, hd_buffer_len=40):
+    def set_bmi(self, bmi, pos_buffer_len=80):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
@@ -183,6 +178,7 @@ class Jovian(EventEmitter):
         '''
         self.bmi = bmi
         self.bmi_pos_buf = np.zeros((pos_buffer_len, 2))
+        hd_buffer_len = int(self.hd_window[0]/self.bmi.binner.bin_size)
         self.bmi_hd_buf  = np.zeros((hd_buffer_len, 2))
         self.log.info('initiate the BMI decoder and playground jov connection')
         @self.bmi.binner.connect
@@ -206,17 +202,10 @@ class Jovian(EventEmitter):
                 # set shared variable
                 self.bmi_pos[:] = torch.tensor(_teleport_pos)
                 self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                delta_pos = np.diff(self.bmi_hd_buf, axis=0)
-                hd = np.arctan2(delta_pos[:,0], delta_pos[:,1])*180/np.pi + 180
-                speed = np.linalg.norm(delta_pos, axis=1)
-                # print(hd.shape, speed.shape)
-                # assert(hd.shape[0] == speed.shape[0])
-                valid_idx = np.where(np.logical_and(hd!=0, speed>.6))[0]
-                hd = np.mean(hd[valid_idx])
-                speed = np.mean(speed[valid_idx])
+                hd, speed = get_hd(trajectory=self.bmi_hd_buf, speed_threshold=0.6, offset_hd=180)
                 if speed > .6:
-                    self.bmi_hd[:] = torch.tensor(hd)
-                    self.current_hd[:] = torch.tensor(hd)
+                    self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
+                    self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 self.log.info('\n')
                 self.log.info('BMI Decoded Position: {}, Head-Direction: {}, Speed: {}'.format(_teleport_pos, hd, speed))
