@@ -378,7 +378,10 @@ class play_GUI(QWidget):
             pass
 
 
-
+###################################################################################################################################################
+# The Major GUI used for the real experiment
+# raster: raster
+###################################################################################################################################################
 
 class play_raster_GUI(QWidget):
     """
@@ -415,12 +418,16 @@ class play_raster_GUI(QWidget):
     #------------------------------------------------------------------------------
 
     def init_UI(self, keys='interactive'):
-        
+ 
         self.setAutoFillBackground(True)
         p = self.palette()
         p.setColor(self.backgroundRole(), Qt.darkGray)
         p.setColor(self.foregroundRole(), Qt.white)
         self.setPalette(p)
+
+        #0. Set commonly used status variable (used by gui elements)
+        self._maze_loaded   = False
+        self._task_selected = False
 
         #1. Folder name (Maze files and task log) and layout
         self.DirName = QLineEdit(dir_path, self)
@@ -462,21 +469,44 @@ class play_raster_GUI(QWidget):
         BtnLayout.addWidget(self.toggle_motion_Btn, 1,0)
 
         #4 Reward Parameter
+        ParaLayout = QGridLayout()
+
         self.reward_time_label   = QLabel('Reward Time: 1s')
-        self.touch_radius_label = QLabel('Reward Radius: 18')
         self.reward_time   = QSlider(Qt.Horizontal, self)
         self.reward_time.setValue(10)
         self.reward_time.valueChanged.connect(self.reward_time_changed)
 
+        self.touch_radius_label = QLabel('Reward Radius: 18')
         self.touch_radius = QSlider(Qt.Horizontal, self)
         self.touch_radius.setValue(20)
         self.touch_radius.valueChanged.connect(self.touch_radius_changed)
 
-        ParaLayout = QGridLayout()
         ParaLayout.addWidget(self.reward_time_label,   0,0,1,1)
         ParaLayout.addWidget(self.reward_time,         0,1,1,1)
         ParaLayout.addWidget(self.touch_radius_label,  0,2,1,1)
         ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
+
+        #5 BMI Parameter
+        self.hd_window_label = QLabel('HD Window: 1s')
+        self.hd_window = QSlider(Qt.Horizontal, self)
+        self.hd_window.setMinimum(1)
+        self.hd_window.setMaximum(16)
+        self.hd_window.setSingleStep(1)
+        self.hd_window.setValue(2) # 2/2 = 1 second
+        self.hd_window.valueChanged.connect(self.hd_window_changed)
+
+        self.bmi_teleport_radius_label = QLabel('Teleport Radius: 500px')
+        self.bmi_teleport_radius = QSlider(Qt.Horizontal, self)
+        self.bmi_teleport_radius.setMinimum(100)
+        self.bmi_teleport_radius.setMaximum(1000)
+        self.bmi_teleport_radius.setSingleStep(10)        
+        self.bmi_teleport_radius.setValue(500)
+        self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
+
+        ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
+        ParaLayout.addWidget(self.hd_window,         0,5,1,1)
+        ParaLayout.addWidget(self.bmi_teleport_radius_label,  0,6,1,1)
+        ParaLayout.addWidget(self.bmi_teleport_radius,        0,7,1,1)
 
         #6. Raster View
         self.ras_view = raster_view(n_units=self.bmi.fpga.n_units+1, 
@@ -485,8 +515,6 @@ class play_raster_GUI(QWidget):
 
         #7. Navigation view for both viz and interaction 
         self.nav_view = maze_view()
-        self._maze_loaded   = False
-        self._task_selected = False
 
         #widget layout
         leftlayout = QVBoxLayout()
@@ -591,6 +619,10 @@ class play_raster_GUI(QWidget):
 
         self._maze_loaded = True
 
+    #------------------------------------------------------------------------------
+    # set slider for parameters
+    # val/N is because slider only support integer number
+    #------------------------------------------------------------------------------
 
     def reward_time_changed(self, value):
         if self._task_selected:
@@ -599,14 +631,26 @@ class play_raster_GUI(QWidget):
         else:
             self.log.warn('select Task First: Jovian initiate when selecting task')
 
-
     def touch_radius_changed(self, value):
         if self._task_selected:
             self.touch_radius_label.setText('Reward Radius: {}'.format(str(value)))
             self.jov.touch_radius.fill_(value)
         else:
-            self.log.warn('select Task First')
+            self.log.warn('select Task First: Jovian initiate when selecting task')
 
+    def hd_window_changed(self, value):
+        if self._task_selected:
+            self.hd_window_label.setText('HD Window: {}'.format(str(value/2.)))
+            self.jov.hd_window.fill_(value/2.)
+        else:
+            self.log.warn('select Task First: Jovian initiate when selecting task')
+
+    def bmi_teleport_radius_changed(self, value):
+        if self._task_selected:
+            self.bmi_teleport_radius_label.setText('Teleport Radius: {}px'.format(value))
+            self.jov.bmi_teleport_radius.fill_(value)
+        else:
+            self.log.warn('select Task First: Jovian initiate when selecting task')
 
     #------------------------------------------------------------------------------
     # jovian process (input, task fsm, output) in another CPU

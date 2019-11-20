@@ -170,15 +170,17 @@ class Jovian(EventEmitter):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
-        jov.emit('bmi_update', y)    ==> task (e.g. JEDI, JUMPER etc.)
+        customize the post decoding calculation inside the function
+        `on_decode(X)` where the X is sent from the bmi.binner, but the `self` here is the jov
 
         set_bmi connect the event flow from
-                decode(X)               bmi_update(y)
-        bmi ==================> jov ====================> task
+                 decode(X)                shared variable
+             y=dec.predict_rt(X)         (bmi_pos, bmi_hd)
+        bmi =====================> jov ====================> task
         '''
         self.bmi = bmi
         self.bmi_pos_buf = np.zeros((pos_buffer_len, 2))
-        hd_buffer_len = int(self.hd_window[0]/self.bmi.binner.bin_size)
+        hd_buffer_len = int(8/self.bmi.binner.bin_size)
         self.bmi_hd_buf  = np.zeros((hd_buffer_len, 2))
         self.log.info('initiate the BMI decoder and playground jov connection')
         @self.bmi.binner.connect
@@ -202,7 +204,8 @@ class Jovian(EventEmitter):
                 # set shared variable
                 self.bmi_pos[:] = torch.tensor(_teleport_pos)
                 self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                hd, speed = get_hd(trajectory=self.bmi_hd_buf, speed_threshold=0.6, offset_hd=180)
+                window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
+                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=180)
                 if speed > .6:
                     self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
                     self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
