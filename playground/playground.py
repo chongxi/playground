@@ -30,11 +30,11 @@ def run(gui_type, prb_file, BMI_ON=False, DEC_ON=False):
 
     if DEC_ON:
         pos_file = '../sorting/dusty_pos.bin'
-        realtime_decode(bmi, pos_file)
+        build_decoder(bmi, pos_file)
     gui.show()
     sys.exit(app.exec_())
 
-def realtime_decode(bmi, pos_file):
+def build_decoder(bmi, pos_file):
     pos = np.fromfile(pos_file).reshape(-1,2)
     pc = place_field(pos=pos, t_step=33.333e-3)
     replay_offset = 2.004
