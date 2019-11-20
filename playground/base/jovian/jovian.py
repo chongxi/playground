@@ -103,9 +103,9 @@ class Jovian(EventEmitter):
         self.current_hd.share_memory_()
 
         # bmi radius (largest teleportation range)
-        self.bmi_radius = torch.empty(1,)
-        self.bmi_radius.share_memory_()
-        self.bmi_radius.fill_(0)    
+        self.bmi_teleport_radius = torch.empty(1,)
+        self.bmi_teleport_radius.share_memory_()
+        self.bmi_teleport_radius.fill_(0)    
 
 
     def reset(self):
