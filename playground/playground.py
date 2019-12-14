@@ -14,7 +14,7 @@ from spiketag.analysis.decoder import NaiveBayes
 
 bin_size, B_bins = 50e-3, 5
 
-def run(gui_type, prb_file, BMI_ON=False, DEC_ON=False):
+def run(gui_type, prb_file, BMI_ON=False):
     logger = create_logger()
     app = QApplication(sys.argv)
     prb = probe(prb_file)
@@ -28,11 +28,9 @@ def run(gui_type, prb_file, BMI_ON=False, DEC_ON=False):
     else:
         gui = play_GUI(logger, prb)
 
-    if DEC_ON:
-        pos_file = '../sorting/dusty_pos.bin'
-        build_decoder(bmi, spktag_file, pos_file)
     gui.show()
     sys.exit(app.exec_())
+
 
 def build_decoder(bmi, spktag_file, pos_file):
     pos = np.fromfile(pos_file).reshape(-1,2)
