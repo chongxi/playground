@@ -97,11 +97,17 @@ class play_GUI(QWidget):
         self.toggle_motion_Btn = QPushButton("Motion toggle", self)
         # self.toggle_motion_Btn.setCheckable(True)
         self.toggle_motion_Btn.setStyleSheet("background-color: darkgrey")
+        # toggle_motion_Btn can only be connectted after jov init
+
+        self.build_decoder_Btn = QPushButton("Build Decoder", self)
+        self.build_decoder_Btn.setStyleSheet("background-color: darkgrey")
+        self.build_decoder_Btn.clicked.connect(self.build_decoder)
 
         BtnLayout = QGridLayout()
         BtnLayout.addWidget(self.vrBtn,0,1)
         BtnLayout.addWidget(self.fpgaBtn,0,0)
         BtnLayout.addWidget(self.toggle_motion_Btn, 1,0)
+        BtnLayout.addWidget(self.build_decoder_Btn, 1,1)
 
         #4 Reward Parameter
         self.reward_time_label   = QLabel('Reward Time: 1s')
@@ -167,6 +173,9 @@ class play_GUI(QWidget):
     #------------------------------------------------------------------------------
     # gui function
     #------------------------------------------------------------------------------
+    def build_decoder(self):
+        file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        print(file)
 
     def line_loadDialog(self):
         folder = self.DirName.text()
@@ -462,11 +471,17 @@ class play_raster_GUI(QWidget):
         self.toggle_motion_Btn = QPushButton("Motion toggle", self)
         # self.toggle_motion_Btn.setCheckable(True)
         self.toggle_motion_Btn.setStyleSheet("background-color: darkgrey")
+        # toggle_motion_Btn can only be connectted after jov init
+
+        self.build_decoder_Btn = QPushButton("Build Decoder", self)
+        self.build_decoder_Btn.setStyleSheet("background-color: darkgrey")
+        self.build_decoder_Btn.clicked.connect(self.build_decoder)
 
         BtnLayout = QGridLayout()
         BtnLayout.addWidget(self.vrBtn,0,1)
         BtnLayout.addWidget(self.fpgaBtn,0,0)
         BtnLayout.addWidget(self.toggle_motion_Btn, 1,0)
+        BtnLayout.addWidget(self.build_decoder_Btn, 1,1)
 
         #4 Reward Parameter
         ParaLayout = QGridLayout()
@@ -544,6 +559,15 @@ class play_raster_GUI(QWidget):
     #------------------------------------------------------------------------------
     # gui function
     #------------------------------------------------------------------------------
+    def build_decoder(self):
+        # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+        spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
+        print('select   spktag {}'.format(spktag_file))
+        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.log, *.bin)')[0])
+        print('select position {}'.format(pos_file))
+        from playground import build_decoder
+        build_decoder(self.bmi, spktag_file, pos_file)
+
 
     def line_loadDialog(self):
         folder = self.DirName.text()

@@ -30,11 +30,11 @@ def run(gui_type, prb_file, BMI_ON=False, DEC_ON=False):
 
     if DEC_ON:
         pos_file = '../sorting/dusty_pos.bin'
-        build_decoder(bmi, pos_file)
+        build_decoder(bmi, spktag_file, pos_file)
     gui.show()
     sys.exit(app.exec_())
 
-def build_decoder(bmi, pos_file):
+def build_decoder(bmi, spktag_file, pos_file):
     pos = np.fromfile(pos_file).reshape(-1,2)
     pc = place_field(pos=pos, t_step=33.333e-3)
     replay_offset = 2.004
@@ -42,7 +42,7 @@ def build_decoder(bmi, pos_file):
     end   = 2500
     pc.align_with_recording(start, end, replay_offset)
     pc.initialize(bin_size=4, v_cutoff=25)
-    pc.load_spktag('../sorting/spktag/test_allspikes', show=True)
+    pc.load_spkdf(spktag_file, show=True)
     dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
     dec.connect_to(pc)
     bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
