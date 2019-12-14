@@ -4,7 +4,7 @@
 import sys
 import time
 from PyQt5.QtWidgets import QApplication
-from .gui import play_GUI, play_raster_GUI
+from .gui import play_raster_GUI
 from .base import create_logger, Fpga
 from spiketag.realtime import BMI
 from spiketag.base import probe
@@ -14,19 +14,12 @@ from spiketag.analysis.decoder import NaiveBayes
 
 bin_size, B_bins = 50e-3, 5
 
-def run(gui_type, prb_file, BMI_ON=False):
+def run():
     logger = create_logger()
     app = QApplication(sys.argv)
-    prb = probe(prb_file)
-    if BMI_ON:
-        bmi = BMI(prb, './fet.bin')
-        bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
-        if gui_type == 'raster':
-            gui = play_raster_GUI(logger, prb, bmi)
-        else:
-            gui = play_GUI(logger, prb, bmi)
-    else:
-        gui = play_GUI(logger, prb)
+    bmi = BMI(fetfile='./fet.bin')
+    bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+    gui = play_raster_GUI(logger, bmi)
 
     gui.show()
     sys.exit(app.exec_())
