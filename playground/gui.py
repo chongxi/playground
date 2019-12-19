@@ -45,7 +45,6 @@ class play_raster_GUI(QWidget):
         '''
         if bmi is not None:
             self.bmi = bmi
-            self.BMI_ON = True
             self.ras_view_timer = QtCore.QTimer(self)
             self.ras_view_timer.timeout.connect(self.ras_view_update)
             self.update_interval = 60
@@ -196,6 +195,12 @@ class play_raster_GUI(QWidget):
         print('select position {}'.format(pos_file))
         from playground import build_decoder
         build_decoder(self.bmi, spktag_file, pos_file)
+        # select task first
+        if hasattr(self, 'jov'):
+            self.jov.set_bmi(self.bmi)
+        else:
+            print('please select task first')
+
 
 
     def line_loadDialog(self):
@@ -229,16 +234,12 @@ class play_raster_GUI(QWidget):
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
 
-            # 3. Init BMI if BMI_ON and log
-            if self.BMI_ON:
-                self.jov.set_bmi(self.bmi)
-
-            # 4. Init Task
+            # 3. Init Task
             try:
                 self.task = globals()[self.task_name](self.jov)
                 self.log.info('task: {}'.format(self.task_name))
 
-                # 5. Task parameter
+                # 4. Task parameter
                 self.task.reward_time = self.reward_time.value()/10. 
                 self.jov.touch_radius.fill_(self.touch_radius.value())
                 self.log.info('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))

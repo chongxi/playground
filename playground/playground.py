@@ -19,8 +19,7 @@ def run():
     app = QApplication(sys.argv)
     bmi = BMI(fetfile='./fet.bin')
     bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
-    gui = play_raster_GUI(logger, bmi)
-
+    gui = play_raster_GUI(logger=logger, bmi=bmi)
     gui.show()
     sys.exit(app.exec_())
 
