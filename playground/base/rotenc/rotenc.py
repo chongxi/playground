@@ -16,10 +16,13 @@ class Rotenc(object):
 
     def __init__(self):
         self.ser = serial.Serial('/dev/ttyACM0', 192000)
+        self.direction = torch.empty(1,)
+        self.direction.share_memory_()
+        self.direction.fill_(0.0)
 
     def _rotenc_process(self):
         while True:
-            self.direction = self.ser.readline().decode("utf-8")
+            self.direction.fill(float(self.ser.readline().decode("utf-8")))
             print(self.direction)
 
     def start(self):
