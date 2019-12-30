@@ -1,4 +1,5 @@
 from .jovian import Jovian
+from .rotenc import Rotenc
 from .task import one_cue_task, two_cue_task, one_cue_moving_task
 from .fpga import Fpga
 from .behaviour import interp_pos
