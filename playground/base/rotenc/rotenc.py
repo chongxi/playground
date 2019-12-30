@@ -34,4 +34,3 @@ class Rotenc(object):
         self.rotenc_process.terminate()
         self.rotenc_process.join()
 
-        
