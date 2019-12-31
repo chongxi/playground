@@ -33,3 +33,4 @@ class Rotenc(object):
     def stop(self):
         self.rotenc_process.terminate()
         self.rotenc_process.join()
+
