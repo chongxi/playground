@@ -31,6 +31,8 @@ class maze_view(scene.SceneCanvas):
         scene.SceneCanvas.__init__(self, title='Navigation View', keys=None)
         self.unfreeze()
 
+        self.free_timer = app.Timer() # use it to connect to whatever
+
         self.is_jovian_connected = False
         ### 1. viewbox, border and camera
         self.view = self.central_widget.add_view(margin=10)
@@ -416,6 +418,11 @@ class maze_view(scene.SceneCanvas):
                 self.replay_timer.stop()
             else:
                 self.replay_timer.start(0.01)
+        elif e.text == 's':
+            if self.free_timer.running:
+                self.free_timer.stop()
+            else:
+                self.free_timer.start(0.01)
         elif e.text == 'r':
             self.set_range() 
         elif e.text == 'h':
