@@ -17,6 +17,7 @@ from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 from torch import multiprocessing
 from spiketag.view.color_scheme import palette
+from spiketag.analysis.core import get_hd
 
 
 neuro_colors = np.array(palette)
@@ -52,10 +53,13 @@ class maze_view(scene.SceneCanvas):
 
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
         self.animal_color   = 'white'
-        
+
         ### 4. replay
         self.replay_current_pos = scene.visuals.Markers(parent=self.view.scene)
         self.replay_current_pos.set_data(np.array([0,0,0]).reshape(-1,3))
+        self.replay_current_hd = scene.visuals.Arrow(parent=self.view.scene, width=1.2, color=(0,1,0,1))
+        hd = np.array([[0,0],[100,100]])
+        self.replay_current_hd.set_data(pos=hd, arrows=hd.reshape((len(hd)//2, 4)))
         self.replay_trajectory  = scene.visuals.Line(parent=self.view.scene, color=(0.7, 0.7, 0.7, 1))
         self.replay_time = 0.0
         self.replay_coord      = 'jovian'
@@ -173,7 +177,7 @@ class maze_view(scene.SceneCanvas):
             self.replay_current_pos.set_data(self.replay_pos[0].reshape(-1,3))
 
     def load_spktime_file(self, file_name, var='spk_time'):
-        self.replay_spk_t = np.load(file_name, encoding='bytes')[var].item()        
+        self.replay_spk_t = np.load(file_name, allow_pickle=True, encoding='bytes')[var].item()        
 
     def load_neurons(self, file_name=None, var='spk_time', spk_time=None):
         if file_name is None:
@@ -190,12 +194,28 @@ class maze_view(scene.SceneCanvas):
         # print self.replay_spk_t
     
     def on_replay(self, event):
+        ### update the replay_time (forward with replay_speed)
         last_time = self.replay_time
         self.replay_time += self.replay_speed * 0.01
+
+        ### update the trajectory 
         idx = np.where(self.replay_t < self.replay_time)[0]
         self.replay_trajectory.set_data(self.replay_pos[idx])
+
+        ### update the last position (current position)
         current_pos = self.replay_pos[idx[-1]].reshape(-1,3)
-        self.replay_current_pos.set_data(current_pos)
+        self.replay_current_pos.set_data(current_pos, face_color=(1,1,1,0.5))
+
+        ### update head direction (hd_window controls the #samples to get_hd)
+        hd_window = 30
+        hd_drawlen = 1000
+        if len(idx)>hd_window:
+            hd, speed = get_hd(trajectory=self.replay_pos[idx][-hd_window:], speed_threshold=10, offset_hd=0)
+        else:
+            hd, speed = get_hd(trajectory=self.replay_pos[idx], speed_threshold=10, offset_hd=0)
+        dx, dy = np.sin(hd/360*np.pi*2), np.cos(hd/360*np.pi*2) 
+        arrow = np.vstack(( current_pos.ravel()[:2], current_pos.ravel()[:2] + hd_drawlen * np.array([dx,dy])) ) 
+        self.replay_current_hd.set_data(arrow)
 
         ## neuron_id is the list of neurons to replay
         # neuron_id = self.neuron_id
@@ -401,7 +421,7 @@ class maze_view(scene.SceneCanvas):
             self.view.camera = 'turntable'
             self.set_range()
         elif e.text == 'p':
-            self.fpv = not self.fpv
+            self.fpv = not self.fpv  # this will visualize the current_hd as first person view
 
     def on_mouse_release(self, e):
         if self.marker is not None:
