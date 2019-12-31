@@ -421,7 +421,7 @@ class maze_view(scene.SceneCanvas):
             self.view.camera = 'turntable'
             self.set_range()
         elif e.text == 'p':
-            self.fpv = not self.fpv
+            self.fpv = not self.fpv  # this will visualize the current_hd as first person view
 
     def on_mouse_release(self, e):
         if self.marker is not None:

@@ -6,6 +6,8 @@ from torch.multiprocessing import Process, Pipe
 from spiketag.utils import Timer
 from spiketag.utils import EventEmitter
 from spiketag.analysis.core import get_hd
+from ..rotenc import Rotenc
+
 
 ENABLE_PROFILER = False
 
@@ -48,6 +50,7 @@ class Jovian(EventEmitter):
         self.socket_init()
         self.buf_init()
         self.shared_mem_init()
+        self.rotenc_init()
 
 
     def socket_init(self):
@@ -67,6 +70,12 @@ class Jovian(EventEmitter):
         self.pynq.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         self.socks = [self.input,  self.output, self.output_control, self.pynq]
+
+    def rotenc_init(self):
+        '''
+        init the rotenc
+        '''
+        self.rot = Rotenc()
 
 
     def buf_init(self):
@@ -164,6 +173,7 @@ class Jovian(EventEmitter):
                     self.log.warn('{}, {}'.format(self._t, self._coord))
                 if type(self._coord) is list:
                     self.current_pos[:]  = torch.tensor(self._coord)
+                    self.current_hd[:]   = self.rod.direction
                     self.task_routine()
 
 
@@ -253,18 +263,18 @@ class Jovian(EventEmitter):
             self.emit('touch', args=((_cue_name_0, _cue_name_1), self.shared_cue_dict[_cue_name_0]))
 
     def start(self):
+        self.rot.start()
         self.pipe_jovian_side, self.pipe_gui_side = Pipe()
         self.jovian_process = Process(target=self._jovian_process, name='jovian') #, args=(self.pipe_jovian_side,)
         self.jovian_process.daemon = True
         self.reset() # !!! reset immediately before start solve the first time jam issue
         self.jovian_process.start()  
 
-
     def stop(self):
         self.jovian_process.terminate()
         self.jovian_process.join()
         self.cnt.fill_(0)
-
+        self.rot.stop()
 
     def get(self):
         return self.pipe_gui_side.recv().decode("utf-8")
