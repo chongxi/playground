@@ -9,8 +9,8 @@ from spiketag.analysis.core import get_hd
 
 ENABLE_PROFILER = False
 
-host_ip = '10.102.20.42'
-# host_ip = '10.102.20.105'
+# host_ip = '10.102.20.42'
+host_ip = '10.102.20.29'
 pynq_ip = '10.102.20.75'
 verbose = True
 
