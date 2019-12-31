@@ -49,7 +49,9 @@ class maze_view(scene.SceneCanvas):
 
         self._current_pos = None 
         self._current_hd  = 0.0
-        self.marker       = None
+        self.marker       = None    # visualize animal position 
+        self.arrow        = None    # visualize animal head direction
+        self._arrow_len    = 1000.0
 
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
         self.animal_color   = 'white'
@@ -113,6 +115,9 @@ class maze_view(scene.SceneCanvas):
         self.marker = Animal(parent=self.view.scene, radius=200, color=(1,0,1,0.8))
         self.marker.transform = STTransform()
         self.marker.origin = self.origin
+        self.arrow = scene.visuals.Arrow(parent=self.view.scene, width=1.2, color=(0,1,0,1))
+        hd = np.array([[0,0],[100,100]])
+        self.arrow.set_data(pos=hd, arrows=hd.reshape((len(hd)//2, 4)))
 
         @self.marker.connect
         def on_move(target_pos):
@@ -255,6 +260,7 @@ class maze_view(scene.SceneCanvas):
         self._current_pos = pos_in
         self.marker.transform.translate = self._current_pos
         self.stream_in_pos(pos_in)
+
         if self.fpv is True:
             self.view.camera._center = (pos_in[0], pos_in[1], 100)
             self.view.camera.azimuth = self.current_hd
@@ -266,8 +272,19 @@ class maze_view(scene.SceneCanvas):
 
     @current_hd.setter
     def current_hd(self, hd_in):
+        dx, dy = np.sin(hd_in/360*np.pi*2), np.cos(hd_in/360*np.pi*2) 
+        arrow = np.vstack(( self.current_pos.ravel()[:2], self.current_pos.ravel()[:2] + self._arrow_len * np.array([dx,dy])) ) 
+        self.arrow.set_data(arrow)
         self._current_hd = hd_in
 
+    @property
+    def arrow_len(self):
+        return self._arrow_len
+
+    @arrow_len.setter
+    def arrow_len(self, arrow_len_in):
+        self._arrow_len = arrow_len_in
+        self.current_hd = self._current_hd
 
     def stream_in_pos(self, pos_in):
         '''
