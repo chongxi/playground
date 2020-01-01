@@ -8,11 +8,14 @@ Dynamic update the rat navigational trajectory
 In a loaded VR Maze
 """
 
+import os
 import numpy as np
 from vispy import app, gloo, visuals, scene
 from vispy.util import keys
 from vispy.visuals.transforms import STTransform, MatrixTransform
+from PyQt5.QtWidgets import QFileDialog
 
+from ..base import maze
 from ..utils import *
 from ..view import Maze, Line, Animal, Cue 
 from torch import multiprocessing
@@ -88,6 +91,28 @@ class maze_view(scene.SceneCanvas):
         self.fpv = False
 
 
+    def load_all(self):
+        base_folder = os.path.dirname(maze.__file__)
+        folder = QFileDialog.getExistingDirectory(None,'', base_folder, QFileDialog.ShowDirsOnly)
+
+        maze_files = [_ for _ in os.listdir(folder) if 'maze' in _]
+        cue_files  = [_ for _ in os.listdir(folder) if 'cue'  in _]
+        print(maze_files)
+        print(cue_files)
+        for file in maze_files:
+            if file.endswith(".obj"):
+                maze_mesh_file = os.path.join(folder, file)
+            elif file.endswith(".coords"):
+                maze_coord_file = os.path.join(folder, file)
+        self.load_maze(maze_file = maze_mesh_file, 
+                                maze_coord_file = maze_coord_file) 
+        self.load_animal()
+
+        for file in cue_files:
+            _cue_file = os.path.join(folder, file)
+            self.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
+
+
     def load_maze(self, maze_file, maze_coord_file=None, border=[-100,-100,100,100], mirror=True):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
@@ -96,6 +121,7 @@ class maze_view(scene.SceneCanvas):
         self.border  = border
         self.x_range = (self.origin[0]+self.border[0]*self.scale_factor, self.origin[0]+self.border[2]*self.scale_factor)
         self.y_range = (self.origin[1]+self.border[1]*self.scale_factor, self.origin[1]+self.border[3]*self.scale_factor)
+        self._arrow_len = (self.x_range[1]-self.x_range[0])/10
         # self.marker.move(self.origin[:2])
         # self.current_pos = self.origin[:2]
 
