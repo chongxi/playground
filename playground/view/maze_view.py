@@ -61,7 +61,12 @@ class maze_view(scene.SceneCanvas):
         self.SWR_trajectory = scene.visuals.Line(parent=self.view.scene)
         self.animal_color   = 'white'
 
-        ### 4. replay
+        self.cues = {}
+        self.cues_height = {}
+        self._selected_cue = None
+
+
+        ### 3. replay
         self.replay_current_pos = scene.visuals.Markers(parent=self.view.scene)
         self.replay_current_pos.set_data(np.array([0,0,0]).reshape(-1,3))
         self.replay_current_hd = scene.visuals.Arrow(parent=self.view.scene, width=1.2, color=(0,1,0,1))
@@ -74,16 +79,18 @@ class maze_view(scene.SceneCanvas):
         self.replay_timer.connect(self.on_replay)
         self.replay_speed = 1
 
-        ### 4. cue objects
-        self.cues = {}
-        self.cues_height = {}
-        self._selected_cue = None
-
         ### Timer
         self._timer = app.Timer(0.1)
         self._timer.connect(self.on_timer)
         # self._timer.start(0.8)
         self.global_i = 0
+
+
+        ### 4. background and fields
+        self.image_background = scene.visuals.Image(parent=self.view.scene, method='subdivide')
+        self.image_background.transform = STTransform()
+        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.05, 1.05])
+        self.image.transform = STTransform()
 
         # self.set_range()
         # self.freeze()
@@ -321,6 +328,20 @@ class maze_view(scene.SceneCanvas):
         self._arrow_len = arrow_len_in
         self.current_hd = self._current_hd
 
+    @property
+    def posterior(self):
+        return self._posterior
+
+    @posterior.setter
+    def posterior(self, posterior):
+        self._posterior = posterior
+        self.image.set_data(posterior)
+        self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], 0])
+        self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[0], 
+                                      (self.y_range[1] - self.y_range[0])/posterior.shape[1])
+        self.image.update()
+
+
     def stream_in_pos(self, pos_in):
         '''
         ! pos_in must be np array with shape (2,) because the way we write LineVisual
@@ -477,6 +498,13 @@ class maze_view(scene.SceneCanvas):
         elif e.text == ',':
             self.view.camera = 'turntable'
             self.set_range()
+        elif e.text == 'o':
+            self.load_all()       
+        elif e.text == 'q':
+            self.view.camera.elevation = -90
+            self.view.camera.azimuth = 0
+        elif e.text == 'f':
+            self.image.visible = not self.image.visible
         elif e.text == 'p':
             self.fpv = not self.fpv  # this will visualize the current_hd as first person view
 
