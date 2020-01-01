@@ -123,7 +123,10 @@ class maze_view(scene.SceneCanvas):
 
         @self.marker.connect
         def on_move(target_pos):
-            self.jov.teleport(prefix='console', target_pos=target_pos)
+            if hasattr(self, 'jov'):
+                self.jov.teleport(prefix='console', target_pos=target_pos)
+            else:
+                self.current_pos = self._to_jovian_coord(target_pos).astype(np.float32)
 
 
     def load_cue(self, cue_file, cue_name=None):
@@ -141,7 +144,11 @@ class maze_view(scene.SceneCanvas):
 
         @_cue.connect
         def on_move(target_item, target_pos):
-            self.jov.teleport(prefix='model', target_pos=target_pos, target_item=target_item)
+            if hasattr(self, 'jov'):
+                self.jov.teleport(prefix='model', target_pos=target_pos, target_item=target_item)
+            else:
+                _cue_default_offset = self.cues[target_item]._xy_center*self.cues[target_item]._scale_factor
+                self.cues[target_item]._transform.translate = self._to_jovian_coord(target_pos).astype(np.float32) - _cue_default_offset
 
 
     def cue_update(self):
