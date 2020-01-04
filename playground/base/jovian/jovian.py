@@ -165,16 +165,16 @@ class Jovian(EventEmitter):
             with Timer('', verbose=ENABLE_PROFILER):
                 try:
                     self._t, self._coord = self.readline().parse()
+                    if type(self._coord) is list:
+                        self.current_pos[:]  = torch.tensor(self._coord)
+                        self.current_hd[:]   = self.rot.direction
+                        self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
+                        self.task_routine()
+                    else:
+                        self.log.warn('{}, {}'.format(self._t, self._coord))
+
                 except:
                     self.log.info('socket time out')
-                if type(self._coord) is list:
-                    self.log.info('{}, {}'.format(self._t, self._coord))
-                else:
-                    self.log.warn('{}, {}'.format(self._t, self._coord))
-                if type(self._coord) is list:
-                    self.current_pos[:]  = torch.tensor(self._coord)
-                    self.current_hd[:]   = self.rot.direction
-                    self.task_routine()
 
 
     def set_bmi(self, bmi, pos_buffer_len=80):
