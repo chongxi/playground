@@ -124,7 +124,8 @@ class maze_view(scene.SceneCanvas):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
         self.scale_factor = 100
-        self.origin  = -np.array(self.maze.coord['Origin']).astype(np.float32) * self.scale_factor
+        self.origin    = -np.array(self.maze.coord['Origin']).astype(np.float32) * self.scale_factor
+        self.origin_hd = np.arctan2(-self.origin[1], self.origin[0])/np.pi*180
         self.border  = border
         self.x_range = (self.origin[0]+self.border[0]*self.scale_factor, self.origin[0]+self.border[2]*self.scale_factor)
         self.y_range = (self.origin[1]+self.border[1]*self.scale_factor, self.origin[1]+self.border[3]*self.scale_factor)
@@ -305,7 +306,7 @@ class maze_view(scene.SceneCanvas):
 
         if self.fpv is True:
             self.view.camera._center = (pos_in[0], pos_in[1], 100)
-            self.view.camera.azimuth = self.current_hd
+            self.view.camera.azimuth = self.current_hd - self.origin_hd - 90 # look ahead
             self.view.camera.view_changed()
 
     @property
@@ -314,9 +315,11 @@ class maze_view(scene.SceneCanvas):
 
     @current_hd.setter
     def current_hd(self, hd_in):
-        self._current_hd = -hd_in + 180 + 45
+        self._current_hd = hd_in # absolute value from rotation encoder
         try:
-            arrow_delta = np.array([np.sin(self._current_hd/360*np.pi*2), np.cos(self._current_hd/360*np.pi*2)]).ravel()
+            _current_hd_calibrated = hd_in - self.origin_hd - 180 # point ahead (0 towards original)
+            arrow_delta = np.array([np.cos(_current_hd_calibrated/360*np.pi*2), 
+                                    np.sin(_current_hd_calibrated/360*np.pi*2)]).ravel()
             arrow = np.vstack(( self.current_pos[:2], 
                                 self.current_pos[:2] + self._arrow_len * arrow_delta ))
             assert(arrow.shape==(2,2)) # first row is current_pos, arrow_delta point into the head direction
