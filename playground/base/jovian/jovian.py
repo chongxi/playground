@@ -11,8 +11,8 @@ from ..rotenc import Rotenc
 
 ENABLE_PROFILER = False
 
-# host_ip = '10.102.20.42'
-host_ip = '10.102.20.29'
+host_ip = '10.102.20.42'
+# host_ip = '10.102.20.29'
 pynq_ip = '10.102.20.75'
 verbose = True
 
@@ -173,7 +173,7 @@ class Jovian(EventEmitter):
                     self.log.warn('{}, {}'.format(self._t, self._coord))
                 if type(self._coord) is list:
                     self.current_pos[:]  = torch.tensor(self._coord)
-                    self.current_hd[:]   = self.rod.direction
+                    self.current_hd[:]   = self.rot.direction
                     self.task_routine()
 
 
