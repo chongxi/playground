@@ -314,9 +314,9 @@ class maze_view(scene.SceneCanvas):
 
     @current_hd.setter
     def current_hd(self, hd_in):
-        self._current_hd = hd_in
+        self._current_hd = -hd_in + 180 + 45
         try:
-            arrow_delta = np.array([np.sin(hd_in/360*np.pi*2), np.cos(hd_in/360*np.pi*2)]).ravel()
+            arrow_delta = np.array([np.sin(self._current_hd/360*np.pi*2), np.cos(self._current_hd/360*np.pi*2)]).ravel()
             arrow = np.vstack(( self.current_pos[:2], 
                                 self.current_pos[:2] + self._arrow_len * arrow_delta ))
             assert(arrow.shape==(2,2)) # first row is current_pos, arrow_delta point into the head direction
