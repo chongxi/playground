@@ -306,7 +306,7 @@ class maze_view(scene.SceneCanvas):
 
         if self.fpv is True:
             self.view.camera._center = (pos_in[0], pos_in[1], 100)
-            self.view.camera.azimuth = self.current_hd - self.origin_hd - 90 # look ahead
+            self.view.camera.azimuth = self.current_hd # look ahead
             self.view.camera.view_changed()
 
     @property
@@ -317,7 +317,7 @@ class maze_view(scene.SceneCanvas):
     def current_hd(self, hd_in):
         self._current_hd = hd_in # absolute value from rotation encoder
         try:
-            _current_hd_calibrated = hd_in - self.origin_hd - 180 # point ahead (0 towards original)
+            _current_hd_calibrated = hd_in - 90 # point ahead (0 towards original)
             arrow_delta = np.array([np.cos(_current_hd_calibrated/360*np.pi*2), 
                                     np.sin(_current_hd_calibrated/360*np.pi*2)]).ravel()
             arrow = np.vstack(( self.current_pos[:2], 
