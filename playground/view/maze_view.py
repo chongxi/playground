@@ -314,10 +314,11 @@ class maze_view(scene.SceneCanvas):
 
     @current_hd.setter
     def current_hd(self, hd_in):
-        dx, dy = np.sin(hd_in/360*np.pi*2), np.cos(hd_in/360*np.pi*2) 
-        arrow = np.vstack(( self.current_pos.ravel()[:2], self.current_pos.ravel()[:2] + self._arrow_len * np.array([dx,dy])) ) 
-        self.arrow.set_data(arrow)
         self._current_hd = hd_in
+        arrow_delta = np.array([np.sin(hd_in/360*np.pi*2), np.cos(hd_in/360*np.pi*2)])
+        arrow = np.vstack(( self.current_pos[:2], 
+                            self.current_pos[:2] + self._arrow_len * arrow_delta ))
+        self.arrow.set_data(arrow)
 
     @property
     def arrow_len(self):
