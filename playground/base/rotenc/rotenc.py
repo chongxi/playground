@@ -15,13 +15,19 @@ class Rotenc(object):
     """
 
     def __init__(self, dev='/dev/ttyACM0', baudrate=192000):
-        self.ser = serial.Serial(dev, baudrate)
+        self.dev = dev
+        try:
+            self.ser = serial.Serial(dev, baudrate)
+            self.is_connected = True
+        except:
+            print('cannot find serial port at {} to read rotation degree'.format(self.dev))
+            self.is_connected = False
         self.direction = torch.empty(1,)
         self.direction.share_memory_()
         self.direction.fill_(0.0)
 
     def _rotenc_process(self):
-        while True:
+        while self.is_connected:
             self.direction.fill_(float(self.ser.readline().decode("utf-8")))
             print(self.direction)
 

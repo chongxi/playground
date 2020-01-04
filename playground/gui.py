@@ -233,6 +233,9 @@ class play_raster_GUI(QWidget):
             self.jov.cnt.fill_(0)
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
+            # if the rotation encoder is not connected, don't show head direction arrow
+            if self.jov.rot.is_connected is False:
+                self.nav_view.arrow_len = 0
 
             # 3. Init Task
             try:
