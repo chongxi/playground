@@ -20,7 +20,7 @@ class PySine(object):
                 rate=int(self.BITRATE),
                 output=True)
         except:
-            logger.error("No audio output is available. Mocking audio stream to simulate one...")
+            # logger.error("No audio output is available. Mocking audio stream to simulate one...")
             # output stream simulation with magicmock
             try:
                 from mock import MagicMock
