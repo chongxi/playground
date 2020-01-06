@@ -11,9 +11,14 @@ from ..rotenc import Rotenc
 
 ENABLE_PROFILER = False
 
-host_ip = '10.102.20.42'
+# Lab
 # host_ip = '10.102.20.29'
-pynq_ip = '10.102.20.75'
+# pynq_ip = '10.102.20.75'
+
+
+# Test
+host_ip = '10.102.20.42'
+pynq_ip = '127.0.0.1'
 verbose = True
 
 is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
