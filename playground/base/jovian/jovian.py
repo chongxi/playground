@@ -11,8 +11,8 @@ from ..rotenc import Rotenc
 
 ENABLE_PROFILER = False
 
-# host_ip = '10.102.20.42'
-host_ip = '10.102.20.29'
+host_ip = '10.102.20.42'
+# host_ip = '10.102.20.29'
 pynq_ip = '10.102.20.75'
 verbose = True
 
@@ -65,11 +65,16 @@ class Jovian(EventEmitter):
         self.enable_output()
 
         ### pynq server connection
-        self.pynq = socket.create_connection((pynq_ip, '2222'), timeout=1)
-        self.pynq.setblocking(1)
-        self.pynq.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        try:
+            self.pynq = socket.create_connection((pynq_ip, '2222'), timeout=1)
+            self.pynq.setblocking(1)
+            self.pynq.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            self.pynq_connected = True
+            self.socks = [self.input,  self.output, self.output_control, self.pynq]
+        except:
+            self.pynq_connected = False
+            self.socks = [self.input,  self.output, self.output_control]
 
-        self.socks = [self.input,  self.output, self.output_control, self.pynq]
 
     def rotenc_init(self):
         '''
@@ -319,4 +324,4 @@ class Jovian(EventEmitter):
             cmd = 'reward, {}'.format(time)
             self.pynq.send(cmd.encode())
         except:
-            print('fail to send reward command')
+            print('fail to send reward command, pynq connected: {}'.format(self.pynq_connected))
