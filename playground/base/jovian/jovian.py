@@ -275,14 +275,14 @@ class Jovian(EventEmitter):
     def check_touch_agent_to_cue(self):
         for _cue_name in self.shared_cue_dict.keys():
             if is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
-                self.emit('touch', args=(_cue_name, self.shared_cue_dict[_cue_name]))
+                self.emit('touch', args=( _cue_name, self.shared_cue_dict[_cue_name] ))
 
     def check_touch_cue_to_cue(self):
         # here let's assume that there are only two cues to check
         _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
         if is_close(torch.tensor(self.shared_cue_dict[_cue_name_0]), 
                           torch.tensor(self.shared_cue_dict[_cue_name_1]), self.touch_radius):
-            self.emit('touch', args=((_cue_name_0, _cue_name_1), self.shared_cue_dict[_cue_name_0]))
+            self.emit('touch', args=( _cue_name_0 + '->' + _cue_name_1, self.shared_cue_dict[_cue_name_0] ))
 
     def start(self):
         self.rot.start()

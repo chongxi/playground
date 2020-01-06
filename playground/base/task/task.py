@@ -26,10 +26,10 @@ def _cue_generate_2d_maze(*args):
     return pos
 
 
-class TrouchEvent(EventEmitter):
+class TouchEvent(EventEmitter):
     """docstring for Event"""
     def __init__(self, _id, _coord):
-        super(TrouchEvent, self).__init__()
+        super(TouchEvent, self).__init__()
         self.type = 'touch'
         self.what = _id
         self.where = _coord
@@ -38,7 +38,7 @@ class AlignEvent(EventEmitter):
     """docstring for Event"""
     def __init__(self, _id, _coord):
         super(AlignEvent, self).__init__()
-        self.type = 'touch'
+        self.type = 'align'
         self.what = _id
         self.where = _coord
 
@@ -47,9 +47,9 @@ class Task(object):
     '''Every task has the same jov to report event
        Every task has different fsm is defined in child task class
        Key for the task is the fsm design, which is a dictionary:
-       At the very core: when jovian report an event, with what and where
+       At the very core: when jovian report an event, with its type, what and where
        ```
-        next_state, func, args = self.fsm[self.state][event.what]
+        next_state, func, args = self.fsm[self.state][event.type + '@' + event.what]
         func(args)
        ```
     ''' 
@@ -76,7 +76,7 @@ class Task(object):
         @self.jov.connect
         def on_touch(args):
             self.touch_id, self.coord = args
-            self.event = TrouchEvent(self.touch_id, self.coord)
+            self.event = TouchEvent(self.touch_id, self.coord)
             self.on_event(self.event) 
 
         # fsm will use jov real-time event to update
@@ -121,21 +121,17 @@ class Task(object):
         self.reset()
 
     def on_event(self, event):
-        if event.type == 'touch':
-            if self.transition_enable.behave:
-                # try:
-                self.log.info('state: {}, {}: {}@{}'.format(self.state, event.type, event.what, event.where))
-                try:
-                    next_state, func, args = self.fsm[self.state][event.what]
-                    func(args)
-                    self.state = next_state
-                    self.log.info('state: {}'.format(self.state))
-                except:
-                    self.log.warn('A event not registered happened, will not process')
+        if self.transition_enable.behave:
+            # try:
+            self.log.info('state: {}, {}: {}@{}'.format(self.state, event.type, event.what, event.where))
+            try:
+                next_state, func, args = self.fsm[self.state][event.type + '@' + event.what]
+                func(args)
+                self.state = next_state
+                self.log.info('state: {}'.format(self.state))
+            except:
+                self.log.warn('A event not registered happened, will not process')
 
-        elif event.type == 'ephys':
-            #TODO: Add ephys API
-            pass
 
     #------------------------------------------------------------------------------
     # animation effect
@@ -251,7 +247,7 @@ class one_cue_task(Task):
     def __init__(self, jov):
 
         fsm = {
-                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(one_cue_task, self).__init__(fsm, jov)
@@ -287,7 +283,7 @@ class one_cue_moving_task(Task):
     def __init__(self, jov):
 
         fsm = {
-                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(one_cue_moving_task, self).__init__(fsm, jov)
@@ -324,8 +320,8 @@ class two_cue_task(Task):
     def __init__(self, jov):
         # goal cue: 000, guide cue: 001
         fsm = {
-                '2cue': { '_dcue_000': ['2cue', self.warn, 'touch wrong cue'],    '_dcue_001': ['1cue', self.guide_cue_touched, 'right cue'] }, 
-                '1cue': { '_dcue_000': ['2cue', self.goal_cue_touched, 'reward'], '_dcue_001': ['1cue', self.guide_cue_touched, 'wrong cue'] } 
+                '2cue': { 'touch@_dcue_000': ['2cue', self.warn, 'touch wrong cue'],    'touch@_dcue_001': ['1cue', self.guide_cue_touched, 'right cue'] }, 
+                '1cue': { 'touch@_dcue_000': ['2cue', self.goal_cue_touched, 'reward'], 'touch@_dcue_001': ['1cue', self.guide_cue_touched, 'wrong cue'] } 
               }
         super(two_cue_task, self).__init__(fsm, jov)
 
@@ -386,7 +382,7 @@ class RING(Task):
     def __init__(self, jov):
 
         fsm = {
-                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {'align@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(RING, self).__init__(fsm, jov)
@@ -439,7 +435,7 @@ class JEDI(Task):
         '''
 
         fsm = {
-                '1cue': {('_dcue_000', '_dcue_001'): ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {'touch@_dcue_000->_dcue_001': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(JEDI, self).__init__(fsm, jov)
@@ -483,7 +479,7 @@ class JUMPER(Task):
     def __init__(self, jov):
 
         fsm = {
-                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
         super(JUMPER, self).__init__(fsm, jov)
