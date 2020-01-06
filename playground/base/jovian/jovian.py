@@ -201,8 +201,8 @@ class Jovian(EventEmitter):
             '''
             # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
             with Timer('decoding', verbose=False):
-                if self.bmi.dec.name == 'NaiveBayes':
-                    X = np.sum(X, axis=0)
+                # if self.bmi.dec.name == 'NaiveBayes':
+                X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
                 # decode predict at current bin
                 y = self.bmi.dec.predict_rt(X)
                 #################### just for dusty test #########################
