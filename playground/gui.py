@@ -12,7 +12,7 @@ from datetime import datetime
 from .base import Jovian
 from .base import Fpga
 from .base import task
-from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI, JUMPER
+from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI, JUMPER, RING
 from .view import maze_view
 from .utils import Timer
 from spiketag.view import probe_view, scatter_3d_view, raster_view
@@ -188,18 +188,29 @@ class play_raster_GUI(QWidget):
     # gui function
     #------------------------------------------------------------------------------
     def build_decoder(self):
-        # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-        spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
-        print('select   spktag {}'.format(spktag_file))
-        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.log, *.bin)')[0])
-        print('select position {}'.format(pos_file))
-        from playground import build_decoder
-        build_decoder(self.bmi, spktag_file, pos_file)
+        '''
+        build decoder according to the task
+        '''
+
+        if self.task_name == 'JEDI' or self.task_name == 'JUMPER':
+            # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+            spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
+            print('select   spktag {}'.format(spktag_file))
+            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.log, *.bin)')[0])
+            print('select position {}'.format(pos_file))
+            from playground import build_decoder
+            build_decoder(self.bmi, spktag_file, pos_file)
+
+        if self.task_name == 'RING':
+            from spiketag.analysis.decoder import Maxout_ring
+            self.bmi.dec = Maxout_ring() 
+
         # select task first
         if hasattr(self, 'jov'):
             self.jov.set_bmi(self.bmi)
         else:
             print('please select task first')
+
 
 
 

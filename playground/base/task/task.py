@@ -34,6 +34,14 @@ class TrouchEvent(EventEmitter):
         self.what = _id
         self.where = _coord
 
+class AlignEvent(EventEmitter):
+    """docstring for Event"""
+    def __init__(self, _id, _coord):
+        super(AlignEvent, self).__init__()
+        self.type = 'touch'
+        self.what = _id
+        self.where = _coord
+
         
 class Task(object):
     '''Every task has the same jov to report event
@@ -69,6 +77,13 @@ class Task(object):
         def on_touch(args):
             self.touch_id, self.coord = args
             self.event = TrouchEvent(self.touch_id, self.coord)
+            self.on_event(self.event) 
+
+        # fsm will use jov real-time event to update
+        @self.jov.connect
+        def on_align(args):
+            self.align_id, self.coord = args
+            self.event = AlignEvent(self.align_id, self.coord)
             self.on_event(self.event) 
 
         # use jov frame update to do the animation
@@ -361,6 +376,52 @@ class empty_task(Task):
     def __init__(self, arg):
         super(empty_task, self).__init__()
         self.arg = arg
+
+
+#------------------------------------------------------------------------------
+# RING
+#------------------------------------------------------------------------------
+class RING(Task):
+
+    def __init__(self, jov):
+
+        fsm = {
+                '1cue': {'_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+              }
+
+        super(RING, self).__init__(fsm, jov)
+
+        @self.ani.connect
+        def on_animation_finish(animation_name):
+            if animation_name == 'bury':
+                self.reset()
+
+    def _bmi_control(self, prefix='console', cue_name=None):
+        ''' usage:
+            self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
+        '''
+        while True:
+            self.jov.teleport(prefix=prefix, 
+                              target_pos=[0, 0, 5], 
+                              head_direction=self.jov.bmi_hd[0] + self.jov.current_hd[0],  # current_hd is from rotation encoder
+                              target_item=cue_name)
+            yield
+
+    #---------------------------------------------------------------------------------------------------
+    # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
+    #---------------------------------------------------------------------------------------------------
+    def reset(self):
+        super(RING, self).reset()
+        self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
+        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self._bmi_control('console')) ])
+        self.state = '1cue'
+
+    def goal_cue_touched(self, args):
+        self.log.info(args)
+        self.jov.reward(self.reward_time)
+        self.transition_enable.behave = False
+        self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
 #------------------------------------------------------------------------------
