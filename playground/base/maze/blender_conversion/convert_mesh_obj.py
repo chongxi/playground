@@ -1,6 +1,6 @@
 
 
-filename = "simple_maze.obj"
+filename = "cue1.obj"
 ofilename = 'tri_' + filename 
 
 f = open(filename)

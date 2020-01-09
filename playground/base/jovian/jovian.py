@@ -12,14 +12,14 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-# host_ip = '10.102.20.29'
-# pynq_ip = '10.102.20.75'
+host_ip = '10.102.20.29'
+pynq_ip = '10.102.20.75'
 
 
 # Test
-host_ip = '10.102.20.42'
-pynq_ip = '127.0.0.1'
-verbose = True
+# host_ip = '10.102.20.42'
+# pynq_ip = '127.0.0.1'
+# verbose = True
 
 is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
 
@@ -178,7 +178,7 @@ class Jovian(EventEmitter):
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
                         self.current_hd[:]   = self.rot.direction
-                        # self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
+                        self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
@@ -217,7 +217,7 @@ class Jovian(EventEmitter):
                 # ----------------------------------
                 hd = self.bmi.dec.predict_rt(X) # hd should be a angle from [0, 360]
                 self.bmi_hd_buf_ring = np.hstack((self.bmi_hd_buf_ring[1:], hd))
-                print(self.bmi_hd_buf_ring)
+                # print(self.bmi_hd_buf_ring)
                 self.bmi_hd[:] = torch.tensor(self.bmi_hd_buf_ring.mean()) 
 
                 # ----------------------------------

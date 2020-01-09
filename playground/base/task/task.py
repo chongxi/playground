@@ -17,7 +17,8 @@ def _cue_generate_2d_maze(*args):
 
     while True:
         break_condition = True
-        pos = np.random.randint(low=-85, high=85, size=(2,))
+        #pos = np.random.randint(low=-85, high=85, size=(2,))
+        pos = np.random.randint(low=-45, high=45, size=(2,))
         for _pos in args:
             if np.linalg.norm(pos - np.array(_pos)) < radius:
                break_condition = False 
