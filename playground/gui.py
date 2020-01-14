@@ -367,6 +367,7 @@ class play_raster_GUI(QWidget):
             self.nav_view.current_pos = self.jov.current_pos.numpy()
             self.nav_view.current_hd  = self.jov.current_hd.numpy() 
             self.nav_view.cue_update()
+            self.nav_view.posterior = self.jov.current_post_2d.numpy()
 
 
     #------------------------------------------------------------------------------

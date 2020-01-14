@@ -127,6 +127,10 @@ class Jovian(EventEmitter):
         self.bmi_teleport_radius.share_memory_()
         self.bmi_teleport_radius.fill_(0)    
 
+        # bmi radius (largest teleportation range)
+        self.current_post_2d = torch.empty((89, 107))
+        self.current_post_2d.share_memory_()
+         
 
     def reset(self):
         [conn.shutdown(2) for conn in self.socks]
@@ -178,7 +182,7 @@ class Jovian(EventEmitter):
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
                         self.current_hd[:]   = self.rot.direction
-                        self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
+                        # self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
@@ -223,7 +227,8 @@ class Jovian(EventEmitter):
                 # ----------------------------------
                 # 2. Bayesian decoder for the position
                 # ----------------------------------
-                y = self.bmi.dec.predict_rt(X)
+                y, post_2d = self.bmi.dec.predict_rt(X)
+                self.current_post_2d[:] = torch.tensor(post_2d) * 3.6
                 # #################### just for dusty test #########################
                 y -= np.array([318.5,195.7])
                 y /= 3
