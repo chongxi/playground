@@ -213,36 +213,33 @@ class Jovian(EventEmitter):
             # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
             with Timer('decoding', verbose=False):
                 # ----------------------------------
-                # Ring decoder for the head direction
+                # 1. Ring decoder for the head direction
                 # ----------------------------------
-                hd = self.bmi.dec.predict_rt(X) # hd should be a angle from [0, 360]
-                self.bmi_hd_buf_ring = np.hstack((self.bmi_hd_buf_ring[1:], hd))
-                # print(self.bmi_hd_buf_ring)
-                self.bmi_hd[:] = torch.tensor(self.bmi_hd_buf_ring.mean()) 
+                # hd = self.bmi.dec.predict_rt(X) # hd should be a angle from [0, 360]
+                # self.bmi_hd_buf_ring = np.hstack((self.bmi_hd_buf_ring[1:], hd))
+                # # print(self.bmi_hd_buf_ring)
+                # self.bmi_hd[:] = torch.tensor(self.bmi_hd_buf_ring.mean()) 
 
                 # ----------------------------------
-                # Bayesian decoder for the position
+                # 2. Bayesian decoder for the position
                 # ----------------------------------
-                #if self.bmi.dec.name == 'NaiveBayes':
-                # X = np.sum(X, axis=0)  # X is (B_bins, N_neurons) spike count matrix, we need to sum up B bins to decode the full window
-                # # decode predict at current bin
-                # y = self.bmi.dec.predict_rt(X)
+                y = self.bmi.dec.predict_rt(X)
                 # #################### just for dusty test #########################
-                # y -= np.array([318.5,195.7])
-                # y /= 3
+                y -= np.array([318.5,195.7])
+                y /= 3
                 # ##################################################################
                 # # decide the output 
-                # self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
-                # _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                 # # set shared variable
-                # self.bmi_pos[:] = torch.tensor(_teleport_pos)
-                # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                # window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
-                # hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=180)
-                # if speed > .6:
-                #     self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
-                #     self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
-                # # self.emit('bmi_update', pos=self.teleport_pos)
+                self.bmi_pos[:] = torch.tensor(_teleport_pos)
+                self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
+                window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
+                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=180)
+                if speed > .6:
+                    self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
+                    self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
+                # self.emit('bmi_update', pos=self.teleport_pos)
                 # self.log.info('\n')
                 # self.log.info('BMI Decoded Position: {}, Head-Direction: {}, Speed: {}'.format(_teleport_pos, hd, speed))
                 
