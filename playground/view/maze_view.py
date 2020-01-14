@@ -345,7 +345,7 @@ class maze_view(scene.SceneCanvas):
     def posterior(self, posterior):
         self._posterior = posterior
         self.image.set_data(posterior)
-        self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], 0])
+        self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], -150])
         self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[0], 
                                       (self.y_range[1] - self.y_range[0])/posterior.shape[1])
         self.image.update()

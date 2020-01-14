@@ -127,9 +127,6 @@ class Jovian(EventEmitter):
         self.bmi_teleport_radius.share_memory_()
         self.bmi_teleport_radius.fill_(0)    
 
-        # bmi radius (largest teleportation range)
-        self.current_post_2d = torch.empty((89, 107))
-        self.current_post_2d.share_memory_()
          
 
     def reset(self):
@@ -181,7 +178,7 @@ class Jovian(EventEmitter):
                     self._t, self._coord = self.readline().parse()
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
-                        self.current_hd[:]   = self.rot.direction
+                        # self.current_hd[:]   = self.rot.direction
                         # self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
                         self.task_routine()
                     else:
@@ -191,7 +188,7 @@ class Jovian(EventEmitter):
                     self.log.info('socket time out')
 
 
-    def set_bmi(self, bmi, pos_buffer_len=80):
+    def set_bmi(self, bmi, pos_buffer_len=90):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
@@ -203,12 +200,21 @@ class Jovian(EventEmitter):
              y=dec.predict_rt(X)         (bmi_pos, bmi_hd)
         bmi =====================> jov ====================> task
         '''
+        ## Set the BMI buffer for smoothing both pos and hd
         self.bmi = bmi
         self.bmi_pos_buf = np.zeros((pos_buffer_len, 2))
         hd_buffer_len = int(self.hd_window.item()/self.bmi.binner.bin_size)
         self.bmi_hd_buf  = np.zeros((hd_buffer_len, 2))
         self.bmi_hd_buf_ring = np.zeros((hd_buffer_len, ))
-        self.log.info('initiate the BMI decoder and playground jov connection')
+        self.log.info('Initiate the BMI decoder and playground jov connection')
+
+        ## Set the real-time posterior placehodler
+        dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N-1))
+        _, post_2d = self.bmi.dec.predict_rt(dumb_X)
+        self.current_post_2d = torch.empty(post_2d.shape)
+        self.current_post_2d.share_memory_()
+        self.log.info('Set the real-time posterior shape as {}'.format(self.current_post_2d.shape))
+
         @self.bmi.binner.connect
         def on_decode(X):
             '''
@@ -228,25 +234,30 @@ class Jovian(EventEmitter):
                 # 2. Bayesian decoder for the position
                 # ----------------------------------
                 y, post_2d = self.bmi.dec.predict_rt(X)
-                self.current_post_2d[:] = torch.tensor(post_2d) * 3.6
+                self.current_post_2d[:] = torch.tensor(post_2d) * 1.05
                 # #################### just for dusty test #########################
-                y -= np.array([318.5,195.7])
-                y /= 3
+                y += np.array([263.755, 263.755])
+                y -= np.array([253.755, 253.755])
+                y -= np.array([318.529, 195.760])
+                y /= 2
                 # ##################################################################
-                # # decide the output 
+                # # decide the VR output by smoothing
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                 _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                 # # set shared variable
                 self.bmi_pos[:] = torch.tensor(_teleport_pos)
                 self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
                 window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
-                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=180)
+                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
+                # hd = 90
                 if speed > .6:
                     self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
                     self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 # self.log.info('\n')
-                # self.log.info('BMI Decoded Position: {}, Head-Direction: {}, Speed: {}'.format(_teleport_pos, hd, speed))
+                self.log.info('BMI output(x,y,hd,speed): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
+                                                                                                    _teleport_pos[1], 
+                                                                                                    hd, speed))
                 
 
     def set_trigger(self, shared_cue_dict):
