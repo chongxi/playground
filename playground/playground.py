@@ -25,13 +25,24 @@ def run():
 
 
 def build_decoder(bmi, spktag_file, pos_file):
-    pos = np.fromfile(pos_file).reshape(-1,2)
-    pc = place_field(pos=pos, t_step=33.333e-3, bin_size=4, v_cutoff=25)
-    replay_offset = 2.004
-    pc.load_spkdf(spktag_file, show=True, replay_offset=2.004)
+    log = logger(pos_file, sync=True)
+    ts, pos = log.to_trajectory(session_id=0)
+    pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5)
+    pc.load_spkdf(spktag_file)
+    # replay_offset = 2.004
+    # pc.load_spkdf(spktag_file, show=True, replay_offset=2.004)
     dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
     dec.connect_to(pc)
     bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+
+    # Using Brian's data to test system
+    # pos = np.fromfile(pos_file).reshape(-1,2)
+    # pc = place_field(pos=pos, t_step=33.333e-3, bin_size=4, v_cutoff=25)
+    # # replay_offset = 2.004
+    # # pc.load_spkdf(spktag_file, show=True, replay_offset=2.004)
+    # dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
+    # dec.connect_to(pc)
+    # bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
 
 
 if __name__ == '__main__':

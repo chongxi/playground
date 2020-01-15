@@ -236,10 +236,10 @@ class Jovian(EventEmitter):
                 y, post_2d = self.bmi.dec.predict_rt(X)
                 self.current_post_2d[:] = torch.tensor(post_2d) * 1.05
                 # #################### just for dusty test #########################
-                y += np.array([263.755, 263.755])
-                y -= np.array([253.755, 253.755])
-                y -= np.array([318.529, 195.760])
-                y /= 2
+                # y += np.array([263.755, 263.755])
+                # y -= np.array([253.755, 253.755])
+                # y -= np.array([318.529, 195.760])
+                # y /= 2
                 # ##################################################################
                 # # decide the VR output by smoothing
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
