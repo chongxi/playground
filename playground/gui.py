@@ -192,7 +192,12 @@ class play_raster_GUI(QWidget):
         build decoder according to the task
         '''
 
-        if self.task_name == 'JEDI' or self.task_name == 'JUMPER':
+        if self.task_name == 'RING':
+            from spiketag.analysis.decoder import Maxout_ring
+            self.bmi.dec = Maxout_ring() 
+
+        # if self.task_name == 'JEDI' or self.task_name == 'JUMPER':
+        else:
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
             spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
             print('select   spktag {}'.format(spktag_file))
@@ -200,10 +205,6 @@ class play_raster_GUI(QWidget):
             print('select position {}'.format(pos_file))
             from playground import build_decoder
             build_decoder(self.bmi, spktag_file, pos_file)
-
-        if self.task_name == 'RING':
-            from spiketag.analysis.decoder import Maxout_ring
-            self.bmi.dec = Maxout_ring() 
 
         # select task first
         if hasattr(self, 'jov'):
