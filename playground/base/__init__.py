@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 
-_origin = np.array([-1309.17, -1258.14])
+_origin = np.array([-1309.21 -1258.16])
 _scale  = 100.
 
 
@@ -90,16 +90,22 @@ class logger():
             else:
                 #datum.append([int(_) for _ in dd])
                 datum.append([float(_) for _ in dd])
-        datum = np.array(datum)
-        ts = datum[:,0]
-        #pos = datum[:, 1:]
-        pos = datum[:, 1:3]
+        self.datum = np.array(datum)
+        ts = self.datum[:,0]
+        pos = self.datum[:, 1:3]
+        z   = self.datum[:, 3]
+        hd = self.datum[:, 4]
+        ball_vel = self.datum[:, 5]
+
         if sync_time is not None:
             try:
                 start_idx = np.where(ts==sync_time)[0][0]
-                ts = datum[start_idx:,0]
-                pos = datum[start_idx:, 1:]
-                ts, pos = (ts-ts[0])/1e3, pos
+                ts  = self.datum[start_idx:,0]
+                ts = (ts-ts[0])/1e3
+                pos = self.datum[start_idx:, 1:]
+                z   = self.datum[start_idx:, 3]
+                hd  = self.datum[start_idx:, 4]
+                ball_vel = self.datum[start_idx:, 5]
             except:
                 print('sync_time {} not in session {}'.format(sync_time, session_id))
                 return None

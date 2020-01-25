@@ -12,14 +12,14 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.29'
-pynq_ip = '10.102.20.75'
+# host_ip = '10.102.20.29'
+# pynq_ip = '10.102.20.75'
 
 
 # Test
-# host_ip = '10.102.20.42'
-# pynq_ip = '127.0.0.1'
-# verbose = True
+host_ip = '10.102.20.42'
+pynq_ip = '127.0.0.1'
+verbose = True
 
 is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
 
@@ -29,9 +29,9 @@ class Jovian_Stream(str):
         line = self.__str__()
         _line = line.split(',')
         try:
-            _t,_x,_y = int(_line[0]), int(_line[1]), int(_line[2])
+            _t,_x,_y,_ball_vel = int(_line[0]), int(_line[1]), int(_line[2]), int(_line[7])
             _coord = [_x, _y, 0]
-            return _t, _coord
+            return _t, _coord, _ball_vel
         except:
             _t,_info = int(_line[0]), _line[1]
             return _t, _info
@@ -175,11 +175,13 @@ class Jovian(EventEmitter):
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
                 try:
-                    self._t, self._coord = self.readline().parse()
+                    self._t, self._coord, self._ball_vel = self.readline().parse()
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
                         self.current_hd[:]   = self.rot.direction
-                        self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
+                        self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
+                                                                   self.current_hd.numpy(), 
+                                                                   self._ball_vel))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
@@ -188,7 +190,7 @@ class Jovian(EventEmitter):
                     self.log.info('socket time out')
 
 
-    def set_bmi(self, bmi, pos_buffer_len=10):
+    def set_bmi(self, bmi, pos_buffer_len=30):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
