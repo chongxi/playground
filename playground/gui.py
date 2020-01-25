@@ -201,7 +201,7 @@ class play_raster_GUI(QWidget):
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
             spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
             print('select   spktag {}'.format(spktag_file))
-            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '*.log')[0])
+            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.bin);;(*.log)')[0])
             print('select position {}'.format(pos_file))
             from playground import build_decoder
             build_decoder(self.bmi, spktag_file, pos_file)
