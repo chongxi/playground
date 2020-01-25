@@ -196,7 +196,7 @@ class play_raster_GUI(QWidget):
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
             spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
             print('select   spktag {}'.format(spktag_file))
-            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.log, *.bin)')[0])
+            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '*.log')[0])
             print('select position {}'.format(pos_file))
             from playground import build_decoder
             build_decoder(self.bmi, spktag_file, pos_file)
@@ -275,7 +275,7 @@ class play_raster_GUI(QWidget):
                 maze_mesh_file = os.path.join(folder, file)
             elif file.endswith(".coords"):
                 maze_coord_file = os.path.join(folder, file)
-        self.nav_view.load_maze(maze_file = maze_mesh_file, 
+        self.nav_view.load_maze(maze_file = maze_mesh_file, border = [-50, -50, 50, 50], 
                                 maze_coord_file = maze_coord_file) 
         self.nav_view.load_animal()
         self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
@@ -367,8 +367,11 @@ class play_raster_GUI(QWidget):
             self.nav_view.current_pos = self.jov.current_pos.numpy()
             self.nav_view.current_hd  = self.jov.current_hd.numpy() 
             self.nav_view.cue_update()
-            self.nav_view.posterior = self.jov.current_post_2d.numpy()
-
+        
+            try:
+                self.nav_view.posterior = self.jov.current_post_2d.numpy()
+            except:
+                pass
 
     #------------------------------------------------------------------------------
     # fpga process (input, task fsm, output) in another CPU

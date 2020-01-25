@@ -5,14 +5,15 @@ import sys
 import time
 from PyQt5.QtWidgets import QApplication
 from .gui import play_raster_GUI
-from .base import create_logger, Fpga
+from .base import create_logger, Fpga, logger
 from spiketag.realtime import BMI
 from spiketag.base import probe
 import numpy as np
 from spiketag.analysis import *
 from spiketag.analysis.decoder import NaiveBayes
 
-bin_size, B_bins = 50e-3, 5
+
+bin_size, B_bins = 100e-3, 6
 
 def run():
     logger = create_logger()

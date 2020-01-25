@@ -12,14 +12,14 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-# host_ip = '10.102.20.29'
-# pynq_ip = '10.102.20.75'
+host_ip = '10.102.20.29'
+pynq_ip = '10.102.20.75'
 
 
 # Test
-host_ip = '10.102.20.42'
-pynq_ip = '127.0.0.1'
-verbose = True
+# host_ip = '10.102.20.42'
+# pynq_ip = '127.0.0.1'
+# verbose = True
 
 is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
 
@@ -178,8 +178,8 @@ class Jovian(EventEmitter):
                     self._t, self._coord = self.readline().parse()
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
-                        # self.current_hd[:]   = self.rot.direction
-                        # self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
+                        self.current_hd[:]   = self.rot.direction
+                        self.log.info('{}, {}, {}'.format(self._t, self.current_pos.numpy(), self.current_hd.numpy()))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
@@ -188,7 +188,7 @@ class Jovian(EventEmitter):
                     self.log.info('socket time out')
 
 
-    def set_bmi(self, bmi, pos_buffer_len=90):
+    def set_bmi(self, bmi, pos_buffer_len=10):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
@@ -233,6 +233,7 @@ class Jovian(EventEmitter):
                 # ----------------------------------
                 # 2. Bayesian decoder for the position
                 # ----------------------------------
+                # if X.sum(axis=0)>2:
                 y, post_2d = self.bmi.dec.predict_rt(X)
                 self.current_post_2d[:] = torch.tensor(post_2d) * 1.05
                 # #################### just for dusty test #########################
@@ -250,9 +251,9 @@ class Jovian(EventEmitter):
                 window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
                 hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
                 # hd = 90
-                if speed > .6:
-                    self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
-                    self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
+                # if speed > .6:
+                    # self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
+                    # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                 # self.emit('bmi_update', pos=self.teleport_pos)
                 # self.log.info('\n')
                 self.log.info('BMI output(x,y,hd,speed): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
