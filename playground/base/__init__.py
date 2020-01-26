@@ -76,7 +76,7 @@ class logger():
         return log_sessions
 
 
-    def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True):
+    def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True, ball_movement=False):
         log = self.log_sessions[session_id]
         sync_time = self.sync_time
         locs = log[log['func']=='_jovian_process']['msg'].values
@@ -88,34 +88,36 @@ class logger():
             if len(dd[1:])<3:
                 print(loc)
             else:
-                #datum.append([int(_) for _ in dd])
                 datum.append([float(_) for _ in dd])
         self.datum = np.array(datum)
         ts = self.datum[:,0]
         pos = self.datum[:, 1:3]
         z   = self.datum[:, 3]
         hd = self.datum[:, 4]
-        ball_vel = self.datum[:, 5]
+        if ball_movement:
+            ball_vel = self.datum[:, 5]
 
         if sync_time is not None:
-            try:
-                start_idx = np.where(ts==sync_time)[0][0]
-                ts  = self.datum[start_idx:,0]
-                ts = (ts-ts[0])/1e3
-                pos = self.datum[start_idx:, 1:]
-                z   = self.datum[start_idx:, 3]
-                hd  = self.datum[start_idx:, 4]
+            start_idx = np.where(ts==sync_time)[0][0]
+            ts  = self.datum[start_idx:,0]
+            pos = self.datum[start_idx:, 1:]
+            z   = self.datum[start_idx:, 3]
+            hd  = self.datum[start_idx:, 4]
+            if ball_movement:
                 ball_vel = self.datum[start_idx:, 5]
-            except:
-                print('sync_time {} not in session {}'.format(sync_time, session_id))
-                return None
+            ts, pos = (ts-ts[0])/1e3, pos
         else:
             ts, pos = (ts-ts[0])/1e3, pos 
+            if ball_movement:
+                ball_vel = self.datum[start_idx:, 5]
 
         if interpolate:
             ts, pos = interp_pos(ts, pos) 
 
         if to_jovian_coord is True:
             pos = pos/_scale + _origin
-
-        return ts, pos
+        
+        if ball_movement:
+            return ts, pos, ball_vel
+        else:
+            return ts, pos
