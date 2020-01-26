@@ -113,6 +113,7 @@ class logger():
 
         if interpolate:
             ts, pos = interp_pos(ts, pos) 
+            #TODO: interpolate the ball_movement
 
         if to_jovian_coord is True:
             pos = pos/_scale + _origin
