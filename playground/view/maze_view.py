@@ -120,7 +120,7 @@ class maze_view(scene.SceneCanvas):
             self.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
 
 
-    def load_maze(self, maze_file, maze_coord_file=None, border=[-100,-100,100,100], mirror=True):
+    def load_maze(self, maze_file, maze_coord_file=None, border=[-50,-50,50,50], mirror=True):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
         self.scale_factor = 100
@@ -137,6 +137,7 @@ class maze_view(scene.SceneCanvas):
         transform = MatrixTransform()
         # transform.rotate(angle=90, axis=(1, 0, 0))  # rotate around x-axis for 90, the maze lay down
         if mirror:
+            self.mirror = True
             transform.matrix[:,2] = - transform.matrix[:,2]  # reflection matrix, mirror image on x-y plane
         transform.scale(scale=4*[self.scale_factor]) # scale at all 4 dim for scale_factor
         transform.translate(pos=self.origin) # translate to origin
@@ -345,7 +346,10 @@ class maze_view(scene.SceneCanvas):
     def posterior(self, posterior):
         self._posterior = posterior
         self.image.set_data(posterior)
-        self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], -150])
+        if self.mirror:
+            self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], 100])
+        else:
+            self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], -100])
         self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[0], 
                                       (self.y_range[1] - self.y_range[0])/posterior.shape[1])
         self.image.update()
