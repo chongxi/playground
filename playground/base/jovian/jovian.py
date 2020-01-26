@@ -190,7 +190,7 @@ class Jovian(EventEmitter):
                     self.log.info('socket time out')
 
 
-    def set_bmi(self, bmi, pos_buffer_len=30):
+    def set_bmi(self, bmi, pos_buffer_len=10):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov
@@ -242,7 +242,7 @@ class Jovian(EventEmitter):
                 # y += np.array([263.755, 263.755])
                 # y -= np.array([253.755, 253.755])
                 # y -= np.array([318.529, 195.760])
-                # y /= 2
+                # y /= 4.5
                 # ##################################################################
                 # # decide the VR output by smoothing
                 self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
