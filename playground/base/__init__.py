@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 
-_origin = np.array([-1309.21 -1258.16])
+_origin = np.array([-1309.21, -1258.16])
 _scale  = 100.
 
 
