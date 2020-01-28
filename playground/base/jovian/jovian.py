@@ -352,6 +352,11 @@ class Jovian(EventEmitter):
                 self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom], dtype=np.float32))
 
 
+    def move_to(self, x, y, z=5, hd=0, hd_offset=0): 
+        cmd="{}.teleport({},{},{},{})\n".format('console', x, y, z, hd+hd_offset) 
+        self.output.send(cmd.encode()) 
+
+
     def reward(self, time):
         try:
             cmd = 'reward, {}'.format(time)
