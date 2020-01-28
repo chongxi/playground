@@ -353,6 +353,10 @@ class Jovian(EventEmitter):
 
 
     def move_to(self, x, y, z=5, hd=0, hd_offset=0): 
+        '''
+        x,y = 0,0 # goes to the center (Jovian protocol)
+        hd_offset = jov.rot.direction # the body direction
+        '''
         cmd="{}.teleport({},{},{},{})\n".format('console', x, y, z, hd+hd_offset) 
         self.output.send(cmd.encode()) 
 
