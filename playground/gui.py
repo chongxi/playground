@@ -287,6 +287,8 @@ class play_raster_GUI(QWidget):
             self.log.info('load {}'.format(_cue_file))
 
         self._maze_loaded = True
+        origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
+        self.log.info('maze_origin: {},{}'.format(origin[0], origin[1]))
 
     #------------------------------------------------------------------------------
     # set slider for parameters
