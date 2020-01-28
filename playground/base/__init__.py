@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 
-_origin = np.array([-1309.21, -1258.16])
-_scale  = 100.
+_origin = np.array([-1309.21, -1258.16])  # by default, will be replaced if there is maze_origin in the log
+_scale  = 100.  # fixed for Jovian 
 
 
 def create_logger():
