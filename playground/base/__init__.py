@@ -117,7 +117,7 @@ class logger():
 
         if to_jovian_coord is True:
             if 'maze_origin' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:
-                self._origin = np.array([float(_) for _ in log.df[log.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
+                self._origin = np.array([float(_) for _ in self.df[self.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
             else:
                 self._origin = _origin
             pos = pos/_scale + self._origin
