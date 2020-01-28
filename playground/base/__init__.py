@@ -57,7 +57,7 @@ class logger():
         else:
             self.sync_time = None
             
-        self.log = pd.DataFrame(
+        self.df = pd.DataFrame(
             {'time': time,
              'process': process,
              'level': level,
@@ -69,7 +69,7 @@ class logger():
 
 
     def get_log_sessions(self):
-        log = self.log
+        log = self.df
         jov_starts = log[np.logical_and(log['process']=='MainProcess', log['msg']=='jovian_process_start')]
         jov_stops = log[np.logical_and(log['process']=='MainProcess', log['msg']=='jovian_process_stop')]
         log_sessions = [log[jov_starts.index[i]+1:jov_stops.index[i]] for i in range(jov_starts.index.shape[0])]
