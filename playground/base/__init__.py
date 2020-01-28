@@ -116,7 +116,11 @@ class logger():
             #TODO: interpolate the ball_movement
 
         if to_jovian_coord is True:
-            pos = pos/_scale + _origin
+            if 'maze_origin' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:
+                self._origin = np.array([float(_) for _ in log.df[log.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
+            else:
+                self._origin = _origin
+            pos = pos/_scale + self._origin
         
         if ball_movement:
             return ts, pos, ball_vel
