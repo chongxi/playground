@@ -2,7 +2,7 @@ from .jovian import Jovian
 from .rotenc import Rotenc
 from .task import one_cue_task, two_cue_task, one_cue_moving_task
 from .fpga import Fpga
-from .behaviour import interp_pos
+from .behaviour import interp_pos, interp_1d
 
 from torch import multiprocessing
 import logging
@@ -78,7 +78,6 @@ class logger():
 
     def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True, ball_movement=False):
         log = self.log_sessions[session_id]
-        sync_time = self.sync_time
         locs = log[log['func']=='_jovian_process']['msg'].values
         # datum = np.array([[int(_) for _ in loc.replace('[','').replace(']','').split(',')] for loc in locs])
         datum = []
@@ -97,8 +96,8 @@ class logger():
         if ball_movement:
             ball_vel = self.datum[:, 5]
 
-        if sync_time is not None:
-            start_idx = np.where(ts==sync_time)[0][0]
+        if self.sync_time is not None:
+            start_idx = np.where(ts==self.sync_time)[0][0]
             ts  = self.datum[start_idx:,0]
             pos = self.datum[start_idx:, 1:]
             z   = self.datum[start_idx:, 3]
@@ -108,12 +107,12 @@ class logger():
             ts, pos = (ts-ts[0])/1e3, pos
         else:
             ts, pos = (ts-ts[0])/1e3, pos 
-            if ball_movement:
-                ball_vel = self.datum[start_idx:, 5]
 
         if interpolate:
-            ts, pos = interp_pos(ts, pos) 
-            #TODO: interpolate the ball_movement
+            new_ts, pos = interp_pos(ts, pos) 
+            if ball_movement:
+                new_ts, ball_vel = interp_1d(ts, new_ts, ball_vel)
+            ts = new_ts
 
         if to_jovian_coord is True:
             if 'maze_origin' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:

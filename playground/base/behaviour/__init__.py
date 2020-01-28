@@ -11,3 +11,13 @@ def interp_pos(t, pos, N=1):
     new_t = np.arange(0.0, dt*len(t), dt*N)
     new_pos = np.hstack((x(new_t).reshape(-1,1), y(new_t).reshape(-1,1)))
     return new_t, new_pos    
+
+def interp_1d(t_old, t_new, var):
+    '''
+    interp_1d variable
+    '''
+    x = interp1d(t_old, var, fill_value="extrapolate")
+    new_var = x(t_new)
+    return t_new, new_var    
+
+
