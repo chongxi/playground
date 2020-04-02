@@ -115,12 +115,16 @@ class Jovian(EventEmitter):
         # bmi head-direction (inferred head direction at bmi_pos)
         self.hd_window = torch.empty(1,)  # time window(seconds) used to calculate head direction
         self.hd_window.share_memory_()
-        self.hd_window.fill_(1)
+        self.hd_window.fill_(0)
+        self.ball_vel = torch.empty(1,)
+        self.ball_vel.share_memory_()
+        self.ball_vel.fill_(0)
         self.bmi_hd = torch.empty(1,)       # calculated hd sent to Jovian for VR rendering
         self.bmi_hd.share_memory_()
         self.bmi_hd.fill_(0)         
         self.current_hd = torch.empty(1,)   # calculated hd (same as bmi_hd) sent to Mazeview for local playground rendering
         self.current_hd.share_memory_()
+        self.current_hd.fill_(0)
 
         # bmi radius (largest teleportation range)
         self.bmi_teleport_radius = torch.empty(1,)
@@ -179,6 +183,7 @@ class Jovian(EventEmitter):
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
                         self.current_hd[:]   = self.rot.direction
+                        self.ball_vel[:]     = self._ball_vel
                         self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
                                                                    self.current_hd.numpy(), 
                                                                    self._ball_vel))
@@ -212,10 +217,13 @@ class Jovian(EventEmitter):
 
         ## Set the real-time posterior placehodler
         dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N-1))
+        self.perm_idx = np.random.permutation(dumb_X.shape[1])
         _, post_2d = self.bmi.dec.predict_rt(dumb_X)
         self.current_post_2d = torch.empty(post_2d.shape)
         self.current_post_2d.share_memory_()
         self.log.info('Set the real-time posterior shape as {}'.format(self.current_post_2d.shape))
+
+        # self.bmi.dec.drop_neuron(np.array([7,9]))
 
         @self.bmi.binner.connect
         def on_decode(X):
@@ -236,8 +244,10 @@ class Jovian(EventEmitter):
                 # 2. Bayesian decoder for the position
                 # ----------------------------------
                 # if X.sum(axis=0)>2:
+                # _X = X[:, self.perm_idx]
                 y, post_2d = self.bmi.dec.predict_rt(X)
-                self.current_post_2d[:] = torch.tensor(post_2d) * 1.05
+                if X.sum()>2:
+                    self.current_post_2d[:] = torch.tensor(post_2d) * 1.0
                 # #################### just for dusty test #########################
                 # y += np.array([263.755, 263.755])
                 # y -= np.array([253.755, 253.755])
@@ -248,9 +258,15 @@ class Jovian(EventEmitter):
                 # self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                 # _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                 # # rule2: decide the VR output by SGD
+                # if self._ball_vel < 100:
                 if True:# y[0]<=38 and y[1]>=-38:
                     u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
-                    _teleport_pos = self.bmi_pos.numpy() + 6*u 
+                    tao = 5
+                    if self.ball_vel.numpy() < 15 and X.sum()>2:
+                        tao = 5 # cm
+                    else:
+                        tao = 0 # cm
+                    _teleport_pos = self.bmi_pos.numpy() + tao*u 
                     # # set shared variable
                     self.bmi_pos[:] = torch.tensor(_teleport_pos)
                     self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
