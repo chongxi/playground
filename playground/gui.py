@@ -138,12 +138,12 @@ class play_raster_GUI(QWidget):
         self.hd_window.setValue(2) # 2/2 = 1 second
         self.hd_window.valueChanged.connect(self.hd_window_changed)
 
-        self.bmi_teleport_radius_label = QLabel('Teleport Radius: 500px')
+        self.bmi_teleport_radius_label = QLabel('speed thres')
         self.bmi_teleport_radius = QSlider(Qt.Horizontal, self)
-        self.bmi_teleport_radius.setMinimum(100)
-        self.bmi_teleport_radius.setMaximum(1000)
-        self.bmi_teleport_radius.setSingleStep(10)        
-        self.bmi_teleport_radius.setValue(500)
+        self.bmi_teleport_radius.setMinimum(0)
+        self.bmi_teleport_radius.setMaximum(3000)
+        self.bmi_teleport_radius.setSingleStep(1)        
+        self.bmi_teleport_radius.setValue(15)
         self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
 
         ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
@@ -318,7 +318,7 @@ class play_raster_GUI(QWidget):
 
     def bmi_teleport_radius_changed(self, value):
         if self._task_selected:
-            self.bmi_teleport_radius_label.setText('Teleport Radius: {}px'.format(value))
+            self.bmi_teleport_radius_label.setText('speed thres: {}'.format(value))
             self.jov.bmi_teleport_radius.fill_(value)
         else:
             self.log.warn('select Task First: Jovian initiate when selecting task')

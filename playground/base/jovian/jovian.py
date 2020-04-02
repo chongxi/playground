@@ -254,33 +254,36 @@ class Jovian(EventEmitter):
                 # y -= np.array([318.529, 195.760])
                 # y /= 4.5
                 # ##################################################################
-                # # rule1: decide the VR output by FIFO smoothing
-                # self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
-                # _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                ball_vel_thres = self.bmi_teleport_radius.item()
+                if ball_vel_thres == 0:
+                    # # rule1: decide the VR output by FIFO smoothing
+                    self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                    _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                 # # rule2: decide the VR output by SGD
                 # if self._ball_vel < 100:
-                if True:# y[0]<=38 and y[1]>=-38:
+                else:
+                # if True:# y[0]<=38 and y[1]>=-38:
                     u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                     tao = 5
-                    if self.ball_vel.numpy() < 15 and X.sum()>2:
+                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
                         tao = 5 # cm
                     else:
                         tao = 0 # cm
                     _teleport_pos = self.bmi_pos.numpy() + tao*u 
-                    # # set shared variable
-                    self.bmi_pos[:] = torch.tensor(_teleport_pos)
-                    self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                    window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
-                    hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
+                # # set shared variable
+                self.bmi_pos[:] = torch.tensor(_teleport_pos)
+                self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
+                window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
+                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
                     # hd = 90
                     # if speed > .6:
                         # self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
                         # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                     # self.emit('bmi_update', pos=self.teleport_pos)
                     # self.log.info('\n')
-                    self.log.info('BMI output(x,y,hd,speed): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
-                                                                                                        _teleport_pos[1], 
-                                                                                                        hd, speed))
+                self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
+                                                                                                     _teleport_pos[1], 
+                                                                                                     speed, self.bmi_teleport_radius.item()))
                     
 
     def set_trigger(self, shared_cue_dict):
