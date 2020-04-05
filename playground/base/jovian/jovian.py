@@ -222,7 +222,10 @@ class Jovian(EventEmitter):
         _, post_2d = self.bmi.dec.predict_rt(dumb_X)
         self.current_post_2d = torch.empty(post_2d.shape)
         self.current_post_2d.share_memory_()
-        self.log.info('Set the real-time posterior shape as {}'.format(self.current_post_2d.shape))
+        self.log.info('The decoder binsize:{}, the B_bins:{}'.format(self.bmi.binner.bin_size, self.bmi.binner.B))
+        self.log.info('The decoder input (spike count bin) shape:{}'.format(dumb_X.shape))
+        self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
+        self.log.info('The bmi position update rule: {}'.format(self.bmi.bmi_update_rule))
 
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 
