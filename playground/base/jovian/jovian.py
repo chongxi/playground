@@ -255,21 +255,24 @@ class Jovian(EventEmitter):
                 # y /= 4.5
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
-                if ball_vel_thres == 0:
+                if self.bmi.bmi_update_rule == 'moving_average':
                     # # rule1: decide the VR output by FIFO smoothing
-                    self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
-                    _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
+                        self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                        _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                    else:
+                        _teleport_pos = self.bmi_pos.numpy()
                 # # rule2: decide the VR output by SGD
                 # if self._ball_vel < 100:
-                else:
+                elif self.bmi.bmi_update_rule == 'fixed_length':
                 # if True:# y[0]<=38 and y[1]>=-38:
                     u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                     tao = 5
                     if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
                         tao = 5 # cm
+                        _teleport_pos = self.bmi_pos.numpy() + tao*u 
                     else:
-                        tao = 0 # cm
-                    _teleport_pos = self.bmi_pos.numpy() + tao*u 
+                        _teleport_pos = self.bmi_pos.numpy()
                 # # set shared variable
                 self.bmi_pos[:] = torch.tensor(_teleport_pos)
                 self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
