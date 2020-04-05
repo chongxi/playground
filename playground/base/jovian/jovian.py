@@ -214,6 +214,7 @@ class Jovian(EventEmitter):
         self.bmi_hd_buf  = np.zeros((hd_buffer_len, 2))
         self.bmi_hd_buf_ring = np.zeros((hd_buffer_len, ))
         self.log.info('Initiate the BMI decoder and playground jov connection')
+        self.log.info('position buffer length:{}'.format(pos_buffer_len))
 
         ## Set the real-time posterior placehodler
         dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N-1))
@@ -262,10 +263,8 @@ class Jovian(EventEmitter):
                         _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                     else:
                         _teleport_pos = self.bmi_pos.numpy()
-                # # rule2: decide the VR output by SGD
-                # if self._ball_vel < 100:
                 elif self.bmi.bmi_update_rule == 'fixed_length':
-                # if True:# y[0]<=38 and y[1]>=-38:
+                    # # rule2: decide the VR output by SGD
                     u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                     tao = 5
                     if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
