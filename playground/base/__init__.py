@@ -12,7 +12,7 @@ from scipy import signal
 
 _origin = np.array([-1309.21, -1258.16])  # by default, will be replaced if there is maze_origin in the log
 _scale  = 100.  # fixed for Jovian 
-
+float_pattern = r'([-+]?\d*\.\d+|\d+)' # regexp for float number
 
 def create_logger():
     multiprocessing.log_to_stderr()
@@ -134,3 +134,24 @@ class logger():
         except:
             print('check whether maze_origin is in the log')
 
+    def get_trial_index(self, start_with='parachute finished', end_with='touch'):
+        '''
+        check https://github.com/chongxi/playground/issues/24
+
+        with trial index, try:
+        i = trial_to_check
+        log.df.iloc[trial_index[i,0]-1:trial_index[i,1]]
+        '''
+        trial_start = self.df[(self.df['func']=='on_animation_finish') & (self.df['msg'].str.contains(start_with))].index[1:] + 1
+        trial_end   = self.df[(self.df['func']=='on_event') & (self.df['msg'].str.contains(end_with))].index[1:] + 1
+        n_trials    = min(trial_start.to_numpy().shape[0], trial_end.to_numpy().shape[0])
+        if start_with == 'parachute finished':
+            trial_index = np.zeros((n_trials, 2), dtype='int')
+            trial_index[:,0] = trial_start[:n_trials].to_numpy()
+            trial_index[:,1] = trial_end[:n_trials].to_numpy()
+        elif start_with == 'bury finished':
+            trial_index = np.zeros((n_trials-1, 2), dtype='int')
+            trial_index[:,0] = trial_start[:n_trials-1].to_numpy()
+            trial_index[:,1] = trial_end[1:n_trials].to_numpy()
+        return trial_index
+        
