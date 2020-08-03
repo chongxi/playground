@@ -125,3 +125,12 @@ class logger():
             return ts, pos, ball_vel
         else:
             return ts, pos
+
+    @property
+    def maze_origin(self):
+        try:
+            _origin = self.df[self.df.msg.str.contains('maze_origin')].msg.str.extractall(r'([-+]?\d*\.\d+|\d+)').astype('float').unstack().iloc[0].to_numpy()
+            return _origin
+        except:
+            print('check whether maze_origin is in the log')
+
