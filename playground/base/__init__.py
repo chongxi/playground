@@ -6,6 +6,7 @@ from .behaviour import interp_pos, interp_1d
 
 from torch import multiprocessing
 import logging
+import re
 import pandas as pd
 import numpy as np
 from scipy import signal
