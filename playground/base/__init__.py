@@ -155,3 +155,42 @@ class logger():
             trial_index[:,1] = trial_end[1:n_trials].to_numpy()
         return trial_index
         
+        
+    def get_epoch(self, i, bypass_bmi_outlier=True, trial_index=None):
+        '''
+        get varialbes of `i`th trial
+        
+        To further use the bmi_df and jov_df:
+        bmi_pos = bmi_df.loc[:,['x','y']].to_numpy()
+        jov_pos = jov_df.loc[:,['x','y']].to_numpy()/100 + log.maze_origin
+        ball_vel = jov_df.ball_v.mean()
+        '''
+        if trial_index is None:
+            trial_index = self.get_trial_index(start_with='parachute finished', end_with='touch')
+
+        # 1. get epoch dataframe
+        epoch_df = self.df.iloc[trial_index[i,0]-1:trial_index[i,1]+1]
+        bmi_df = epoch_df[epoch_df['func']=='on_decode'].msg.str.extractall(float_pattern).astype('float').unstack()
+        bmi_df.columns = ['x','y','ball_thres']
+
+        if bmi_df.shape[0]<=2:
+            print('not enough bmi teleportation points')
+            return [None]*5
+
+        # 2. get bmi_pos and goal_pos
+        # bmi_pos = bmi_df.loc[:,['x','y']].to_numpy()
+        cue_pos = np.array([float(_) for _ in re.findall("\d+\.", epoch_df.iloc[-2].msg)])[:2]
+        goal_pos = cue_pos/100 + self.maze_origin
+
+        # 3. get the jovian time and jovian ball vellocity for this epoch
+        jov_df = epoch_df[epoch_df['func']=='_jovian_process'].msg.str.extractall(float_pattern).astype('float').unstack()
+        jov_df.columns = ['time', 'x','y','z','v','ball_v']
+        jov_time = np.array(jov_df.loc[bmi_df.index[0]:bmi_df.index[-1]].time.to_numpy())/1e3
+        jov_time -= jov_time[0]
+        epoch_time = jov_time[-1]
+        # ball_vel = jov_df.ball_v.mean()
+
+        # 4. get landing position
+        start_pos = bmi_df[bmi_df.index > epoch_df[epoch_df['msg']=='parachute finished'].index.to_numpy()[0]+1].iloc[0][['x','y']].to_numpy()
+        
+        return epoch_time, start_pos, goal_pos, bmi_df, jov_df
