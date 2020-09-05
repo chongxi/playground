@@ -36,8 +36,8 @@ class logger():
         func = []
         msg = []
         SY = []
-        with open(filename) as f: 
-            for line in (f): 
+        with open(filename) as f:
+            for line in (f):
                 text.append(line)
                 if line != 'SY\n':
                     try:
@@ -52,12 +52,12 @@ class logger():
                     msg.append(message.strip())
                 if line == 'SY\n':
                     SY.append(msg[-1])
-                    
+
         if sync:
             self.sync_time = int(SY[0].split(',')[0])
         else:
             self.sync_time = None
-            
+
         self.df = pd.DataFrame(
             {'time': time,
              'process': process,
@@ -68,14 +68,12 @@ class logger():
 
         self.log_sessions = self.get_log_sessions()
 
-
     def get_log_sessions(self):
         log = self.df
         jov_starts = log[np.logical_and(log['process']=='MainProcess', log['msg']=='jovian_process_start')]
         jov_stops = log[np.logical_and(log['process']=='MainProcess', log['msg']=='jovian_process_stop')]
         log_sessions = [log[jov_starts.index[i]+1:jov_stops.index[i]] for i in range(jov_starts.index.shape[0])]
         return log_sessions
-
 
     def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True, ball_movement=False):
         log = self.log_sessions[session_id]
@@ -121,7 +119,7 @@ class logger():
             else:
                 self._origin = _origin
             pos = pos/_scale + self._origin
-        
+
         if ball_movement:
             return ts, pos, ball_vel
         else:
@@ -193,5 +191,5 @@ class logger():
 
         # 4. get landing position
         start_pos = bmi_df[bmi_df.index > epoch_df[epoch_df['msg']=='parachute finished'].index.to_numpy()[0]+1].iloc[0][['x','y']].to_numpy()
-        
+
         return epoch_time, start_pos, goal_pos, bmi_df, jov_df
