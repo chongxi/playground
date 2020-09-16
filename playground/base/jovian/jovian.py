@@ -250,8 +250,21 @@ class Jovian(EventEmitter):
                 # if X.sum(axis=0)>2:
                 # _X = X[:, self.perm_idx]
                 y, post_2d = self.bmi.dec.predict_rt(X)
+                post_2d /= post_2d.sum()
+                
+                ### save scv and posterior to file ###
+                f_scv = open('scv.bin', 'ab+')
+                f_scv.write(x.tobytes())
+                f_scv.close()
+                
+                f_post = open('post_2d.bin', 'ab+')
+                f_post.write(post_2d.tobytes())
+                f_post.close()
+                
+                ### Key: filter out criterion ###
                 if X.sum()>2:
                     self.current_post_2d[:] = torch.tensor(post_2d) * 1.0
+                    
                 # #################### just for dusty test #########################
                 # y += np.array([263.755, 263.755])
                 # y -= np.array([253.755, 253.755])
