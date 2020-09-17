@@ -254,7 +254,7 @@ class Jovian(EventEmitter):
                 
                 ### save scv and posterior to file ###
                 f_scv = open('./scv.bin', 'ab+')
-                f_scv.write(x.tobytes())
+                f_scv.write(X.tobytes())
                 f_scv.close()
                 
                 f_post = open('./post_2d.bin', 'ab+')
