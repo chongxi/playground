@@ -33,7 +33,7 @@ def build_decoder(bmi, spktag_file, pos_file):
     pc.load_spkdf(spktag_file)
     dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
     dec.connect_to(pc)
-    bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+    bmi.set_decoder(dec, dec_file='dec', score=False)
 
     # For test: Using Brian's data to test system
     # pos = np.fromfile(pos_file).reshape(-1,2)

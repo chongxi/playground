@@ -205,7 +205,9 @@ class play_raster_GUI(QWidget):
             self.log.info('select position {}'.format(pos_file))
             from playground import build_decoder
             build_decoder(self.bmi, spktag_file, pos_file)
-            self.log.info('updating_rule: {}'.format(self.bmi.bmi_update_rule))
+            score = self.bmi.dec.score(smooth_sec=2)
+            self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
+            self.log.info('BMI updating_rule: {}'.format(self.bmi.bmi_update_rule))
 
         # select task first
         if hasattr(self, 'jov'):
