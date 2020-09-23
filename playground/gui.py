@@ -280,10 +280,14 @@ class play_raster_GUI(QWidget):
                 maze_mesh_file = os.path.join(folder, file)
             elif file.endswith(".coords"):
                 maze_coord_file = os.path.join(folder, file)
-        self.nav_view.load_maze(maze_file = maze_mesh_file, border = [-50, -50, 50, 50], 
+        self.nav_view.load_maze(maze_file = maze_mesh_file, 
                                 maze_coord_file = maze_coord_file) 
         self.nav_view.load_animal()
         self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
+        origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
+        border = np.array(self.nav_view.maze.coord['border']).astype(np.float32)
+        self.log.info('maze origin: {},{}'.format(origin[0], origin[1]))
+        self.log.info('maze border: {}'.format(border))
 
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
@@ -291,8 +295,6 @@ class play_raster_GUI(QWidget):
             self.log.info('load {}'.format(_cue_file))
 
         self._maze_loaded = True
-        origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
-        self.log.info('maze_origin: {},{}'.format(origin[0], origin[1]))
 
     #------------------------------------------------------------------------------
     # set slider for parameters
