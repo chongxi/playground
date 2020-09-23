@@ -206,6 +206,7 @@ class play_raster_GUI(QWidget):
         from playground import build_decoder
         build_decoder(self.bmi, spktag_file, pos_file)
         score = self.bmi.dec.score(smooth_sec=2)
+        self.log.info('BMI decoder params: {} cells, {} t_step, {} t_window'.format(self.bmi.dec.fields.shape[0], self.bmi.dec.t_step, self.bmi.dec.t_window))
         self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
         self.log.info('BMI updating_rule: {}'.format(self.bmi.bmi_update_rule))
 
