@@ -283,6 +283,7 @@ class play_raster_GUI(QWidget):
         self.nav_view.load_maze(maze_file = maze_mesh_file, 
                                 maze_coord_file = maze_coord_file) 
         self.nav_view.load_animal()
+        self.log.info('maze folder: {}'.format(folder))
         self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
         origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
         border = np.array(self.nav_view.maze.coord['border']).astype(np.float32)
