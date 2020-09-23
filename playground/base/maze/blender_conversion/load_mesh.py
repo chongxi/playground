@@ -8,7 +8,7 @@ from vispy.io.mesh import read_mesh
 canvas = scene.SceneCanvas(keys='interactive')
 view = canvas.central_widget.add_view()
 
-(vertices, faces, vertex_colors, _) = read_mesh('maze_2d_1m.obj')
+(vertices, faces, vertex_colors, _) = read_mesh('tri_Dodecahedron_2m.obj')
 gray_mat = np.repeat(np.array([0.5989, 0.6870, 0.4140]), 3).reshape(-1,3)
 vertex_colors = abs(vertex_colors.dot(gray_mat))
 transparency  = np.ones((vertex_colors.shape[0], 1))
