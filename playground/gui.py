@@ -192,22 +192,22 @@ class play_raster_GUI(QWidget):
         build decoder according to the task
         '''
 
-        if self.task_name == 'RING':
-            from spiketag.analysis.decoder import Maxout_ring
-            self.bmi.dec = Maxout_ring() 
+#         if self.task_name == 'RING':
+            # from spiketag.analysis.decoder import Maxout_ring
+            # self.bmi.dec = Maxout_ring() 
 
         # if self.task_name == 'JEDI' or self.task_name == 'JUMPER':
-        else:
+        # else:
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-            spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
-            self.log.info('select   spktag {}'.format(spktag_file))
-            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.bin);;(*.log)')[0])
-            self.log.info('select position {}'.format(pos_file))
-            from playground import build_decoder
-            build_decoder(self.bmi, spktag_file, pos_file)
-            score = self.bmi.dec.score(smooth_sec=2)
-            self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
-            self.log.info('BMI updating_rule: {}'.format(self.bmi.bmi_update_rule))
+        spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
+        self.log.info('select   spktag {}'.format(spktag_file))
+        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.bin);;(*.log)')[0])
+        self.log.info('select position {}'.format(pos_file))
+        from playground import build_decoder
+        build_decoder(self.bmi, spktag_file, pos_file)
+        score = self.bmi.dec.score(smooth_sec=2)
+        self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
+        self.log.info('BMI updating_rule: {}'.format(self.bmi.bmi_update_rule))
 
         # select task first
         if hasattr(self, 'jov'):
