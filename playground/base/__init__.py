@@ -122,10 +122,11 @@ class logger():
             return ts, pos
 
 
-    def to_pc(self, session_id=0):
+    def to_pc(self, session_id=0, dt=0.3, bin_size=2.5, v_cutoff=5):
         from spiketag.analysis import place_field
         ts, pos = self.to_trajectory(session_id)
-        pc = place_field(ts=ts, pos=pos, maze_range=self.maze_range)
+        pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=vcutoff, maze_range=self.maze_range)
+        pc(dt)
         return pc
 
 
