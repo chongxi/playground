@@ -131,6 +131,17 @@ class logger():
             return _center
             print('check whether maze_center is in the log')
 
+    @property
+    def maze_range(self):
+        try:
+            sub_df = log.df[log.df.func=='load_maze']
+            s = sub_df[sub_df.msg.str.contains('maze_border')].iloc[0].msg.split('[')[-1].replace(']','').split(' ')
+            maze_range = [float(_) for _ in s if _ is not '']
+            maze_range = np.array(maze_range)
+            return maze_range.reshape(-1,2).T
+        except:
+            print('check whether maze_border is in the log')
+
     def get_trial_index(self, start_with='parachute finished', end_with='touch'):
         '''
         check https://github.com/chongxi/playground/issues/24
