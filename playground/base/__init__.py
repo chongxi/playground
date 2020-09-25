@@ -75,7 +75,7 @@ class logger():
         log_sessions = [log[jov_starts.index[i]+1:jov_stops.index[i]] for i in range(jov_starts.index.shape[0])]
         return log_sessions
 
-    def to_trajectory(self, session_id, target='', interpolate=True, to_jovian_coord=True, ball_movement=False):
+    def to_trajectory(self, session_id, target='', interpolate=True, to_zero_center_coord=True, ball_movement=False):
         log = self.log_sessions[session_id]
         locs = log[log['func']=='_jovian_process']['msg'].values
         # datum = np.array([[int(_) for _ in loc.replace('[','').replace(']','').split(',')] for loc in locs])
@@ -113,8 +113,8 @@ class logger():
                 new_ts, ball_vel = interp_1d(ts, new_ts, ball_vel)
             ts = new_ts
 
-        if to_jovian_coord is True:
-            pos = pos/_scale + self.maze_center
+        if to_zero_center_coord is True:
+            pos = pos/_scale + self.maze_center  # jovian maze_center is negative
 
         if ball_movement:
             return ts, pos, ball_vel
