@@ -121,6 +121,14 @@ class logger():
         else:
             return ts, pos
 
+
+    def to_pc(self, session_id=0):
+        from spiketag.analysis import place_field
+        ts, pos = log.to_trajectory(session_id)
+        pc = place_field(ts=ts, pos=pos, maze_range=self.maze_range)
+        return pc
+
+
     @property
     def maze_center(self):
         try:
