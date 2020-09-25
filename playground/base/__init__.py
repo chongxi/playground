@@ -134,7 +134,7 @@ class logger():
     @property
     def maze_range(self):
         try:
-            sub_df = log.df[log.df.func=='load_maze']
+            sub_df = self.df[self.df.func=='load_maze']
             s = sub_df[sub_df.msg.str.contains('maze_border')].iloc[0].msg.split('[')[-1].replace(']','').split(' ')
             maze_range = [float(_) for _ in s if _ is not '']
             maze_range = np.array(maze_range)
