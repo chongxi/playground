@@ -114,11 +114,7 @@ class logger():
             ts = new_ts
 
         if to_jovian_coord is True:
-            if 'maze_center' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:
-                self._center = np.array([float(_) for _ in self.df[self.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
-            else:
-                self._center = _center
-            pos = pos/_scale + self._center
+            pos = pos/_scale + self.maze_center
 
         if ball_movement:
             return ts, pos, ball_vel
@@ -128,9 +124,11 @@ class logger():
     @property
     def maze_center(self):
         try:
-            _maze_center = self.df[self.df.msg.str.contains('maze_center')].msg.str.extractall(r'([-+]?\d*\.\d+|\d+)').astype('float').unstack().iloc[0].to_numpy()
+            sub_df = self.df[self.df['func']=='load_maze']
+            _maze_center = sub_df[sub_df.msg.str.contains('maze_center')].msg.str.extractall(r'([-+]?\d*\.\d+|\d+)').astype('float').unstack().iloc[0].to_numpy()
             return _maze_center
         except:
+            return _center
             print('check whether maze_center is in the log')
 
     def get_trial_index(self, start_with='parachute finished', end_with='touch'):
