@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 
-_origin = np.array([-1309.21, -1258.16])  # by default, will be replaced if there is maze_origin in the log
+_center = np.array([-1309.21, -1258.16])  # by default, will be replaced if there is maze_center in the log
 _scale  = 100.  # fixed for Jovian 
 float_pattern = r'([-+]?\d*\.\d+|\d+)' # regexp for float number
 
@@ -114,11 +114,11 @@ class logger():
             ts = new_ts
 
         if to_jovian_coord is True:
-            if 'maze_origin' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:
-                self._origin = np.array([float(_) for _ in self.df[self.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
+            if 'maze_center' in self.df[self.df['func']=='load_maze'].iloc[-1].msg:
+                self._center = np.array([float(_) for _ in self.df[self.df['func']=='load_maze'].iloc[-1].msg.split(':')[1].split(',')])
             else:
-                self._origin = _origin
-            pos = pos/_scale + self._origin
+                self._center = _center
+            pos = pos/_scale + self._center
 
         if ball_movement:
             return ts, pos, ball_vel
@@ -126,12 +126,12 @@ class logger():
             return ts, pos
 
     @property
-    def maze_origin(self):
+    def maze_center(self):
         try:
-            _origin = self.df[self.df.msg.str.contains('maze_origin')].msg.str.extractall(r'([-+]?\d*\.\d+|\d+)').astype('float').unstack().iloc[0].to_numpy()
-            return _origin
+            _maze_center = self.df[self.df.msg.str.contains('maze_center')].msg.str.extractall(r'([-+]?\d*\.\d+|\d+)').astype('float').unstack().iloc[0].to_numpy()
+            return _maze_center
         except:
-            print('check whether maze_origin is in the log')
+            print('check whether maze_center is in the log')
 
     def get_trial_index(self, start_with='parachute finished', end_with='touch'):
         '''
@@ -161,7 +161,7 @@ class logger():
         
         To further use the bmi_df and jov_df:
         bmi_pos = bmi_df.loc[:,['x','y']].to_numpy()
-        jov_pos = jov_df.loc[:,['x','y']].to_numpy()/100 + log.maze_origin
+        jov_pos = jov_df.loc[:,['x','y']].to_numpy()/100 + log.maze_center
         ball_vel = jov_df.ball_v.mean()
         '''
         if trial_index is None:
@@ -179,7 +179,7 @@ class logger():
         # 2. get bmi_pos and goal_pos
         # bmi_pos = bmi_df.loc[:,['x','y']].to_numpy()
         cue_pos = np.array([float(_) for _ in re.findall("\d+\.", epoch_df.iloc[-2].msg)])[:2]
-        goal_pos = cue_pos/100 + self.maze_origin
+        goal_pos = cue_pos/100 + self.maze_center
 
         # 3. get the jovian time and jovian ball vellocity for this epoch
         jov_df = epoch_df[epoch_df['func']=='_jovian_process'].msg.str.extractall(float_pattern).astype('float').unstack()
