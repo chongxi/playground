@@ -287,8 +287,8 @@ class play_raster_GUI(QWidget):
         self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
         origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
         border = np.array(self.nav_view.maze.coord['border']).astype(np.float32)
-        self.log.info('maze origin: {},{}'.format(origin[0], origin[1]))
-        self.log.info('maze border: {}'.format(border))
+        self.log.info('maze_center: {},{}'.format(origin[0], origin[1]))   ## don't change the keyword maze_center, it is read building the decoder
+        self.log.info('maze_border: {}'.format(border))                    ## don't change the keyword maze_border, it is read building the decoder
 
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
