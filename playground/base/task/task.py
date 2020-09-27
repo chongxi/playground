@@ -469,6 +469,7 @@ class JEDI(Task):
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('model','_dcue_001')) ])
         self.BMI_enable = True
+        self.log.info('BMI control enabled')
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
@@ -476,6 +477,7 @@ class JEDI(Task):
         self.jov.reward(self.reward_time)
         self.transition_enable.behave = False
         self.BMI_enable = False
+        self.log.info('BMI control disabled')
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
@@ -515,6 +517,7 @@ class JUMPER(Task):
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
         self.BMI_enable = True
+        self.log.info('BMI control enabled')
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
@@ -522,6 +525,7 @@ class JUMPER(Task):
         self.jov.reward(self.reward_time)
         self.transition_enable.behave = False
         self.BMI_enable = False
+        self.log.info('BMI control disabled')
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
