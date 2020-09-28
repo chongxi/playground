@@ -188,8 +188,8 @@ class Jovian(EventEmitter):
                         self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
                                                               self.current_hd.numpy(), 
                                                               self._ball_vel))
-                        # self.log.info('cue_pos:, {},{}'.format(self.shared_cue_dict[_cue_name_0],
-                        #                                        self.shared_cue_dict[_cue_name_1]))
+                        self.log.info('cue_pos:, {},{}'.format(self.shared_cue_dict[_cue_name_0],
+                                                               self.shared_cue_dict[_cue_name_1]))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
