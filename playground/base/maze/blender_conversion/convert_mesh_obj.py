@@ -1,7 +1,7 @@
 ## filename is the obj file output from blender maze (file->export->obj: y forward, -z up, selection only)
 
 
-filename = "Dodecahedron_2m.obj"
+filename = "rectangle.obj"
 ofilename = 'tri_' + filename 
 
 f = open(filename)
