@@ -277,7 +277,7 @@ class Jovian(EventEmitter):
                 # y /= 4.5
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
-                self.speed_fifo.input(self.ball_vel.numpy())
+                self.speed_fifo.input(self.ball_vel.numpy()/14e-3/100)
                 current_speed = self.speed_fifo.mean()
                 if self.bmi.bmi_update_rule == 'moving_average':
                     # # rule1: decide the VR output by FIFO smoothing
