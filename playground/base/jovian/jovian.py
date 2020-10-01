@@ -6,6 +6,7 @@ from torch.multiprocessing import Process, Pipe
 from spiketag.utils import Timer
 from spiketag.utils import EventEmitter
 from spiketag.analysis.core import get_hd
+from spiketag.utils import FIFO
 from ..rotenc import Rotenc
 
 
@@ -230,6 +231,7 @@ class Jovian(EventEmitter):
         self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
         self.log.info('The bmi position update rule: {}'.format(self.bmi.bmi_update_rule))
 
+        self.speed_fifo = FIFO(depth=39)
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 
         @self.bmi.binner.connect
@@ -275,9 +277,11 @@ class Jovian(EventEmitter):
                 # y /= 4.5
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
+                self.speed_fifo.input(self.ball_vel.numpy())
+                current_speed = self.speed_fifo.mean()
                 if self.bmi.bmi_update_rule == 'moving_average':
                     # # rule1: decide the VR output by FIFO smoothing
-                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
+                    if current_speed < ball_vel_thres and X.sum()>2:
                         self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                         _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                     else:
@@ -286,7 +290,7 @@ class Jovian(EventEmitter):
                     # # rule2: decide the VR output by SGD
                     u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                     tao = 5
-                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
+                    if current_speed < ball_vel_thres and X.sum()>2:
                         tao = 5 # cm
                         _teleport_pos = self.bmi_pos.numpy() + tao*u 
                     else:
@@ -303,8 +307,9 @@ class Jovian(EventEmitter):
                     # self.emit('bmi_update', pos=self.teleport_pos)
                     # self.log.info('\n')
                 self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
-                                                                                                     _teleport_pos[1], 
-                                                                                                     speed, self.bmi_teleport_radius.item()))
+                                                                                                            _teleport_pos[1], 
+                                                                                                            current_speed, 
+                                                                                                            ball_vel_thres))
                     
 
     def set_trigger(self, shared_cue_dict):
