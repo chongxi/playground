@@ -1,0 +1,3 @@
+[console_scripts]
+playground = playground.cli:main
+
