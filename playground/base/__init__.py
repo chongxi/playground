@@ -107,7 +107,8 @@ class logger():
             pos = self.jov_pos[self.start_idx:, 1:]
             z   = self.jov_pos[self.start_idx:, 3]
             hd  = self.jov_pos[self.start_idx:, 4]
-            cue_pos = self.cue_pos[self.start_idx:, :]
+            if cue_pos.shape[0] > 0:
+                cue_pos = self.cue_pos[self.start_idx:, :]
             if ball_movement:
                 ball_vel = self.jov_pos[start_idx:, 5]
             ts, pos, cue_pos = (ts-ts[0])/1e3, pos, cue_pos
