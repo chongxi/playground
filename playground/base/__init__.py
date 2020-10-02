@@ -3,6 +3,7 @@ from .rotenc import Rotenc
 from .task import one_cue_task, two_cue_task, one_cue_moving_task
 from .fpga import Fpga
 from .behaviour import interp_pos, interp_1d
+from ..utils import isnotebook
 
 from torch import multiprocessing
 import logging
@@ -31,7 +32,10 @@ def create_logger():
 class logger():
     def __init__(self, filename, session_id=0, sync=True):
 
-        print('loading session: {}'.format(session_id))
+        if isnotebook():
+            from tqdm.notebook import tqdm
+        else:
+            from tqdm import tqdm
 
         time,process,level,func,msg,SY = ([] for i in range(6))
 
@@ -73,8 +77,22 @@ class logger():
             })
 
         self.log_sessions = self.get_log_sessions()
+        self.n_sessions   = len(self.log_sessions)
+        print('{} sessions found'.format(self.n_sessions))
 
-        self.df = self.log_sessions[session_id]
+        self.session_id  = session_id  # this will update self.df to log_sessions[session_id]
+
+
+    @property
+    def session_id(self):
+        return self._session_id
+
+    @session_id.setter
+    def session_id(self, i):
+        self._session_id = i
+        self.df = self.log_sessions[self.session_id]
+        print('session {} loaded into the dataframe'.format(self._session_id))
+        return self.df
 
 
     def get_log_sessions(self):
