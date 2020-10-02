@@ -43,8 +43,9 @@ class logger():
                     try:
                         asctime, processName, levelname, funcName, message = line.split(' - ')
                     except:
-                        print('{} cannot be parsed'.format(line))
-        #             print asctime, processName, levelname, funcName, message
+                        pass
+                        # print('{} cannot be parsed'.format(line))
+            #             print asctime, processName, levelname, funcName, message
                     time.append(asctime.strip())
                     process.append(processName.strip())
                     level.append(levelname.strip())
