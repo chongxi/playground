@@ -277,7 +277,7 @@ class Jovian(EventEmitter):
                 # y /= 4.5
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
-                self.speed_fifo.input(self.ball_vel.numpy())
+                self.speed_fifo.input(self.ball_vel.numpy()[0])
                 self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
                 # current_speed = self.speed_fifo.mean()
                 try:
@@ -301,18 +301,20 @@ class Jovian(EventEmitter):
                             _teleport_pos = self.bmi_pos.numpy()
                     # # set shared variable
                     self.bmi_pos[:] = torch.tensor(_teleport_pos)
-                    self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                    window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
-                    hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
+
+                    # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
+                    # window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
+                    # hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
                         # hd = 90
                         # if speed > .6:
                             # self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
                             # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                         # self.emit('bmi_update', pos=self.teleport_pos)
                         # self.log.info('\n')
+
                     self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
                                                                                                                 _teleport_pos[1], 
-                                                                                                                self.ball_vel.numpy(), 
+                                                                                                                0, 
                                                                                                                 ball_vel_thres))
                 except Exception as e:
                     self.log.warn('BMI error: {}'.format(e))
