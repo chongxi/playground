@@ -10,6 +10,7 @@ import re
 import pandas as pd
 import numpy as np
 from scipy import signal
+from tqdm.notebook import tqdm
 
 _center = np.array([-1309.21, -1258.16])  # by default, will be replaced if there is maze_center in the log
 _scale  = 100.  # fixed for Jovian 
@@ -28,24 +29,24 @@ def create_logger():
 
 
 class logger():
-    def __init__(self, filename, sync=True):
-        text=[]
-        time = []
-        process = []
-        level = []
-        func = []
-        msg = []
-        SY = []
+    def __init__(self, filename, session_id=0, sync=True):
+
+        print('loading session: {}'.format(session_id))
+
+        time,process,level,func,msg,SY = ([] for i in range(6))
+
         with open(filename) as f:
-            for line in (f):
-                text.append(line)
+            for linenumber, line in enumerate(f):
+                pass
+
+        with open(filename) as f:
+            for i in tqdm(range(linenumber)):
+                line = f.readline()
                 if line != 'SY\n':
                     try:
                         asctime, processName, levelname, funcName, message = line.split(' - ')
                     except:
                         pass
-                        # print('{} cannot be parsed'.format(line))
-            #             print asctime, processName, levelname, funcName, message
                     time.append(asctime.strip())
                     process.append(processName.strip())
                     level.append(levelname.strip())
@@ -53,6 +54,10 @@ class logger():
                     msg.append(message.strip())
                 if line == 'SY\n':
                     SY.append(msg[-1])
+
+        if len(SY)==0:
+            print('Critical warning: no SYNC signal found')
+            sync=False
 
         if sync:
             self.sync_time = int(SY[0].split(',')[0])
@@ -68,6 +73,9 @@ class logger():
             })
 
         self.log_sessions = self.get_log_sessions()
+
+        self.df = self.log_sessions[session_id]
+
 
     def get_log_sessions(self):
         log = self.df
@@ -280,3 +288,6 @@ class logger():
 
         return epoch_time, start_pos, goal_pos, bmi_df, jov_df
 
+
+    def _repr_html_(self):
+        return self.df._repr_html_()
