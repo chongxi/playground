@@ -351,8 +351,10 @@ class maze_view(scene.SceneCanvas):
             self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], 100])
         else:
             self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], -100])
-        self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[0], 
-                                      (self.y_range[1] - self.y_range[0])/posterior.shape[1])
+        ## posterior.shape[1] is the #bins in the x_range
+        ## posterior.shape[0] is the #bins in the y_range
+        self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[1], 
+                                      (self.y_range[1] - self.y_range[0])/posterior.shape[0])
         self.image.update()
 
 
