@@ -173,6 +173,19 @@ class logger():
         except:
             print('check whether maze_border is in the log')
 
+
+    def extractall(self, expr=r'([-+]?\d*\.?\d+|[-+]?\d+)', dtype='float', level='INFO', proc='', func='', msg=''):
+        '''
+        extract all matched rugular expression pattern in the msgs in defined func and msg
+        Note the msg here can be a sub-string (but need to be continuous) to be pattern complete
+        '''
+        df = self.df[self.df.process==proc]
+        df = df[df.level==level]
+        df = df[df.func==func]
+        df = df[df.msg.str.contains(msg)]
+        return df.msg.str.extractall(expr).astype(dtype).unstack().to_numpy()
+        
+
     def get_trial_index(self, start_with='parachute finished', end_with='touch'):
         '''
         check https://github.com/chongxi/playground/issues/24
@@ -265,3 +278,4 @@ class logger():
         start_pos = bmi_df[bmi_df.index > epoch_df[epoch_df['msg']=='parachute finished'].index.to_numpy()[0]+1].iloc[0][['x','y']].to_numpy()
 
         return epoch_time, start_pos, goal_pos, bmi_df, jov_df
+
