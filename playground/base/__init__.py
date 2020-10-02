@@ -179,9 +179,9 @@ class logger():
         extract all matched rugular expression pattern in the msgs in defined func and msg
         Note the msg here can be a sub-string (but need to be continuous) to be pattern complete
         '''
-        df = self.df[self.df.process==proc]
-        df = df[df.level==level]
-        df = df[df.func==func]
+        df = self.df[self.df.process.str.contains(proc)]
+        df = df[df.level.str.contains(level)]
+        df = df[df.func.str.contains(func)]
         df = df[df.msg.str.contains(msg)]
         return df.msg.str.extractall(expr).astype(dtype).unstack().to_numpy()
         
