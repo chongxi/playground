@@ -279,12 +279,13 @@ class Jovian(EventEmitter):
                 ball_vel_thres = self.bmi_teleport_radius.item()
                 self.speed_fifo.input(self.ball_vel.numpy()[0])
                 self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
+                speed = self.speed_fifo.mean()/14e-3/100
                 # current_speed = self.speed_fifo.mean()
                 try:
                     if self.bmi.bmi_update_rule == 'moving_average':
                         # # rule1: decide the VR output by FIFO smoothing
-                        self.log.info('speed:{}, threshold:{}'.format(self.ball_vel.numpy(), ball_vel_thres))
-                        if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
+                        self.log.info('speed:{}, threshold:{}'.format(speed, ball_vel_thres))
+                        if speed < ball_vel_thres and X.sum()>2:
                             self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                             _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                             self.log.info('_teleport_pos:{}'.format(_teleport_pos))
@@ -294,7 +295,7 @@ class Jovian(EventEmitter):
                         # # rule2: decide the VR output by SGD
                         u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                         tao = 5
-                        if current_speed < ball_vel_thres and X.sum()>2:
+                        if speed < ball_vel_thres and X.sum()>2:
                             tao = 5 # cm
                             _teleport_pos = self.bmi_pos.numpy() + tao*u 
                         else:
@@ -314,7 +315,7 @@ class Jovian(EventEmitter):
 
                     self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
                                                                                                                 _teleport_pos[1], 
-                                                                                                                0, 
+                                                                                                                speed, 
                                                                                                                 ball_vel_thres))
                 except Exception as e:
                     self.log.warn('BMI error: {}'.format(e))
