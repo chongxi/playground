@@ -28,7 +28,7 @@ def run(bmi_update_rule):
 def build_decoder(bmi, spktag_file, pos_file):
     # For Lab
     log = logger(pos_file, sync=True)
-    ts, pos = log.to_trajectory(session_id=0)
+    ts, pos, _ = log.to_trajectory(session_id=0)
     pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5, maze_range=log.maze_range)
     pc.load_spkdf(spktag_file)
     dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)

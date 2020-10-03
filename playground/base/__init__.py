@@ -161,9 +161,9 @@ class logger():
                 return ts, pos, cue_pos
         else:
             if ball_movement:
-                return ts, pos, ball_vel
+                return ts, pos, None, ball_vel
             else:
-                return ts, pos
+                return ts, pos, None
 
     def to_pc(self, session_id=0, dt=0.3, bin_size=2.5, v_cutoff=5):
         from spiketag.analysis import place_field
