@@ -78,9 +78,9 @@ class logger():
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
-        print('{} sessions found'.format(self.n_sessions))
+        # print('{} sessions found'.format(self.n_sessions))
 
-        self.session_id  = session_id  # this will update self.df to log_sessions[session_id]
+        # self.session_id  = session_id  # this will update self.df to log_sessions[session_id]
 
 
     @property
@@ -92,7 +92,6 @@ class logger():
         self._session_id = i
         self.df = self.log_sessions[self.session_id]
         print('session {} loaded into the dataframe'.format(self._session_id))
-        return self.df
 
 
     def get_log_sessions(self):
