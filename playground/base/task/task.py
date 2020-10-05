@@ -268,7 +268,7 @@ class one_cue_task(Task):
         super(one_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
@@ -515,7 +515,7 @@ class JUMPER(Task):
         super(JUMPER, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
+        self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
         self.BMI_enable = True
         self.log.info('BMI control enabled')
         self.state = '1cue'
