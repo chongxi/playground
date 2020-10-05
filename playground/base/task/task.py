@@ -144,13 +144,13 @@ class Task(object):
         ''' usage:
             self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
         '''
-        for z in range(60,-1,-2):
+        for z in range(100,-1,-2):
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
 
     def bury(self, cue_name):
         self.transition_enable.behave = False
-        for z in range(0, -100, -8):
+        for z in range(0, -100, -2):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
