@@ -278,7 +278,7 @@ class Jovian(EventEmitter):
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
                 self.speed_fifo.input(self.ball_vel.numpy()[0])
-                self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
+                # self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
                 speed = self.speed_fifo.mean()/14e-3/100
                 # current_speed = self.speed_fifo.mean()
                 try:
