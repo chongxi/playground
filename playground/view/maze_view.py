@@ -89,7 +89,7 @@ class maze_view(scene.SceneCanvas):
         ### 4. background and fields
         self.image_background = scene.visuals.Image(parent=self.view.scene, method='subdivide')
         self.image_background.transform = STTransform()
-        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.05, 1.05])
+        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.025, 0.3])
         self.image.transform = STTransform()
 
         # self.set_range()
