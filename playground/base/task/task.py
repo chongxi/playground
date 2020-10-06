@@ -8,7 +8,7 @@ from collections import deque, namedtuple
 from abc import abstractmethod
 
 
-def _cue_generate_2d_maze(*args):
+def _cue_generate_2d_maze(maze_border, *args):
     '''generate a cue position that is not going to be near to the _pos in args
        low, high are border condition for cue generation
        function should return < 100us
@@ -17,8 +17,11 @@ def _cue_generate_2d_maze(*args):
 
     while True:
         break_condition = True
-        #pos = np.random.randint(low=-85, high=85, size=(2,))
-        pos = np.random.randint(low=-45, high=45, size=(2,))
+        # pos = np.random.randint(low=-45, high=45, size=(2,))
+        # rectangle maze
+        x = np.random.randint(low=maze_border[0][0]+5, high=maze_border[0][1]-5, size=(1,))[0]
+        y = np.random.randint(low=maze_border[1][0]+5, high=maze_border[1][1]-5, size=(1,))[0]
+        pos = np.array([x, y])
         for _pos in args:
             if np.linalg.norm(pos - np.array(_pos)) < radius:
                break_condition = False 
@@ -267,7 +270,7 @@ class one_cue_task(Task):
     def reset(self):
         super(one_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
         self.state = '1cue'
 
@@ -303,7 +306,7 @@ class one_cue_moving_task(Task):
     def reset(self):
         super(one_cue_moving_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         # self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000', direction='x')) ])
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.wander('_dcue_000')) ])
         self.state = '1cue'
@@ -342,8 +345,8 @@ class two_cue_task(Task):
     def reset(self):
         super(two_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_guide  = _cue_generate_2d_maze(self._corrd_animal) 
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal, self._coord_guide)
+        self._coord_guide  = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal, self._coord_guide)
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
         self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
         self.state = '2cue'
@@ -413,7 +416,7 @@ class RING(Task):
     def reset(self):
         super(RING, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self._bmi_control('console')) ])
         self.state = '1cue'
 
@@ -466,7 +469,7 @@ class JEDI(Task):
     def reset(self):
         super(JEDI, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('model','_dcue_001')) ])
         self.BMI_enable = True
         self.log.info('BMI control enabled')
@@ -514,7 +517,7 @@ class JUMPER(Task):
     def reset(self):
         super(JUMPER, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
         self.BMI_enable = True
         self.log.info('BMI control enabled')

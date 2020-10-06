@@ -248,6 +248,7 @@ class play_raster_GUI(QWidget):
             self.jov.log = self.log
             self.jov.cnt.fill_(0)
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
+            self.jov.maze_border = self.maze_border
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
             # if the rotation encoder is not connected, don't show head direction arrow
             if self.jov.rot.is_connected is False:
@@ -255,7 +256,7 @@ class play_raster_GUI(QWidget):
 
             # 3. Init Task
             try:
-                self.task = globals()[self.task_name](self.jov)
+                self.task = globals()[self.task_name](self.jov)  # initialte task and pass jov into the task
                 self.log.info('task: {}'.format(self.task_name))
 
                 # 4. Task parameter
@@ -289,6 +290,7 @@ class play_raster_GUI(QWidget):
         border = np.array(self.nav_view.maze.coord['border']).astype(np.float32)
         self.log.info('maze_center: {},{}'.format(origin[0], origin[1]))   ## don't change the keyword maze_center, it is read building the decoder
         self.log.info('maze_border: {}'.format(border))                    ## don't change the keyword maze_border, it is read building the decoder
+        self.maze_border = border.reshape(-1,2).T
 
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
