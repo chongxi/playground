@@ -143,7 +143,7 @@ class play_raster_GUI(QWidget):
         self.bmi_teleport_radius.setMinimum(0)
         self.bmi_teleport_radius.setMaximum(3000)
         self.bmi_teleport_radius.setSingleStep(1)        
-        self.bmi_teleport_radius.setValue(15)
+        self.bmi_teleport_radius.setValue(5)
         self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
 
         ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
