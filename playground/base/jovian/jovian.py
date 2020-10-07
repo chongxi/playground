@@ -280,11 +280,11 @@ class Jovian(EventEmitter):
                 self.speed_fifo.input(self.ball_vel.numpy()[0])
                 # self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
                 speed = self.speed_fifo.mean()/14e-3/100
+                self.log.info('speed:{}, threshold:{}'.format(speed, ball_vel_thres))
                 # current_speed = self.speed_fifo.mean()
                 try:
                     if self.bmi.bmi_update_rule == 'moving_average':
                         # # rule1: decide the VR output by FIFO smoothing
-                        self.log.info('speed:{}, threshold:{}'.format(speed, ball_vel_thres))
                         if speed < ball_vel_thres and X.sum()>2 and post_2d.max()>self.bmi.posterior_threshold:
                             self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                             _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
