@@ -14,11 +14,12 @@ from spiketag.analysis.decoder import NaiveBayes
 
 bin_size, B_bins = 100e-3, 8
 
-def run(bmi_update_rule):
+def run(bmi_update_rule, posterior_threshold):
     logger = create_logger()
     app = QApplication(sys.argv)
     bmi = BMI(fetfile='./fet.bin')
     bmi.bmi_update_rule = bmi_update_rule
+    bmi.posterior_threshold = posterior_threshold
     bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
     gui = play_raster_GUI(logger=logger, bmi=bmi)
     gui.show()
