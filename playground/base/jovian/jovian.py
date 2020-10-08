@@ -256,6 +256,7 @@ class Jovian(EventEmitter):
                 # _X = X[:, self.perm_idx]
                 y, post_2d = self.bmi.dec.predict_rt(X)
                 post_2d /= post_2d.sum()
+                max_posterior = post_2d.max()
                 
                 ### save scv and posterior to file ###
                 f_scv = open('./scv.bin', 'ab+')
@@ -281,21 +282,22 @@ class Jovian(EventEmitter):
                 # self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
                 speed = self.speed_fifo.mean()/14e-3/100
                 self.log.info('speed:{}, threshold:{}'.format(speed, ball_vel_thres))
+                self.log.info('max_post:{}, post_thres:{}'.format(max_posterior, self.bmi.posterior_threshold))
                 # current_speed = self.speed_fifo.mean()
                 try:
                     if self.bmi.bmi_update_rule == 'moving_average':
                         # # rule1: decide the VR output by FIFO smoothing
-                        if speed < ball_vel_thres and X.sum()>2 and post_2d.max()>self.bmi.posterior_threshold:
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
                             self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
                             _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
                             self.log.info('_teleport_pos:{}'.format(_teleport_pos))
                         else:
                             _teleport_pos = self.bmi_pos.numpy()
                     elif self.bmi.bmi_update_rule == 'fixed_length':
-                        # # rule2: decide the VR output by SGD
+                        # # rule2: decide the VR output by fixed length update
                         u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
                         tao = 5
-                        if speed < ball_vel_thres and X.sum()>2 and post_2d.max()>self.bmi.posterior_threshold:
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
                             tao = 5 # cm
                             _teleport_pos = self.bmi_pos.numpy() + tao*u 
                         else:
