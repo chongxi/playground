@@ -24,7 +24,9 @@ def _cue_generate_2d_maze(maze_border, *args):
         pos = np.array([x, y])
         for _pos in args:
             if np.linalg.norm(pos - np.array(_pos)) < radius:
-               break_condition = False 
+                break_condition = False 
+        if np.linalg.norm(pos) > 95:
+            break_condition = False 
         if break_condition:
             break
     return pos
