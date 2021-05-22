@@ -37,6 +37,12 @@ class Jovian_Stream(str):
             _t,_info = int(_line[0]), _line[1]
             return _t, _info
 
+        
+def rotate(pos, theta=0):
+    x = theta/360*2*np.pi
+    R = np.array([[cos(x), -sin(x)], [sin(x), cos(x)]])
+    return R.dot(pos)
+
 
 class Jovian(EventEmitter):
     '''
@@ -303,6 +309,7 @@ class Jovian(EventEmitter):
                         else:
                             _teleport_pos = self.bmi_pos.numpy()
                     # # set shared variable
+                    _teleport_pos = rotate(_teleport_pos, theta=0)
                     self.bmi_pos[:] = torch.tensor(_teleport_pos)
 
                     # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
