@@ -48,11 +48,11 @@ def boundray_check(pos, bx=[-50.0, 50.0], by=[-50.0, 50.0]):
     animal_size = 5
     if pos[0] < bx[0] + animal_size:
         new_pos[0] = bx[0] + animal_size
-    if pos[0] > bx[1] - 5:
+    if pos[0] > bx[1] - animal_size:
         new_pos[0] = bx[1] - animal_size
-    if pos[1] < by[0] + 5:
+    if pos[1] < by[0] + animal_size:
         new_pos[1] = by[0] + animal_size
-    if pos[1] > by[1] - 5:
+    if pos[1] > by[1] - animal_size:
         new_pos[1] = by[1] - animal_size
     return new_pos
 
