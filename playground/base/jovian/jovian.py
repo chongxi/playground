@@ -311,6 +311,7 @@ class Jovian(EventEmitter):
                             self.log.info('_teleport_pos:{}'.format(_teleport_pos))
                         else:
                             _teleport_pos = self.bmi_pos.numpy()
+                            
                     elif self.bmi.bmi_update_rule == 'fixed_length':
                         # # rule2: decide the VR output by fixed length update
                         u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
@@ -320,8 +321,24 @@ class Jovian(EventEmitter):
                             _teleport_pos = self.bmi_pos.numpy() + tao*u 
                         else:
                             _teleport_pos = self.bmi_pos.numpy()
+
+                    elif self.bmi.bmi_update_rule == 'randomized_control':
+                        # # rule1: decide the VR output by FIFO smoothing
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
+                            last_mean_pos = np.mean(self.bmi_pos_buf, axis=0)
+                            self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                            mean_pos = np.mean(self.bmi_pos_buf, axis=0)
+                            diff_pos = mean_pos - last_mean_pos
+                            distance = np.linalg.norm(diff_pos)
+                            theta = np.random.uniform(low=0.0, high=2*np.pi)
+                            new_pos  = self.bmi_pos.numpy() + np.array([distance*np.cos(theta), distance*np.sin(theta)])  # current position + randomly rotated distance
+                            _teleport_pos  = boundray_check(new_pos)     # make sure it is inside the maze
+                            self.log.info('_teleport_pos:{}'.format(_teleport_pos))
+                        else:
+                            _teleport_pos = self.bmi_pos.numpy()    
+                            
                     # # set shared variable
-                    _teleport_pos = rotate(_teleport_pos, theta=0)
+                    # _teleport_pos = rotate(_teleport_pos, theta=0)
                     self.bmi_pos[:] = torch.tensor(_teleport_pos)
 
                     # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
