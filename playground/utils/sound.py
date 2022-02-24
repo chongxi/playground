@@ -1,4 +1,4 @@
-from pyaudio import PyAudio, paInt16
+from pyaudio import PyAudio, paInt16  # sudo apt-get install portaudio19-dev 
 import numpy as np
 
 '''
