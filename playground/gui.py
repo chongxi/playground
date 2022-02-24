@@ -143,7 +143,7 @@ class play_raster_GUI(QWidget):
         self.bmi_teleport_radius.setMinimum(0)
         self.bmi_teleport_radius.setMaximum(3000)
         self.bmi_teleport_radius.setSingleStep(1)        
-        self.bmi_teleport_radius.setValue(15)
+        self.bmi_teleport_radius.setValue(5)
         self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
 
         ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
@@ -192,20 +192,24 @@ class play_raster_GUI(QWidget):
         build decoder according to the task
         '''
 
-        if self.task_name == 'RING':
-            from spiketag.analysis.decoder import Maxout_ring
-            self.bmi.dec = Maxout_ring() 
+#         if self.task_name == 'RING':
+            # from spiketag.analysis.decoder import Maxout_ring
+            # self.bmi.dec = Maxout_ring() 
 
         # if self.task_name == 'JEDI' or self.task_name == 'JUMPER':
-        else:
+        # else:
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
-            spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
-            self.log.info('select   spktag {}'.format(spktag_file))
-            pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.bin);;(*.log)')[0])
-            self.log.info('select position {}'.format(pos_file))
-            from playground import build_decoder
-            build_decoder(self.bmi, spktag_file, pos_file)
-            self.log.info('updating_rule: {}'.format(self.bmi.bmi_update_rule))
+        spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
+        self.log.info('select   spktag {}'.format(spktag_file))
+        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.bin);;(*.log)')[0])
+        self.log.info('select position {}'.format(pos_file))
+        from playground import build_decoder
+        build_decoder(self.bmi, spktag_file, pos_file)
+        score = self.bmi.dec.score(smooth_sec=2)
+        self.log.info('BMI decoder params: {} cells, {} t_step, {} t_window'.format(self.bmi.dec.fields.shape[0], self.bmi.dec.t_step, self.bmi.dec.t_window))
+        self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
+        self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
+        self.log.info('BMI posterior threshold: {}'.format(self.bmi.posterior_threshold))
 
         # select task first
         if hasattr(self, 'jov'):
@@ -245,6 +249,7 @@ class play_raster_GUI(QWidget):
             self.jov.log = self.log
             self.jov.cnt.fill_(0)
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
+            self.jov.maze_border = self.maze_border
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
             # if the rotation encoder is not connected, don't show head direction arrow
             if self.jov.rot.is_connected is False:
@@ -252,7 +257,7 @@ class play_raster_GUI(QWidget):
 
             # 3. Init Task
             try:
-                self.task = globals()[self.task_name](self.jov)
+                self.task = globals()[self.task_name](self.jov)  # initialte task and pass jov into the task
                 self.log.info('task: {}'.format(self.task_name))
 
                 # 4. Task parameter
@@ -277,10 +282,16 @@ class play_raster_GUI(QWidget):
                 maze_mesh_file = os.path.join(folder, file)
             elif file.endswith(".coords"):
                 maze_coord_file = os.path.join(folder, file)
-        self.nav_view.load_maze(maze_file = maze_mesh_file, border = [-50, -50, 50, 50], 
+        self.nav_view.load_maze(maze_file = maze_mesh_file, 
                                 maze_coord_file = maze_coord_file) 
         self.nav_view.load_animal()
+        self.log.info('maze folder: {}'.format(folder))
         self.log.info('load {} {}'.format(maze_mesh_file, maze_coord_file))
+        origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
+        border = np.array(self.nav_view.maze.coord['border']).astype(np.float32)
+        self.log.info('maze_center: {},{}'.format(origin[0], origin[1]))   ## don't change the keyword maze_center, it is read building the decoder
+        self.log.info('maze_border: {}'.format(border))                    ## don't change the keyword maze_border, it is read building the decoder
+        self.maze_border = border.reshape(-1,2).T
 
         for file in cue_files:
             _cue_file = os.path.join(folder, file)
@@ -288,8 +299,6 @@ class play_raster_GUI(QWidget):
             self.log.info('load {}'.format(_cue_file))
 
         self._maze_loaded = True
-        origin = np.array(self.nav_view.maze.coord['Origin']).astype(np.float32)
-        self.log.info('maze_origin: {},{}'.format(origin[0], origin[1]))
 
     #------------------------------------------------------------------------------
     # set slider for parameters

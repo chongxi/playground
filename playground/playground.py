@@ -14,11 +14,12 @@ from spiketag.analysis.decoder import NaiveBayes
 
 bin_size, B_bins = 100e-3, 8
 
-def run(bmi_update_rule):
+def run(bmi_update_rule, posterior_threshold):
     logger = create_logger()
     app = QApplication(sys.argv)
     bmi = BMI(fetfile='./fet.bin')
     bmi.bmi_update_rule = bmi_update_rule
+    bmi.posterior_threshold = posterior_threshold
     bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
     gui = play_raster_GUI(logger=logger, bmi=bmi)
     gui.show()
@@ -28,12 +29,12 @@ def run(bmi_update_rule):
 def build_decoder(bmi, spktag_file, pos_file):
     # For Lab
     log = logger(pos_file, sync=True)
-    ts, pos = log.to_trajectory(session_id=0)
-    pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5)
+    ts, pos, _ = log.to_trajectory(session_id=0)
+    pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5, maze_range=log.maze_range)
     pc.load_spkdf(spktag_file)
     dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
     dec.connect_to(pc)
-    bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
+    bmi.set_decoder(dec, dec_file='dec', score=False)
 
     # For test: Using Brian's data to test system
     # pos = np.fromfile(pos_file).reshape(-1,2)

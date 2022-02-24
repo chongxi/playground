@@ -89,7 +89,7 @@ class maze_view(scene.SceneCanvas):
         ### 4. background and fields
         self.image_background = scene.visuals.Image(parent=self.view.scene, method='subdivide')
         self.image_background.transform = STTransform()
-        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.05, 1.05])
+        self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.025, 0.3])
         self.image.transform = STTransform()
 
         # self.set_range()
@@ -112,7 +112,7 @@ class maze_view(scene.SceneCanvas):
             elif file.endswith(".coords"):
                 maze_coord_file = os.path.join(folder, file)
         self.load_maze(maze_file = maze_mesh_file, 
-                                maze_coord_file = maze_coord_file) 
+                       maze_coord_file = maze_coord_file) 
         self.load_animal()
 
         for file in cue_files:
@@ -120,13 +120,13 @@ class maze_view(scene.SceneCanvas):
             self.load_cue(cue_file=_cue_file, cue_name=file.split('.')[0])
 
 
-    def load_maze(self, maze_file, maze_coord_file=None, border=[-50,-50,50,50], mirror=True):
+    def load_maze(self, maze_file, mirror=True, maze_coord_file=None):
         self.maze = Maze(maze_file, maze_coord_file) #color='gray'
 
         self.scale_factor = 100
         self.origin    = -np.array(self.maze.coord['Origin']).astype(np.float32) * self.scale_factor
         self.origin_hd = np.arctan2(-self.origin[1], self.origin[0])/np.pi*180
-        self.border  = border
+        self.border  = np.array(self.maze.coord['border']).astype(np.float32)
         self.x_range = (self.origin[0]+self.border[0]*self.scale_factor, self.origin[0]+self.border[2]*self.scale_factor)
         self.y_range = (self.origin[1]+self.border[1]*self.scale_factor, self.origin[1]+self.border[3]*self.scale_factor)
         self._arrow_len = (self.x_range[1]-self.x_range[0])/10
@@ -146,6 +146,7 @@ class maze_view(scene.SceneCanvas):
         self.view.add(self.maze)
         self.set_range()
         print('Origin:', self.origin)
+        print('border:', self.border)
 
 
     def load_animal(self):
@@ -350,8 +351,10 @@ class maze_view(scene.SceneCanvas):
             self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], 100])
         else:
             self.image.transform.translate = np.array([self.x_range[0], self.y_range[0], -100])
-        self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[0], 
-                                      (self.y_range[1] - self.y_range[0])/posterior.shape[1])
+        ## posterior.shape[1] is the #bins in the x_range
+        ## posterior.shape[0] is the #bins in the y_range
+        self.image.transform.scale = ((self.x_range[1] - self.x_range[0])/posterior.shape[1], 
+                                      (self.y_range[1] - self.y_range[0])/posterior.shape[0])
         self.image.update()
 
 

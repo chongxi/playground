@@ -12,7 +12,7 @@ view = canvas.central_widget.add_view()
 
 (vertices, faces, vertex_colors, _) = read_mesh(filename)
 vertex_colors = rgb2gray(vertex_colors) 
-print vertex_colors
+print(vertex_colors)
 # color = np.zeros((ys.shape[0], 4)) * np.array([0,1,1,1])
 N = vertex_colors.shape[0]
 mesh = scene.visuals.Mesh(vertices, faces, vertex_colors, shading=None)

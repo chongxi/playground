@@ -6,6 +6,7 @@ from torch.multiprocessing import Process, Pipe
 from spiketag.utils import Timer
 from spiketag.utils import EventEmitter
 from spiketag.analysis.core import get_hd
+from spiketag.utils import FIFO
 from ..rotenc import Rotenc
 
 
@@ -36,6 +37,24 @@ class Jovian_Stream(str):
             _t,_info = int(_line[0]), _line[1]
             return _t, _info
 
+        
+def rotate(pos, theta=0):
+    x = theta/360*2*np.pi
+    R = np.array([[cos(x), -sin(x)], [sin(x), cos(x)]])
+    return R.dot(pos)
+
+def boundray_check(pos, bx=[-50.0, 50.0], by=[-50.0, 50.0]):
+    new_pos = pos
+    animal_size = 5
+    if pos[0] < bx[0] + animal_size:
+        new_pos[0] = bx[0] + animal_size
+    if pos[0] > bx[1] - animal_size:
+        new_pos[0] = bx[1] - animal_size
+    if pos[1] < by[0] + animal_size:
+        new_pos[1] = by[0] + animal_size
+    if pos[1] > by[1] - animal_size:
+        new_pos[1] = by[1] - animal_size
+    return new_pos
 
 class Jovian(EventEmitter):
     '''
@@ -180,13 +199,16 @@ class Jovian(EventEmitter):
             with Timer('', verbose=ENABLE_PROFILER):
                 try:
                     self._t, self._coord, self._ball_vel = self.readline().parse()
+                    _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
                     if type(self._coord) is list:
                         self.current_pos[:]  = torch.tensor(self._coord)
                         self.current_hd[:]   = self.rot.direction
                         self.ball_vel[:]     = self._ball_vel
                         self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
-                                                                   self.current_hd.numpy(), 
-                                                                   self._ball_vel))
+                                                              self.current_hd.numpy(), 
+                                                              self._ball_vel))
+                        self.log.info('cue_pos:, {},{}'.format(self.shared_cue_dict[_cue_name_0],
+                                                               self.shared_cue_dict[_cue_name_1]))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
@@ -227,6 +249,7 @@ class Jovian(EventEmitter):
         self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
         self.log.info('The bmi position update rule: {}'.format(self.bmi.bmi_update_rule))
 
+        self.speed_fifo = FIFO(depth=39)
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 
         @self.bmi.binner.connect
@@ -250,8 +273,22 @@ class Jovian(EventEmitter):
                 # if X.sum(axis=0)>2:
                 # _X = X[:, self.perm_idx]
                 y, post_2d = self.bmi.dec.predict_rt(X)
+                post_2d /= post_2d.sum()
+                max_posterior = post_2d.max()
+                
+                ### save scv and posterior to file ###
+                f_scv = open('./scv.bin', 'ab+')
+                f_scv.write(X.tobytes())
+                f_scv.close()
+                
+                f_post = open('./post_2d.bin', 'ab+')
+                f_post.write(post_2d.tobytes())
+                f_post.close()
+                
+                ### Key: filter out criterion ###
                 if X.sum()>2:
                     self.current_post_2d[:] = torch.tensor(post_2d) * 1.0
+                    
                 # #################### just for dusty test #########################
                 # y += np.array([263.755, 263.755])
                 # y -= np.array([253.755, 253.755])
@@ -259,36 +296,70 @@ class Jovian(EventEmitter):
                 # y /= 4.5
                 # ##################################################################
                 ball_vel_thres = self.bmi_teleport_radius.item()
-                if self.bmi.bmi_update_rule == 'moving_average':
-                    # # rule1: decide the VR output by FIFO smoothing
-                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
-                        self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
-                        _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
-                    else:
-                        _teleport_pos = self.bmi_pos.numpy()
-                elif self.bmi.bmi_update_rule == 'fixed_length':
-                    # # rule2: decide the VR output by SGD
-                    u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
-                    tao = 5
-                    if self.ball_vel.numpy() < ball_vel_thres and X.sum()>2:
-                        tao = 5 # cm
-                        _teleport_pos = self.bmi_pos.numpy() + tao*u 
-                    else:
-                        _teleport_pos = self.bmi_pos.numpy()
-                # # set shared variable
-                self.bmi_pos[:] = torch.tensor(_teleport_pos)
-                self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
-                window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
-                hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
-                    # hd = 90
-                    # if speed > .6:
-                        # self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
-                        # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
-                    # self.emit('bmi_update', pos=self.teleport_pos)
-                    # self.log.info('\n')
-                self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
-                                                                                                     _teleport_pos[1], 
-                                                                                                     speed, self.bmi_teleport_radius.item()))
+                self.speed_fifo.input(self.ball_vel.numpy()[0])
+                # self.log.info('FIFO:{}'.format(self.speed_fifo.numpy()))
+                speed = self.speed_fifo.mean()/14e-3/100
+                self.log.info('speed:{}, threshold:{}'.format(speed, ball_vel_thres))
+                self.log.info('max_post:{}, post_thres:{}'.format(max_posterior, self.bmi.posterior_threshold))
+                # current_speed = self.speed_fifo.mean()
+                try:
+                    if self.bmi.bmi_update_rule == 'moving_average':
+                        # # rule1: decide the VR output by FIFO smoothing
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
+                            self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                            _teleport_pos = np.mean(self.bmi_pos_buf, axis=0)
+                            self.log.info('_teleport_pos:{}'.format(_teleport_pos))
+                        else:
+                            _teleport_pos = self.bmi_pos.numpy()
+                            
+                    elif self.bmi.bmi_update_rule == 'fixed_length':
+                        # # rule2: decide the VR output by fixed length update
+                        u = (y-self.bmi_pos.numpy())/np.linalg.norm(y-self.bmi_pos.numpy())
+                        tao = 5
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
+                            tao = 5 # cm
+                            _teleport_pos = self.bmi_pos.numpy() + tao*u 
+                        else:
+                            _teleport_pos = self.bmi_pos.numpy()
+
+                    elif self.bmi.bmi_update_rule == 'randomized_control':
+                        # # rule1: decide the VR output by FIFO smoothing
+                        if speed < ball_vel_thres and X.sum()>2 and max_posterior>self.bmi.posterior_threshold:
+                            last_mean_pos = np.mean(self.bmi_pos_buf, axis=0)
+                            self.bmi_pos_buf = np.vstack((self.bmi_pos_buf[1:, :], y))
+                            mean_pos = np.mean(self.bmi_pos_buf, axis=0)
+                            diff_pos = mean_pos - last_mean_pos
+                            distance = np.linalg.norm(diff_pos)
+                            theta = np.random.uniform(low=0.0, high=2*np.pi)
+                            new_pos  = self.bmi_pos.numpy() + np.array([distance*np.cos(theta), distance*np.sin(theta)])  # current position + randomly rotated distance
+                            _teleport_pos  = boundray_check(new_pos)     # make sure it is inside the maze
+                            self.log.info('_teleport_pos:{}'.format(_teleport_pos))
+                        else:
+                            _teleport_pos = self.bmi_pos.numpy()    
+                            
+                    # # set shared variable
+                    # _teleport_pos = rotate(_teleport_pos, theta=0)
+                    self.bmi_pos[:] = torch.tensor(_teleport_pos)
+
+                    # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
+                    # window_size = int(self.hd_window[0]/self.bmi.binner.bin_size)
+                    # hd, speed = get_hd(trajectory=self.bmi_hd_buf[-window_size:], speed_threshold=0.6, offset_hd=0)
+                        # hd = 90
+                        # if speed > .6:
+                            # self.bmi_hd[:] = torch.tensor(hd)      # sent to Jovian
+                            # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
+                        # self.emit('bmi_update', pos=self.teleport_pos)
+                        # self.log.info('\n')
+
+                    self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
+                                                                                                                _teleport_pos[1], 
+                                                                                                                speed, 
+                                                                                                                ball_vel_thres))
+                except Exception as e:
+                    self.log.warn('BMI error: {}'.format(e))
+                    pass
+
+
                     
 
     def set_trigger(self, shared_cue_dict):

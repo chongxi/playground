@@ -1,6 +1,7 @@
+## filename is the obj file output from blender maze (file->export->obj: y forward, -z up, selection only)
 
 
-filename = "cue1.obj"
+filename = "rec_cue_1.obj"
 ofilename = 'tri_' + filename 
 
 f = open(filename)

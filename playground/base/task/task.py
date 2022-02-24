@@ -8,7 +8,7 @@ from collections import deque, namedtuple
 from abc import abstractmethod
 
 
-def _cue_generate_2d_maze(*args):
+def _cue_generate_2d_maze(maze_border, *args):
     '''generate a cue position that is not going to be near to the _pos in args
        low, high are border condition for cue generation
        function should return < 100us
@@ -17,11 +17,16 @@ def _cue_generate_2d_maze(*args):
 
     while True:
         break_condition = True
-        #pos = np.random.randint(low=-85, high=85, size=(2,))
-        pos = np.random.randint(low=-45, high=45, size=(2,))
+        # pos = np.random.randint(low=-45, high=45, size=(2,))
+        # rectangle maze
+        x = np.random.randint(low=maze_border[0][0]+5, high=maze_border[0][1]-5, size=(1,))[0]
+        y = np.random.randint(low=maze_border[1][0]+5, high=maze_border[1][1]-5, size=(1,))[0]
+        pos = np.array([x, y])
         for _pos in args:
             if np.linalg.norm(pos - np.array(_pos)) < radius:
-               break_condition = False 
+                break_condition = False 
+        if np.linalg.norm(pos) > 95:
+            break_condition = False 
         if break_condition:
             break
     return pos
@@ -67,6 +72,8 @@ class Task(object):
         self.transition_enable.behave, self.transition_enable.ephys = True, False
         self.ani = EventEmitter()
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
+
+        self.BMI_enable = False
 
         # initial reset only after jov process start 
         @self.jov.connect
@@ -142,13 +149,13 @@ class Task(object):
         ''' usage:
             self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
         '''
-        for z in range(60,-1,-2):
+        for z in range(100,-1,-2):
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
 
     def bury(self, cue_name):
         self.transition_enable.behave = False
-        for z in range(0, -100, -8):
+        for z in range(0, -100, -2):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  z], target_item=cue_name)
             yield
@@ -233,10 +240,11 @@ class Task(object):
             self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
         '''
         while True:
-            self.jov.teleport(prefix=prefix, 
-                              target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], 
-                              head_direction=self.jov.bmi_hd[0], 
-                              target_item=cue_name)
+            if self.BMI_enable:
+                self.jov.teleport(prefix=prefix, 
+                                  target_pos=[self.jov.bmi_pos[0], self.jov.bmi_pos[1], 5], 
+                                  head_direction=self.jov.bmi_hd[0], 
+                                  target_item=cue_name)
             yield
 
 
@@ -264,8 +272,8 @@ class one_cue_task(Task):
     def reset(self):
         super(one_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
+        self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
@@ -300,7 +308,7 @@ class one_cue_moving_task(Task):
     def reset(self):
         super(one_cue_moving_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         # self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (4, self.wander('_dcue_000', direction='x')) ])
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.wander('_dcue_000')) ])
         self.state = '1cue'
@@ -339,8 +347,8 @@ class two_cue_task(Task):
     def reset(self):
         super(two_cue_task, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_guide  = _cue_generate_2d_maze(self._corrd_animal) 
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal, self._coord_guide)
+        self._coord_guide  = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal, self._coord_guide)
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)) ])
         self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
         self.state = '2cue'
@@ -410,7 +418,7 @@ class RING(Task):
     def reset(self):
         super(RING, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self._bmi_control('console')) ])
         self.state = '1cue'
 
@@ -441,6 +449,8 @@ class JEDI(Task):
 
         super(JEDI, self).__init__(fsm, jov)
 
+        self.BMI_enable = True
+
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
         @self.jov.connect
@@ -461,14 +471,18 @@ class JEDI(Task):
     def reset(self):
         super(JEDI, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('model','_dcue_001')) ])
+        self.BMI_enable = True
+        self.log.info('BMI control enabled')
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
         self.log.info(args)
         self.jov.reward(self.reward_time)
         self.transition_enable.behave = False
+        self.BMI_enable = False
+        self.log.info('BMI control disabled')
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
@@ -484,6 +498,8 @@ class JUMPER(Task):
               }
 
         super(JUMPER, self).__init__(fsm, jov)
+
+        self.BMI_enable = True
 
         #------------------------------------------------------------------------------
         # core of JUMPER: teleport itself when bmi_decode event happens
@@ -503,14 +519,18 @@ class JUMPER(Task):
     def reset(self):
         super(JUMPER, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
+        self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (3, self.bmi_control('console')) ])
+        self.BMI_enable = True
+        self.log.info('BMI control enabled')
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
         self.log.info(args)
         self.jov.reward(self.reward_time)
         self.transition_enable.behave = False
+        self.BMI_enable = False
+        self.log.info('BMI control disabled')
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
