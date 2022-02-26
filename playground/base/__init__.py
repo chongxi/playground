@@ -78,6 +78,7 @@ class logger():
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
+        self.trial_index = None
         # print('{} sessions found'.format(self.n_sessions))
 
         # self.session_id  = session_id  # this will update self.df to log_sessions[session_id]
@@ -230,17 +231,26 @@ class logger():
         bmi_disable = self.select(func='', msg=end_with)
         df = pd.concat([bmi_enable, bmi_disable]).sort_index()
         if len(df) % 2 == 1:
-            return df.index.to_numpy()[:-1].reshape(-1, 2)
+            self.trial_index = df.index.to_numpy()[:-1].reshape(-1, 2)
+            return self.trial_index
         else:
-            return df.index.to_numpy().reshape(-1, 2)
+            self.trial_index = df.index.to_numpy().reshape(-1, 2)
+            return self.trial_index
 
     @property
-    def trial_df(self):
-        index = self.get_trial_index()
-        trial_df = []
-        for i in range(len(index)):
-            _df = self.df.loc[index[i,0]-1:index[i,1]]
-            trial_df.append(_df)
+    def trial_df(self, format='original'):
+
+        if format == 'original':
+            if self.trial_index is None:
+                index = self.get_trial_index()
+            else:
+                index = self.trial_index
+            trial_df = []
+            for i in range(len(index)):
+                _df = self.df.loc[index[i,0]:index[i,1]]
+                trial_df.append(_df)
+        elif format == 'processed':
+            pass
         return trial_df
 
     def get_epoch_non_bmi(self, i, trial_index=None):
