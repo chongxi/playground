@@ -215,27 +215,24 @@ class logger():
         df = df[df.msg.str.contains(msg)]
         return df.msg.str.extractall(expr).astype(dtype).unstack().to_numpy()
         
-
-    def get_trial_index(self, start_with='parachute finished', end_with='touch'):
+    def get_trial_index(self, start_with='BMI control enabled', end_with='BMI control disabled'):
         '''
         check https://github.com/chongxi/playground/issues/24
 
-        with trial index, try:
-        i = trial_to_check
-        log.df.iloc[trial_index[i,0]-1:trial_index[i,1]]
+        get trial index from the process.log file
+        each trial begins with 'BMI control enabled' in its msg field
+        each trial end with 'BMI control disabled' in its msg field
+        Note:
+            both msg are sent by the same process (jovian) 
+            each msg via different function defined in task (enabled by `reset`, disabled by `goal_cue_touched`)
         '''
-        trial_start = self.df[(self.df['func']=='on_animation_finish') & (self.df['msg'].str.contains(start_with))].index[1:] + 1
-        trial_end   = self.df[(self.df['func']=='on_event') & (self.df['msg'].str.contains(end_with))].index[1:] + 1
-        n_trials    = min(trial_start.to_numpy().shape[0], trial_end.to_numpy().shape[0])
-        if start_with == 'parachute finished':
-            trial_index = np.zeros((n_trials, 2), dtype='int')
-            trial_index[:,0] = trial_start[:n_trials].to_numpy()
-            trial_index[:,1] = trial_end[:n_trials].to_numpy()
-        elif start_with == 'bury finished':
-            trial_index = np.zeros((n_trials-1, 2), dtype='int')
-            trial_index[:,0] = trial_start[:n_trials-1].to_numpy()
-            trial_index[:,1] = trial_end[1:n_trials].to_numpy()
-        return trial_index
+        bmi_enable = self.select(func='', msg=start_with)
+        bmi_disable = self.select(func='', msg=end_with)
+        df = pd.concat([bmi_enable, bmi_disable]).sort_index()
+        if len(df) % 2 == 1:
+            return df.index.to_numpy()[:-1].reshape(-1, 2)
+        else:
+            return df.index.to_numpy().reshape(-1, 2)
 
     @property
     def trial_df(self):
