@@ -199,6 +199,10 @@ class logger():
         except:
             print('check whether maze_border is in the log')
 
+    def select(self, func='', msg=''):
+        df = self.df[self.df.func.str.contains(func)]
+        df = df[df.msg.str.contains(msg)]
+        return df
 
     def extractall(self, expr=r'([-+]?\d*\.?\d+|[-+]?\d+)', dtype='float', level='INFO', proc='', func='', msg=''):
         '''
@@ -233,6 +237,14 @@ class logger():
             trial_index[:,1] = trial_end[1:n_trials].to_numpy()
         return trial_index
 
+    @property
+    def trial_df(self):
+        index = self.get_trial_index()
+        trial_df = []
+        for i in range(len(index)):
+            _df = self.df.loc[index[i,0]-1:index[i,1]]
+            trial_df.append(_df)
+        return trial_df
 
     def get_epoch_non_bmi(self, i, trial_index=None):
         '''
