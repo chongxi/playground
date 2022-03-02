@@ -238,19 +238,15 @@ class logger():
             return self.trial_index
 
     @property
-    def trial_df(self, format='original'):
-
-        if format == 'original':
-            if self.trial_index is None:
-                index = self.get_trial_index()
-            else:
-                index = self.trial_index
-            trial_df = []
-            for i in range(len(index)):
-                _df = self.df.loc[index[i,0]:index[i,1]]
-                trial_df.append(_df)
-        elif format == 'processed':
-            pass
+    def trial_df_orig(self):
+        if self.trial_index is None:
+            index = self.get_trial_index()
+        else:
+            index = self.trial_index
+        trial_df = []
+        for i in range(len(index)):
+            _df = self.df.loc[index[i,0]:index[i,1]]
+            trial_df.append(_df)
         return trial_df
 
     def get_epoch_non_bmi(self, i, trial_index=None):
