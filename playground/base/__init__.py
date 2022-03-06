@@ -199,6 +199,24 @@ class logger():
             return maze_range.reshape(-1,2).T
         except:
             print('check whether maze_border is in the log')
+        
+    @property
+    def bmi_params(self):
+        '''
+        The number of cell count, bin window length and decoding window length
+        '''
+        cell_count, bin_len, dec_len = self.select(func='build_decoder', msg='params').msg.str.extractall(
+                                                      float_pattern).astype('float').unstack().to_numpy().ravel()
+        return int(cell_count), bin_len, dec_len
+
+    @property
+    def bmi_pos_vel(self):
+        '''
+        The full BMI decoded matrix: 
+        Four columns: bmi_x, bmi_y, ball_vel, ball_vel_threshold
+        '''
+        bmi_pos = self.extractall(func='on_decode', msg='output')
+        return bmi_pos
     
     def convert_jov_pos(self, pos):
         return pos/_scale + self.maze_center
@@ -267,6 +285,13 @@ class logger():
         jov_hd = jov_pos_df.to_numpy()[:, 4]
         jov_ball_vel = jov_pos_df.to_numpy()[:, -1]
         return jov_pos, jov_hd, jov_ball_vel
+
+    def get_cue_pos(self, trial_no):
+        trial_df = self.trial_df_orig[trial_no]
+        cue_pos = trial_df[trial_df.func.str.contains('on_event') & trial_df.msg.str.contains('touch')].msg.str.extractall(
+                            float_pattern).unstack().to_numpy().astype('float').ravel()[2:4]
+        cue_pos = self.convert_jov_pos(cue_pos)
+        return cue_pos
 
     def get_epoch_non_bmi(self, i, trial_index=None):
         '''
