@@ -137,7 +137,7 @@ class logger():
             if cue_pos.shape[0] > 0:
                 cue_pos = self.cue_pos[self.start_idx:, :]
             if ball_movement:
-                ball_vel = self.jov_pos[start_idx:, 5]
+                ball_vel = self.jov_pos[self.start_idx:, 5]
             ts, pos, cue_pos = (ts-ts[0])/1e3, pos, cue_pos
         else:
             ts, pos, cue_pos = (ts-ts[0])/1e3, pos, cue_pos 
@@ -199,6 +199,9 @@ class logger():
             return maze_range.reshape(-1,2).T
         except:
             print('check whether maze_border is in the log')
+    
+    def convert_jov_pos(self, pos):
+        return pos/_scale + self.maze_center
 
     def select(self, func='', msg=''):
         df = self.df[self.df.func.str.contains(func)]
@@ -248,6 +251,22 @@ class logger():
             _df = self.df.loc[index[i,0]:index[i,1]]
             trial_df.append(_df)
         return trial_df
+    
+    def get_jov_after_bmi(self, trial_no, offset=2):
+        trial_df = self.trial_df_orig[trial_no]
+        _jov_df = pd.DataFrame([], columns=trial_df.columns)
+        for i in trial_df[trial_df.msg.str.contains('BMI output')].index:  # i is the index of the BMI output
+            cond = (trial_df.loc[i:i+offset].func ==
+            '_jovian_process') & ~(trial_df.loc[i:i+offset].msg.str.contains('cue')) # from _jovian_process but no `cue` in its msg
+            jov_output_before_bmi_output = trial_df.loc[i:i+offset][cond]
+            _jov_df = _jov_df.append(jov_output_before_bmi_output)
+        
+        jov_pos_df = _jov_df.msg.str.extractall(float_pattern).astype('float').unstack()
+        jov_pos = jov_pos_df.to_numpy()[:, 1:3]
+        jov_pos = self.convert_jov_pos(jov_pos) # convert to the maze coordinate
+        jov_hd = jov_pos_df.to_numpy()[:, 4]
+        jov_ball_vel = jov_pos_df.to_numpy()[:, -1]
+        return jov_pos, jov_hd, jov_ball_vel
 
     def get_epoch_non_bmi(self, i, trial_index=None):
         '''
@@ -268,7 +287,7 @@ class logger():
         # 2. get bmi_pos and goal_pos
         # bmi_pos = bmi_df.loc[:,['x','y']].to_numpy()
         cue_pos = np.array([float(_) for _ in re.findall("\d+\.", epoch_df.iloc[-2].msg)])[:2]
-        goal_pos = cue_pos/_scale + self.maze_center
+        goal_pos = self.convert_jov_pos(cue_pos)
 
         # 3. get the jovian time and jovian ball vellocity for this epoch
         jov_df = epoch_df[epoch_df['func']=='_jovian_process'].msg.str.extractall(float_pattern).astype('float').unstack()
