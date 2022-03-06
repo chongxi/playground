@@ -210,6 +210,15 @@ class logger():
         return int(cell_count), bin_len, dec_len
 
     @property
+    def task_params(self):
+        '''
+        The task parameters
+        '''
+        reward_time, reward_radius = self.select(func='Task', msg='radius').msg.str.extractall(
+                                                    float_pattern).unstack().to_numpy().astype('float').ravel()
+        return reward_time, reward_radius
+
+    @property
     def bmi_pos_vel(self):
         '''
         The full BMI decoded matrix: 
