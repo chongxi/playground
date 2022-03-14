@@ -9,6 +9,28 @@ from scipy.interpolate import interp1d
 
 ENABLE_PROFILER = False
 
+# segment an array into segments of same numbers
+def segment_trial_gaps(array):
+    '''
+    segment an array of trial gaps (the difference in trial number) into segments of same numbers
+    array: a 1d array
+
+    return: a list of segments
+    one segment of output like [1,1,1,1,1] means there are 5 trials in consecutive order
+    There can be many such segments in the output list
+    '''
+    segments = []
+    for i in range(len(array)):
+        if i == 0:
+            segments.append([array[i]])
+        else:
+            if array[i] == array[i-1]:
+                segments[-1].append(array[i])
+            else:
+                segments.append([array[i]])
+    return segments
+
+
 #------------------------------------------------------------------------------
 # Compare the content of two list/array in a orderless manner
 #------------------------------------------------------------------------------
