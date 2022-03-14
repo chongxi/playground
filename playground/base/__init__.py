@@ -76,6 +76,9 @@ class logger():
              'msg': msg
             })
 
+        self.jov_log_idx = self.select(func='jovian', msg=', 0').index.to_numpy()
+        self.jov_df = self.df.loc[self.jov_log_idx]
+
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
         self.trial_index = None
@@ -228,7 +231,8 @@ class logger():
         return bmi_pos
     
     def convert_jov_pos(self, pos):
-        return pos/_scale + self.maze_center
+        jov_pos = pos/_scale + self.maze_center
+        return np.round(jov_pos, 2) + 0.01
 
     def select(self, func='', msg=''):
         df = self.df[self.df.func.str.contains(func)]
@@ -279,16 +283,12 @@ class logger():
             trial_df.append(_df)
         return trial_df
     
-    def get_jov_after_bmi(self, trial_no, offset=2):
+    def get_jov_after_bmi(self, trial_no):
         trial_df = self.trial_df_orig[trial_no]
-        _jov_df = pd.DataFrame([], columns=trial_df.columns)
-        for i in trial_df[trial_df.msg.str.contains('BMI output')].index:  # i is the index of the BMI output
-            cond = (trial_df.loc[i:i+offset].func ==
-            '_jovian_process') & ~(trial_df.loc[i:i+offset].msg.str.contains('cue')) # from _jovian_process but no `cue` in its msg
-            jov_output_before_bmi_output = trial_df.loc[i:i+offset][cond]
-            _jov_df = _jov_df.append(jov_output_before_bmi_output)
+        trial_bmi_idx = trial_df[trial_df.func.str.contains('decode') & trial_df.msg.str.contains('BMI')].index
+        _jov_df = self.df.loc[self.jov_log_idx[np.searchsorted(self.jov_log_idx, trial_bmi_idx.to_numpy())]]
         
-        jov_pos_df = _jov_df.msg.str.extractall(float_pattern).astype('float').unstack()
+        jov_pos_df = _jov_df.reset_index().msg.str.extractall(float_pattern).astype('float').unstack() 
         jov_pos = jov_pos_df.to_numpy()[:, 1:3]
         jov_pos = self.convert_jov_pos(jov_pos) # convert to the maze coordinate
         jov_hd = jov_pos_df.to_numpy()[:, 4]
