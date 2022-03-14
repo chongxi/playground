@@ -302,6 +302,79 @@ class logger():
         cue_pos = self.convert_jov_pos(cue_pos)
         return cue_pos
 
+    def get_bmi_df(self, bin_index, bin_len, examine_trials=True):
+        '''
+        unit.bin_index for aligning the ephys_time with the bmi_time
+        unit.bin_len for the length of each bin (each bin there is a bmi decoding output)
+        '''
+        bmi_pos_df = self.select(func='on_decode', msg='BMI').msg.str.extractall(float_pattern).unstack().astype('float')
+        bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
+        bmi_pos_df['ephys_time'] = (bin_index + 1) * bin_len
+
+        if examine_trials:
+            self.read_bmi_trials(bmi_pos_df)
+
+        self.bmi_df = bmi_pos_df
+        return bmi_pos_df
+
+    def read_bmi_trials(self, bmi_pos_df):
+        bmi_pos_df['trial'] = np.nan
+        bmi_pos_df['hd'] = np.nan
+        bmi_pos_df['jov_x'] = np.nan
+        bmi_pos_df['jov_y'] = np.nan
+        bmi_pos_df['cue_x'] = np.nan
+        bmi_pos_df['cue_y'] = np.nan
+        bmi_pos_df['hd_x'] = np.nan
+        bmi_pos_df['hd_y'] = np.nan
+        bmi_pos_df['goal_dist'] = np.nan
+        bmi_pos_df['trial_type'] = np.nan    
+
+            # Extract bmi trial info 
+        trial_index = self.get_trial_index()
+        for trial_no in tqdm(range(0, len(trial_index))):
+            trial_df = self.trial_df_orig[trial_no]
+            jov_pos, jov_hd, jov_ball_vel = self.get_jov_after_bmi(trial_no)
+            trial_bmi_idx = trial_df[trial_df.func.str.contains('decode') & trial_df.msg.str.contains('BMI')].index
+            cue_pos = self.get_cue_pos(trial_no)
+            bmi_pos = bmi_pos_df.loc[trial_bmi_idx][['x','y']].to_numpy()
+            hd = jov_hd-90
+            hd_xy = np.vstack((np.cos(hd/360*np.pi*2), np.sin(hd/360*np.pi*2))).T
+            goal_dist = np.linalg.norm(bmi_pos - cue_pos, axis=1)
+            goal_radius = 22.2
+            if any(goal_dist<goal_radius):
+                if 1<np.where(goal_dist<goal_radius)[0][0]<=28 and len(goal_dist)<=29:
+                    trial_type = 0
+                elif np.where(goal_dist<goal_radius)[0][0]<=1 and len(goal_dist)<=29:
+                    trial_type = -1
+                    print(f'unidentified trials: {trial_no}')
+                elif len(goal_dist) > 227:
+                    trial_type = 2
+                else:
+                    trial_type = 1
+            else:
+                trial_type = -1
+                    
+            bmi_pos_df.loc[trial_bmi_idx, 'hd'] = jov_hd
+            bmi_pos_df.loc[trial_bmi_idx, 'trial'] = trial_no
+            bmi_pos_df.loc[trial_bmi_idx, 'cue_x'] = cue_pos[0]
+            bmi_pos_df.loc[trial_bmi_idx, 'cue_y'] = cue_pos[1]
+            bmi_pos_df.loc[trial_bmi_idx, 'jov_x'] = jov_pos[:, 0]
+            bmi_pos_df.loc[trial_bmi_idx, 'jov_y'] = jov_pos[:, 1]
+            bmi_pos_df.loc[trial_bmi_idx, 'hd_x'] = hd_xy[:, 0]
+            bmi_pos_df.loc[trial_bmi_idx, 'hd_y'] = hd_xy[:, 1]
+            bmi_pos_df.loc[trial_bmi_idx, 'goal_dist'] = goal_dist
+            bmi_pos_df.loc[trial_bmi_idx, 'trial_type'] = trial_type   
+
+        bmi_pos_df['y'] = -bmi_pos_df['y']
+        bmi_pos_df['jov_y'] = -bmi_pos_df['jov_y']
+        bmi_pos_df['cue_y'] = -bmi_pos_df['cue_y']
+        bmi_pos_df['hd_y'] = -bmi_pos_df['hd_y']
+        self.bmi_df = bmi_pos_df
+
+    def get_bmi_trial_time(self, trial_no):
+        t0, t1 = self.bmi_df[self.bmi_df.trial == trial_no].ephys_time.to_numpy()[[0, -1]]
+        return t0, t1
+
     def get_epoch_non_bmi(self, i, trial_index=None):
         '''
         get varialbes of `i`th trial
