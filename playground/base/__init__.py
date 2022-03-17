@@ -30,8 +30,23 @@ def create_logger():
 
 
 class logger():
-    def __init__(self, filename, session_id=0, sync=True):
+    def __init__(self, filename):
+        """Load playground log file and extract BMI/Jovian/Sync data.
 
+        Args:
+            filename (string): path to the log file ('./process.log')
+        
+        Important Variables:
+            logger.df (pandas.DataFrame): log dataframe
+            logger.sync_df (pandas.DataFrame): the jovian output that exactly labelled by the sync time
+            logger.jov_df (pandas.DataFrame): the animal jovian data content (time, [pos_x, pos_y], [head_direction], ball_vel)
+            logger.cue_df (pandas.DataFrame): the cue jovian data content
+
+        Other variables:
+            logger.n_sessions (int): number of sessions (usually just 1, there can be bugs with multiple sessions)
+            logger.log_sessions (list): list of log sessions, each is a dataframe
+            logger.sync_time (int): sync time calculated by a microcontroller that synced with jovian
+        """
         if isnotebook():
             from tqdm.notebook import tqdm
         else:
@@ -58,15 +73,12 @@ class logger():
                     msg.append(message.strip())
                 if line == 'SY\n':
                     SY.append(msg[-1])
-
-        if len(SY)==0:
-            print('Critical warning: no SYNC signal found')
-            sync=False
-
-        if sync:
-            self.sync_time = int(SY[0].split(',')[0])
-        else:
-            self.sync_time = None
+                    sync_time_index = i
+                    time.append(time[-1])
+                    process.append('SYNC')
+                    level.append('INFO')
+                    func.append('sync')
+                    msg.append('last message is synced')
 
         self.df = pd.DataFrame(
             {'time': time,
@@ -76,15 +88,37 @@ class logger():
              'msg': msg
             })
 
-        self.jov_log_idx = self.select(func='jovian', msg=', 0').index.to_numpy()
-        self.jov_df = self.df.loc[self.jov_log_idx]
+        self.cue_df = self.select(func='_jovian', msg='cue_pos')
+        self.cue_idx = self.cue_df.index  # index of cue position data in the log dataframe (report by _jovian process in playground)
+        self.jov_df = self.select(func='_jovian').drop(self.cue_df.index)
+        self.jov_idx = self.jov_df.index  # index of jovian animal position data in the log dataframe (report by _jovian process in playground)
+        self.reward_df = self.select(func='touched', msg='reward')
+        self.touch_df = self.select(func='', msg='touch:')
+
+        if len(SY) == 0:
+            print('Critical warning: no SYNC signal found')
+            self.sync_time = None
+        else:
+            self.sync_time = int(SY[0].split(',')[0])
+            self.sync_idx = self.select(func='sync').index - 1 # index of jov timestamps that is exactly same as SY
+            self.sync_df = self.df.loc[self.sync_idx]
+            self.jov_idx = self.jov_idx[self.jov_idx >= self.sync_idx[0]]  # only use jovian data after the sync time
+            self.jov_df = self.jov_df.loc[self.jov_idx]
+            self.cue_idx = self.cue_idx[self.cue_idx > self.jov_idx[0]]    # only use cue data after the first jovian data
+            self.cue_df = self.cue_df.loc[self.cue_idx]
+            self.reward_df = self.reward_df[self.reward_df.index > self.jov_idx[0]]
+            self.touch_df = self.touch_df[self.touch_df.index > self.jov_idx[0]]
+
+        self.dfs = {'jov_df': self.jov_df,
+                    'cue_df': self.cue_df,
+                    'reward_df': self.reward_df,
+                    'touch_df': self.touch_df}
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
         self.trial_index = None
         # print('{} sessions found'.format(self.n_sessions))
 
-        # self.session_id  = session_id  # this will update self.df to log_sessions[session_id]
 
 
     @property
@@ -286,7 +320,7 @@ class logger():
     def get_jov_after_bmi(self, trial_no):
         trial_df = self.trial_df_orig[trial_no]
         trial_bmi_idx = trial_df[trial_df.func.str.contains('decode') & trial_df.msg.str.contains('BMI')].index
-        _jov_df = self.df.loc[self.jov_log_idx[np.searchsorted(self.jov_log_idx, trial_bmi_idx.to_numpy())]]
+        _jov_df = self.df.loc[self.jov_idx[np.searchsorted(self.jov_idx, trial_bmi_idx.to_numpy())]]
         
         jov_pos_df = _jov_df.reset_index().msg.str.extractall(float_pattern).astype('float').unstack() 
         jov_pos = jov_pos_df.to_numpy()[:, 1:3]
