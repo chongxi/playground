@@ -439,12 +439,13 @@ class logger():
                 trial_type = -1
                     
             bmi_pos_df.loc[trial_bmi_idx, 'trial'] = trial_no
-            bmi_pos_df.loc[trial_bmi_idx, 'trial_type'] = trial_type   
+            bmi_pos_df.loc[trial_bmi_idx, 'trial_type'] = trial_type
             bmi_pos_df.loc[trial_bmi_idx, 'cue_x'] = cue_pos[0]
             bmi_pos_df.loc[trial_bmi_idx, 'cue_y'] = cue_pos[1]
             bmi_pos_df.loc[trial_bmi_idx, 'goal_dist'] = goal_dist
 
-
+        bmi_pos_df.reset_index(inplace=True)
+        bmi_pos_df.rename(columns={"index": "log_index"}, inplace=True)
         # bmi_pos_df['y'] = -bmi_pos_df['y']
         # bmi_pos_df['jov_y'] = -bmi_pos_df['jov_y']
         # bmi_pos_df['cue_y'] = -bmi_pos_df['cue_y']
