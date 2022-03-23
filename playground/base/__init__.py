@@ -80,6 +80,7 @@ class logger():
                     func.append('sync')
                     msg.append('last message is synced')
 
+        print(f'Creating major data frame log.df and severl sub-dataframes', end='...')
         self.df = pd.DataFrame(
             {'time': time,
              'process': process,
@@ -94,11 +95,13 @@ class logger():
         self.jov_idx = self.jov_df.index  # index of jovian animal position data in the log dataframe (report by _jovian process in playground)
         self.reward_df = self.select(func='touched', msg='reward')
         self.touch_df = self.select(func='', msg='touch:')
+        print('Done')
 
         if len(SY) == 0:
             print('Critical warning: no SYNC signal found')
             self.sync_time = None
         else:
+            print('Find SYNC, syncing the data', end='...')
             self.sync_time = int(SY[0].split(',')[0])
             self.sync_idx = self.select(func='sync').index - 1 # index of jov timestamps that is exactly same as SY
             self.sync_df = self.df.loc[self.sync_idx]
@@ -108,17 +111,24 @@ class logger():
             self.cue_df = self.cue_df.loc[self.cue_idx]
             self.reward_df = self.reward_df[self.reward_df.index > self.jov_idx[0]]
             self.touch_df = self.touch_df[self.touch_df.index > self.jov_idx[0]]
+            print('Done')
+
+        print(f'Finalizing all sub-dataframes', end='...')
+        self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
+        self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
 
         self.dfs = {'jov_df': self.jov_df,
+                    'jov_pos_df': self.jov_pos_df,
                     'cue_df': self.cue_df,
                     'reward_df': self.reward_df,
                     'touch_df': self.touch_df}
+        print('Done')
+        print('Please check log.df, log.jov_pos_df, log.cue_df, log.reward_df, log.touch_df')
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
         self.trial_index = None
         # print('{} sessions found'.format(self.n_sessions))
-
 
 
     @property
@@ -317,7 +327,7 @@ class logger():
             trial_df.append(_df)
         return trial_df
     
-    def get_jov_after_bmi(self, trial_no):
+    def get_jov_after_bmi(self, trial_no=None):
         trial_df = self.trial_df_orig[trial_no]
         trial_bmi_idx = trial_df[trial_df.func.str.contains('decode') & trial_df.msg.str.contains('BMI')].index
         _jov_df = self.df.loc[self.jov_idx[np.searchsorted(self.jov_idx, trial_bmi_idx.to_numpy())]]
@@ -348,22 +358,51 @@ class logger():
             >>> unit = UNIT(bin_len=bin_len, nbins=nbins)
             >>> unit.load_unitpacket('./fet.bin')
 
+            We need these variables to create `ephys_time` in the output bmi_df
+
             examine_trials:
             if True: more columns will be added to the bmi_df
             if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres', 'ephys_time')
 
+        Output:
+            bmi_df: a dataframe with each row corresponds to a single bmi decoding output at each bin
+                    with its ephys time in one of the columns
+
         Variables (every bmi output bin has a corresponding below variables):
-            bmi_df.x: x position of the bmi output
-            bmi_df.y: y position of the bmi output
+            bmi_df.x: x position of the bmi output in the maze coordinate (e.g. between -50 to 50 cm)
+            bmi_df.y: y position of the bmi output in the maze coordinate (e.g. between -50 to 50 cm)
             bmi_df.ball_vel: ball velocity at that bmi output bin
             bmi_df.vel_thres: ball velocity threshold preventing teleportation if animal move ball faster than the threshold
+            bmi_df.jov_x: x position reported by jovian after the bmi output bin (maze coordination e.g. between -50 to 50 cm)
+            bmi_df.jov_y: y position reported by jovian after the bmi output bin (maze coordination e.g. between -50 to 50 cm)
+            bmi_df.jov_hd: head direction angle at the bmi output bin
+            bmi_df.hd_x: head direction x component at the bmi output bin (maze coordination)
+            bmi_df.hd_y: head direction y component at the bmi output bin (maze coordination)
+
             bmi_df.ephys_time is the **END** (instead of START) time of the bmi decoding output bin
         '''
+
+        # create bmi_pos_df
         bmi_pos_df = self.select(func='on_decode', msg='BMI').msg.str.extractall(float_pattern).unstack().astype('float')
         bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
+
+        # find the ephys_time of the bmi output bin (the time that bin ends)
         bmi_pos_df['ephys_time'] = (bin_index + 1) * bin_len
 
-        if examine_trials:
+        # find jov output in the jov_df that just before bmi output index in bmi_pos_df
+        bmi_jov_df = self.jov_pos_df.iloc[self.jov_pos_df.index.searchsorted(bmi_pos_df.index)].astype('float')
+        jov_pos = self.convert_jov_pos(bmi_jov_df[['jov_x', 'jov_y']].to_numpy())
+        jov_pos_z = bmi_jov_df['jov_z'].to_numpy().reshape(-1, 1)
+        jov_hd = bmi_jov_df['jov_hd'].to_numpy().reshape(-1, 1)
+        bmi_pos_df[['jov_x', 'jov_y', 'jov_z', 'jov_hd']] = np.hstack((jov_pos, jov_pos_z, jov_hd))
+
+        # calculate hd_xy for plotting head direction, for every bmi output index i, 
+        # the animal head direction is represented by (hd_x[i], hd_y[i])
+        hd = jov_hd.ravel() - 90 
+        hd_xy = np.vstack((np.cos(hd/360*np.pi*2), np.sin(hd/360*np.pi*2))).T
+        bmi_pos_df[['hd_x', 'hd_y']] = np.round(hd_xy, 2)
+
+        if examine_trials: # assign trials, cues, goal_distance, and trial types to each output bin
             self.read_bmi_trials(bmi_pos_df)
 
         self.bmi_df = bmi_pos_df
@@ -371,26 +410,20 @@ class logger():
 
     def read_bmi_trials(self, bmi_pos_df):
         bmi_pos_df['trial'] = np.nan
-        bmi_pos_df['hd'] = np.nan
-        bmi_pos_df['jov_x'] = np.nan
-        bmi_pos_df['jov_y'] = np.nan
+        bmi_pos_df['trial_type'] = np.nan
         bmi_pos_df['cue_x'] = np.nan
         bmi_pos_df['cue_y'] = np.nan
-        bmi_pos_df['hd_x'] = np.nan
-        bmi_pos_df['hd_y'] = np.nan
         bmi_pos_df['goal_dist'] = np.nan
-        bmi_pos_df['trial_type'] = np.nan    
 
             # Extract bmi trial info 
         trial_index = self.get_trial_index()
         for trial_no in tqdm(range(0, len(trial_index))):
             trial_df = self.trial_df_orig[trial_no]
-            jov_pos, jov_hd, jov_ball_vel = self.get_jov_after_bmi(trial_no)
+            # jov_pos, jov_hd, jov_ball_vel = self.get_jov_after_bmi(trial_no)
             trial_bmi_idx = trial_df[trial_df.func.str.contains('decode') & trial_df.msg.str.contains('BMI')].index
             cue_pos = self.get_cue_pos(trial_no)
             bmi_pos = bmi_pos_df.loc[trial_bmi_idx][['x','y']].to_numpy()
-            hd = jov_hd-90
-            hd_xy = np.vstack((np.cos(hd/360*np.pi*2), np.sin(hd/360*np.pi*2))).T
+
             goal_dist = np.linalg.norm(bmi_pos - cue_pos, axis=1)
             goal_radius = 22.2
             if any(goal_dist<goal_radius):
@@ -399,28 +432,24 @@ class logger():
                 elif np.where(goal_dist<goal_radius)[0][0]<=1 and len(goal_dist)<=29:
                     trial_type = -1
                     print(f'unidentified trials: {trial_no}')
-                elif len(goal_dist) > 227:
+                elif len(goal_dist) > 127:
                     trial_type = 2
                 else:
                     trial_type = 1
             else:
                 trial_type = -1
                     
-            bmi_pos_df.loc[trial_bmi_idx, 'hd'] = jov_hd
             bmi_pos_df.loc[trial_bmi_idx, 'trial'] = trial_no
+            bmi_pos_df.loc[trial_bmi_idx, 'trial_type'] = trial_type   
             bmi_pos_df.loc[trial_bmi_idx, 'cue_x'] = cue_pos[0]
             bmi_pos_df.loc[trial_bmi_idx, 'cue_y'] = cue_pos[1]
-            bmi_pos_df.loc[trial_bmi_idx, 'jov_x'] = jov_pos[:, 0]
-            bmi_pos_df.loc[trial_bmi_idx, 'jov_y'] = jov_pos[:, 1]
-            bmi_pos_df.loc[trial_bmi_idx, 'hd_x'] = hd_xy[:, 0]
-            bmi_pos_df.loc[trial_bmi_idx, 'hd_y'] = hd_xy[:, 1]
             bmi_pos_df.loc[trial_bmi_idx, 'goal_dist'] = goal_dist
-            bmi_pos_df.loc[trial_bmi_idx, 'trial_type'] = trial_type   
 
-        bmi_pos_df['y'] = -bmi_pos_df['y']
-        bmi_pos_df['jov_y'] = -bmi_pos_df['jov_y']
-        bmi_pos_df['cue_y'] = -bmi_pos_df['cue_y']
-        bmi_pos_df['hd_y'] = -bmi_pos_df['hd_y']
+
+        # bmi_pos_df['y'] = -bmi_pos_df['y']
+        # bmi_pos_df['jov_y'] = -bmi_pos_df['jov_y']
+        # bmi_pos_df['cue_y'] = -bmi_pos_df['cue_y']
+        # bmi_pos_df['hd_y'] = -bmi_pos_df['hd_y']
         self.bmi_df = bmi_pos_df
 
     def get_bmi_trial_time(self, trial_no):
