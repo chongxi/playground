@@ -338,8 +338,12 @@ class logger():
 
     def get_bmi_df(self, bin_index, bin_len, examine_trials=True):
         '''
-        unit.bin_index for aligning the ephys_time with the bmi_time
+        unit.bin_index for aligning the ephys_time with the bmi_time (especially for aligning LFP data)
         unit.bin_len for the length of each bin (each bin there is a bmi decoding output)
+
+        examine_trials:
+        if True: more columns will be added to the bmi_df
+        if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres')
         '''
         bmi_pos_df = self.select(func='on_decode', msg='BMI').msg.str.extractall(float_pattern).unstack().astype('float')
         bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
