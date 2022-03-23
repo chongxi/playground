@@ -338,12 +338,26 @@ class logger():
 
     def get_bmi_df(self, bin_index, bin_len, examine_trials=True):
         '''
-        unit.bin_index for aligning the ephys_time with the bmi_time (especially for aligning LFP data)
-        unit.bin_len for the length of each bin (each bin there is a bmi decoding output)
+        Inputs:
+            bin_index for aligning the ephys_time with the bmi_time (especially for aligning LFP data)
+            bin_len for the length of each bin (each bin there is a bmi decoding output)
 
-        examine_trials:
-        if True: more columns will be added to the bmi_df
-        if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres')
+            Both input are from spiketag.base.UNIT
+            unit.bin_index and unit.bin_len
+            To load unit: 
+            >>> unit = UNIT(bin_len=bin_len, nbins=nbins)
+            >>> unit.load_unitpacket('./fet.bin')
+
+            examine_trials:
+            if True: more columns will be added to the bmi_df
+            if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres', 'ephys_time')
+
+        Variables (every bmi output bin has a corresponding below variables):
+            bmi_df.x: x position of the bmi output
+            bmi_df.y: y position of the bmi output
+            bmi_df.ball_vel: ball velocity at that bmi output bin
+            bmi_df.vel_thres: ball velocity threshold preventing teleportation if animal move ball faster than the threshold
+            bmi_df.ephys_time is the **END** (instead of START) time of the bmi decoding output bin
         '''
         bmi_pos_df = self.select(func='on_decode', msg='BMI').msg.str.extractall(float_pattern).unstack().astype('float')
         bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
