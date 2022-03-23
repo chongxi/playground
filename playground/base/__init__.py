@@ -346,23 +346,21 @@ class logger():
         cue_pos = self.convert_jov_pos(cue_pos)
         return cue_pos
 
-    def get_bmi_df(self, bin_index, bin_len, examine_trials=True):
+    def get_bmi_df(self, bin_index, examine_trials=True):
         '''
         Inputs:
             bin_index for aligning the ephys_time with the bmi_time (especially for aligning LFP data)
-            bin_len for the length of each bin (each bin there is a bmi decoding output)
+                To load unit: 
+                >>> unit = UNIT(bin_len=bin_len, nbins=nbins)
+                >>> unit.load_unitpacket('./fet.bin')
+                >>> unit.bin_index
 
-            Both input are from spiketag.base.UNIT
-            unit.bin_index and unit.bin_len
-            To load unit: 
-            >>> unit = UNIT(bin_len=bin_len, nbins=nbins)
-            >>> unit.load_unitpacket('./fet.bin')
-
-            We need these variables to create `ephys_time` in the output bmi_df
+            We need this variable to create `ephys_time` = (bin_index + 1) * bin_len
+            We need `ephys_time` to align with LPF and other ephys data. 
 
             examine_trials:
-            if True: more columns will be added to the bmi_df
-            if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres', 'ephys_time')
+                if True: more columns will be added to the bmi_df
+                if Flase: only basic columns will be added to the bmi_df ('x', 'y', 'ball_vel', 'vel_thres', 'ephys_time')
 
         Output:
             bmi_df: a dataframe with each row corresponds to a single bmi decoding output at each bin
@@ -387,7 +385,8 @@ class logger():
         bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
 
         # find the ephys_time of the bmi output bin (the time that bin ends)
-        bmi_pos_df['ephys_time'] = (bin_index + 1) * bin_len
+        self.cell_count, self.bin_len, self.dec_len = self.bmi_params
+        bmi_pos_df['ephys_time'] = (bin_index + 1) * self.bin_len
 
         # find jov output in the jov_df that just before bmi output index in bmi_pos_df
         bmi_jov_df = self.jov_pos_df.iloc[self.jov_pos_df.index.searchsorted(bmi_pos_df.index)].astype('float')
