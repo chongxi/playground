@@ -386,7 +386,8 @@ class logger():
 
         # find the ephys_time of the bmi output bin (the time that bin ends)
         self.cell_count, self.bin_len, self.dec_len = self.bmi_params
-        bmi_pos_df['ephys_time'] = (bin_index + 1) * self.bin_len
+        bmi_output_ephys_time = (bin_index + 1) * self.bin_len
+        bmi_pos_df.insert(0, column='ephys_time', value=bmi_output_ephys_time)
 
         # find jov output in the jov_df that just before bmi output index in bmi_pos_df
         bmi_jov_df = self.jov_pos_df.iloc[self.jov_pos_df.index.searchsorted(bmi_pos_df.index)].astype('float')
