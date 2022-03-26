@@ -149,7 +149,7 @@ class logger():
         log_sessions = [log[jov_starts.index[i]+1:jov_stops.index[i]] for i in range(jov_starts.index.shape[0])]
         return log_sessions
 
-    def to_trajectory(self, session_id, target='', interpolate=True, to_zero_center_coord=True, ball_movement=False):
+    def to_trajectory(self, session_id=0, target='', interpolate=True, to_zero_center_coord=True, ball_movement=False):
         log = self.log_sessions[session_id]
         locs = log[log['func']=='_jovian_process']['msg']
         cue_flag = locs.str.contains('cue_pos')
@@ -213,7 +213,7 @@ class logger():
             else:
                 return ts, pos, None
 
-    def to_pc(self, session_id=0, dt=0.3, bin_size=2.5, v_cutoff=5):
+    def to_pc(self, session_id=0, dt=0.1, bin_size=2.5, v_cutoff=5):
         from spiketag.analysis import place_field
         try:
             ts, pos = self.to_trajectory(session_id)
