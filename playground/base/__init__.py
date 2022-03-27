@@ -116,6 +116,8 @@ class logger():
         print(f'Finalizing all sub-dataframes', end='...')
         self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
         self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
+        self.cue_pos_df = self.cue_df.msg.str.extractall(float_pattern).unstack().astype('float')
+        self.cue_pos_df.columns = ['cue1_x', 'cue1_y', 'cue1_z', 'cue2_x', 'cue2_y', 'cue2_z']
 
         self.dfs = {'jov_df': self.jov_df,
                     'jov_pos_df': self.jov_pos_df,
@@ -149,7 +151,40 @@ class logger():
         log_sessions = [log[jov_starts.index[i]+1:jov_stops.index[i]] for i in range(jov_starts.index.shape[0])]
         return log_sessions
 
+    def get_jov(self):
+        """
+        get jovian datastream from the log sub-dataframes:
+                jov_pos_df: jovian main data stream
+                cue_pos_df: cue position data stream
+                reward_df: reward data stream
+                touch_df: touch data stream (currently not used here)
+        Returns:
+            (ts, pos, hd, ball_vel, cue_pos, reward_time): tuple of numpy arrays
+        """
+        jov = self.jov_pos_df.to_numpy()
+        t = jov[:, 0]
+        self._jov_ts = (t - t[0])/1e3
+        self._jov_pos = self.convert_jov_pos(jov[:, 1:3])
+        self._jov_hd = jov[:, -2]
+        self._jov_ball_vel = jov[:, -1]
+        self._jov_reward_time = self.jov_pos_df.iloc[self.jov_pos_df.index.searchsorted(self.reward_df.index)-1].jov_time.to_numpy()
+        self._jov_reward_time = (self._jov_reward_time - t[0])/1e3
+        cue_pos = self.cue_pos_df.to_numpy()
+        cue_pos[:, 0:2] = self.convert_jov_pos(cue_pos[:, :2])
+        cue_pos[:, 3:5] = self.convert_jov_pos(cue_pos[:, 3:5])
+        self._jov_cue_pos = cue_pos
+        jov_dict =  {'jov_ts': self._jov_ts, 
+                     'jov_pos': self._jov_pos, 
+                     'jov_hd': self._jov_hd,
+                     'jov_ball_vell': self._jov_ball_vel, 
+                     'jov_cue_pos': self._jov_cue_pos, 
+                     'jov_reward_time': self._jov_reward_time}
+        return jov_dict
+
     def to_trajectory(self, session_id=0, target='', interpolate=True, to_zero_center_coord=True, ball_movement=False):
+        """
+        deprecated soon, use `get_jov` for more complete read out with much faster speed
+        """
         log = self.log_sessions[session_id]
         locs = log[log['func']=='_jovian_process']['msg']
         cue_flag = locs.str.contains('cue_pos')
@@ -215,16 +250,12 @@ class logger():
 
     def to_pc(self, session_id=0, dt=0.1, bin_size=2.5, v_cutoff=5):
         from spiketag.analysis import place_field
-        try:
-            ts, pos = self.to_trajectory(session_id)
-            pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=v_cutoff, maze_range=self.maze_range)
-        except:
-            ts, pos, cue_pos = self.to_trajectory(session_id)
-            pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=v_cutoff, maze_range=self.maze_range)
-            pc.cue_pos = cue_pos
+        jov_dict = self.get_jov()
+        ts, pos, cue_pos = jov_dict['jov_ts'], jov_dict['jov_pos'], jov_dict['jov_cue_pos']
+        pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=v_cutoff, maze_range=self.maze_range)
+        pc.cue_pos = cue_pos
         pc(dt)
         return pc
-
 
     @property
     def maze_center(self):
