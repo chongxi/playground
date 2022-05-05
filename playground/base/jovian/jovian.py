@@ -39,7 +39,7 @@ class Jovian_Stream(str):
         
 def rotate(pos, theta=0):
     x = theta/360*2*np.pi
-    R = np.array([[cos(x), -sin(x)], [sin(x), cos(x)]])
+    R = np.array([[np.cos(x), -np.sin(x)], [np.sin(x), np.cos(x)]])
     return R.dot(pos)
 
 def boundray_check(pos, bx=[-50.0, 50.0], by=[-50.0, 50.0]):
