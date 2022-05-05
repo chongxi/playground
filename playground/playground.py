@@ -9,10 +9,23 @@ from .base import create_logger, Fpga, logger
 from spiketag.realtime import BMI
 from spiketag.base import probe
 import numpy as np
+import pandas as pd
 from spiketag.analysis import *
 from spiketag.analysis.decoder import NaiveBayes
 
-bin_size, B_bins = 100e-3, 8
+# bin_size, B_bins = 100e-3, 8
+
+bin_size, B_bins = 40e-3, 7
+
+def normalize_pos(pos, scale):
+    pos = (pos - np.mean(pos,axis=0))
+    # pos = pos/np.max(np.abs(pos),axis=0) * scale
+    range_x = pos[:,0].max() - pos[:,0].min()
+    range_y = pos[:,1].max() - pos[:,1].min()
+    pos[:,0] = (pos[:,0] - pos[:,0].min() ) / range_x * scale - scale/2
+    pos[:,1] = (pos[:,1] - pos[:,1].min() ) / range_x * scale - scale/2
+    # pos = (pos - np.mean(pos,axis=0))
+    return pos
 
 def run(bmi_update_rule, posterior_threshold):
     logger = create_logger()
@@ -28,22 +41,29 @@ def run(bmi_update_rule, posterior_threshold):
 
 def build_decoder(bmi, spktag_file, pos_file):
     # For Lab
-    log = logger(pos_file, sync=True)
-    ts, pos, _ = log.to_trajectory(session_id=0)
-    pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5, maze_range=log.maze_range)
-    pc.load_spkdf(spktag_file)
-    dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
-    dec.connect_to(pc)
-    bmi.set_decoder(dec, dec_file='dec', score=False)
+    # log = logger(pos_file, sync=True)
+    # ts, pos, _ = log.to_trajectory(session_id=0)
+    # pc = place_field(pos=pos, ts=ts, bin_size=2.5, v_cutoff=5, maze_range=log.maze_range)
+    # pc.load_spkdf(spktag_file)
+    # dec, score = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=1)
+    # bmi.set_decoder(dec, dec_file='dec')
 
     # For test: Using Brian's data to test system
     # pos = np.fromfile(pos_file).reshape(-1,2)
-    # pc = place_field(pos=pos, t_step=33.333e-3, bin_size=4, v_cutoff=25)
-    # pc.load_spkdf(spktag_file, show=True, replay_offset=2.004)
-    # dec = NaiveBayes(t_step=bin_size, t_window=B_bins*bin_size)
-    # dec.connect_to(pc)
-    # bmi.set_decoder(dec, dec_result_file='./decoded_pos.bin')
 
+    dusty_pos = pd.read_pickle(pos_file)
+    t = dusty_pos.time.to_numpy()
+    x,y = dusty_pos.x.to_numpy(), dusty_pos.y.to_numpy()
+    pos = np.vstack((x,y)).T
+    pos = normalize_pos(pos, scale=100)
+    pc = place_field(pos=pos.copy(), ts=t.copy(), bin_size=2.5, v_cutoff=22)
+    pc.load_spkdf(spktag_file, show=False, replay_offset=2.38)
+    pc.align_with_recording(300, 750)  # training data are within range of [300, 750] seconds
+    dec, score = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=1)
+    drop_neurons = np.where((dec.pc.metric['spatial_bit_spike']<0.1) &
+                            (dec.pc.metric['peak_rate']>0.1))[0]
+    dec.drop_neuron(np.append(0,drop_neurons))
+    bmi.set_decoder(dec, dec_file='dec')
 
 if __name__ == '__main__':
     run()
