@@ -48,6 +48,7 @@ class play_raster_GUI(QWidget):
             self.ras_view_timer = QtCore.QTimer(self)
             self.ras_view_timer.timeout.connect(self.ras_view_update)
             self.update_interval = 60
+            self.init_speed_thres = 1500
 
         self.init_UI()
     #------------------------------------------------------------------------------
@@ -143,7 +144,7 @@ class play_raster_GUI(QWidget):
         self.bmi_teleport_radius.setMinimum(0)
         self.bmi_teleport_radius.setMaximum(3000)
         self.bmi_teleport_radius.setSingleStep(1)        
-        self.bmi_teleport_radius.setValue(5)
+        self.bmi_teleport_radius.setValue(self.init_speed_thres)
         self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
 
         ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
@@ -270,6 +271,9 @@ class play_raster_GUI(QWidget):
             except:
                 self.jov.pynq.shutdown(2)
                 raise
+
+            # 4. Init Speed threshold
+            self.jov.bmi_teleport_radius.fill_(self.init_speed_thres)
         else:
             self.log.warn('Load Maze folder first')
 
