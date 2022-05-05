@@ -13,12 +13,11 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.30'
+# host_ip = '10.102.20.30'
 pynq_ip = '10.102.20.75'
 
-
 # Test
-# host_ip = '10.102.20.42'
+host_ip = '10.102.20.34'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
@@ -239,7 +238,7 @@ class Jovian(EventEmitter):
         self.log.info('position buffer length:{}'.format(pos_buffer_len))
 
         ## Set the real-time posterior placehodler
-        dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N-1))
+        dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N))
         self.perm_idx = np.random.permutation(dumb_X.shape[1])
         _, post_2d = self.bmi.dec.predict_rt(dumb_X)
         self.current_post_2d = torch.empty(post_2d.shape)
