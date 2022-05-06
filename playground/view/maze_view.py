@@ -275,7 +275,8 @@ class maze_view(scene.SceneCanvas):
                                                     self.replay_spk_t[neuron_id] < self.replay_time))[0]
             if neuron_firing.shape[0] > 0:
                 for i in range(neuron_firing.shape[0]):
-                    neuron_sound(frequency=250.0, duration=0.011)
+                    # neuron_sound(frequency=250.0, duration=0.011)
+                    pass
                 self.neuron_firing_pos[neuron_id] = np.append(self.neuron_firing_pos[neuron_id], 
                                                               current_pos).reshape(-1, 3)
                 intensity = neuron_firing.shape[0]*0.2
