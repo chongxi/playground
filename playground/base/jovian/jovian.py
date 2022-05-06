@@ -13,11 +13,11 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-# host_ip = '10.102.20.30'
+host_ip = '10.102.20.30'
 pynq_ip = '10.102.20.75'
 
 # Test
-host_ip = '10.102.20.34'
+# host_ip = '10.102.20.34'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
