@@ -96,6 +96,7 @@ class Task(object):
             self.on_event(self.event) 
 
         # use jov frame update to do the animation
+        # check the doc of "animation effect"
         @self.jov.connect
         def on_frame():
             for _cue_name, _action_queue in self.animation.items():
@@ -143,6 +144,9 @@ class Task(object):
 
     #------------------------------------------------------------------------------
     # animation effect
+    # each animation is a deque object of tuples, each tuple is (pace, animation)
+    # the `pace` is the number of frame between each animation to be played
+    # the `animation` is a function that will be called in the loop
     #------------------------------------------------------------------------------
 
     def parachute(self, cue_name, pos):
