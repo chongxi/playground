@@ -13,11 +13,11 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-# host_ip = '10.102.20.30'
+host_ip = '10.102.20.23'
 pynq_ip = '10.102.20.75'
 
 # Test
-host_ip = '10.102.20.34'
+# host_ip = '10.102.20.34'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
@@ -212,9 +212,10 @@ class Jovian(EventEmitter):
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
 
-                except Exception as e:
-                    self.log.warn(f'jovian recv process error:{e}')
-
+                # except Exception as e:
+                    # self.log.warn(f'jovian recv process error:{e}')
+                except:
+                    self.log.info('jovian recv process error')
 
     def set_bmi(self, bmi, pos_buffer_len=10):
         '''
