@@ -204,16 +204,16 @@ class Jovian(EventEmitter):
                         self.current_hd[:]   = self.rot.direction
                         self.ball_vel[:]     = self._ball_vel
                         self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
-                                                              self.current_hd.numpy(), 
-                                                              self._ball_vel))
+                                                                self.current_hd.numpy(), 
+                                                                self._ball_vel))
                         self.log.info('cue_pos:, {},{}'.format(self.shared_cue_dict[_cue_name_0],
-                                                               self.shared_cue_dict[_cue_name_1]))
+                                                                self.shared_cue_dict[_cue_name_1]))
                         self.task_routine()
                     else:
                         self.log.warn('{}, {}'.format(self._t, self._coord))
 
-                except:
-                    self.log.info('socket time out')
+                except Exception as e:
+                    self.log.warn(f'jovian recv process error:{e}')
 
 
     def set_bmi(self, bmi, pos_buffer_len=10):
@@ -460,8 +460,9 @@ class Jovian(EventEmitter):
 
 
     def reward(self, time):
+        self.log.info('reward {}'.format(time))
         try:
             cmd = 'reward, {}'.format(time)
             self.pynq.send(cmd.encode())
         except:
-            print('fail to send reward command, pynq connected: {}'.format(self.pynq_connected))
+            self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
