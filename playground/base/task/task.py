@@ -100,16 +100,16 @@ class Task(object):
         @self.jov.connect
         def on_frame():
             for _cue_name, _action_queue in self.animation.items():
-                try: 
-                    _pace, _animation = _action_queue[0]
-                    if self.jov.cnt % _pace == 0:
-                        try:
-                            _animation.__next__()
-                        except StopIteration:
-                            __pace__, __animation__ = _action_queue.popleft()
-                            self.ani.emit('animation_finish', animation_name=__animation__.__name__)
-                except:
-                    pass
+                # try: 
+                _pace, _animation = _action_queue[0]
+                if self.jov.cnt % _pace == 0:
+                    try:
+                        _animation.__next__()
+                    except StopIteration:
+                        __pace__, __animation__ = _action_queue.popleft()
+                        self.ani.emit('animation_finish', animation_name=__animation__.__name__)
+                # except:
+                #     pass
 
         @self.ani.connect
         def on_animation_finish(animation_name):
