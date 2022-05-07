@@ -450,7 +450,7 @@ class JEDI(Task):
         super(JEDI, self).__init__(fsm, jov)
 
         self.BMI_enable = True
-        self.reward_time = 0.05
+        self.reward_time = 0.01
 
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
@@ -475,7 +475,7 @@ class JEDI(Task):
         self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)),  
                                               (16,self.vibrate('_dcue_000'))  ])
-        self.animation['_dcue_001'] = deque([ (2, self.bmi_control('model','_dcue_001')) ])
+        self.animation['_dcue_001'] = deque([ (3, self.bmi_control('model','_dcue_001')) ])
         self.BMI_enable = True
         self.log.info('BMI control enabled')
         self.state = '1cue'
