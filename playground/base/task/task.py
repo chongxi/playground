@@ -73,6 +73,7 @@ class Task(object):
         self.ani = EventEmitter()
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
 
+        self.reward_time = 1.0
         self.BMI_enable = False
 
         # initial reset only after jov process start 
@@ -130,15 +131,14 @@ class Task(object):
 
     def on_event(self, event):
         if self.transition_enable.behave:
-            # try:
             self.log.info('state: {}, {}: {}@{}'.format(self.state, event.type, event.what, event.where))
             try:
                 next_state, func, args = self.fsm[self.state][event.type + '@' + event.what]
                 func(args)
                 self.state = next_state
                 self.log.info('state: {}'.format(self.state))
-            except:
-                self.log.warn('A event not registered happened, will not process')
+            except Exception as e:
+                self.log.warn(f'task event processing error: {e}')
 
 
     #------------------------------------------------------------------------------
@@ -444,12 +444,13 @@ class JEDI(Task):
         '''
 
         fsm = {
-                '1cue': {'touch@_dcue_000->_dcue_001': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': { 'touch@_dcue_000->_dcue_001': ['1cue', self.goal_cue_touched, 'reward'] } 
               }
 
         super(JEDI, self).__init__(fsm, jov)
 
         self.BMI_enable = True
+        self.reward_time = 0.05
 
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
@@ -480,12 +481,7 @@ class JEDI(Task):
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
-        self.log.info(args)
         self.jov.reward(self.reward_time)
-        # self.transition_enable.behave = False
-        # self.BMI_enable = False
-        # self.log.info('BMI control disabled')
-        # self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
 #------------------------------------------------------------------------------

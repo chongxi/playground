@@ -269,7 +269,10 @@ class play_raster_GUI(QWidget):
                 self.log.info('task: {}'.format(self.task_name))
 
                 # 4. Task parameter
-                self.task.reward_time = self.reward_time.value()/10. 
+                ## reward time
+                self.reward_time.setValue(self.task.reward_time*10) # define reward_time in each task
+                self.reward_time_label.setText('Reward Time: {}'.format(str(self.task.reward_time)))
+                ## reward radius
                 self.jov.touch_radius.fill_(self.touch_radius.value())
                 self.log.info('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
                 self.log.info('Task Ready')
