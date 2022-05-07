@@ -48,8 +48,10 @@ class play_raster_GUI(QWidget):
             self.ras_view_timer = QtCore.QTimer(self)
             self.ras_view_timer.timeout.connect(self.ras_view_update)
             self.update_interval = 60
-            self.init_speed_thres = 1500
-
+        else:
+            self.bmi = None
+            
+        self.init_speed_thres = 1500
         self.init_UI()
     #------------------------------------------------------------------------------
     # gui layout
@@ -153,9 +155,14 @@ class play_raster_GUI(QWidget):
         ParaLayout.addWidget(self.bmi_teleport_radius,        0,7,1,1)
 
         #6. Raster View
-        self.ras_view = raster_view(n_units=self.bmi.fpga.n_units+1, 
-                                    t_window=5e-3, 
-                                    view_window=10)
+        if self.bmi is not None:
+            self.ras_view = raster_view(n_units=self.bmi.fpga.n_units+1, 
+                                        t_window=5e-3, 
+                                        view_window=10)
+        else:
+            self.ras_view = raster_view(n_units=100,
+                                        t_window=5e-3,
+                                        view_window=10)
 
         #7. Navigation view for both viz and interaction 
         self.nav_view = maze_view()

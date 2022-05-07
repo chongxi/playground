@@ -27,13 +27,17 @@ def normalize_pos(pos, scale):
     # pos = (pos - np.mean(pos,axis=0))
     return pos
 
-def run(bmi_update_rule, posterior_threshold):
+
+def run(bmi_update_rule, posterior_threshold, bmi_mode):
     logger = create_logger()
     app = QApplication(sys.argv)
-    bmi = BMI(fetfile='./fet.bin')
-    bmi.bmi_update_rule = bmi_update_rule
-    bmi.posterior_threshold = posterior_threshold
-    bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+    if bmi_mode:
+        bmi = BMI(fetfile='./fet.bin')
+        bmi.bmi_update_rule = bmi_update_rule
+        bmi.posterior_threshold = posterior_threshold
+        bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
+    else:
+        bmi = None
     gui = play_raster_GUI(logger=logger, bmi=bmi)
     gui.show()
     sys.exit(app.exec_())
