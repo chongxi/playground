@@ -209,13 +209,15 @@ class play_raster_GUI(QWidget):
             # file = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
         spktag_file = str(QFileDialog.getOpenFileName(self, "load spktag", '../', '*.pd')[0])
         self.log.info('select   spktag {}'.format(spktag_file))
-        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.pd);;(*.bin);;(*.log)')[0])
+        pos_file = str(QFileDialog.getOpenFileName(self, "load saved position", '../', '(*.log);;(*.pd);;(*.bin)')[0])
         self.log.info('select position {}'.format(pos_file))
         from playground import build_decoder
-        build_decoder(self.bmi, spktag_file, pos_file)
-        score = self.bmi.dec.score(smooth_sec=2)
-        self.log.info('BMI decoder params: {} cells, {} t_step, {} t_window'.format(self.bmi.dec.fields.shape[0], self.bmi.dec.t_step, self.bmi.dec.t_window))
-        self.log.info('BMI decoder R2-score (cross-validation disabled): {}'.format(score))
+        score = build_decoder(self.bmi, spktag_file, pos_file)
+        self.log.info('BMI decoder params: {} decoding cells out of {} cells, {} t_step, {} t_window'.format(self.bmi.dec.neuron_idx.shape[0], 
+                                                                                                             self.bmi.dec.fields.shape[0], 
+                                                                                                             self.bmi.dec.t_step, 
+                                                                                                             self.bmi.dec.t_window))
+        self.log.info('BMI decoder R2-score (cross-validation enabled): {}'.format(score))
         self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
         self.log.info('BMI posterior threshold: {}'.format(self.bmi.posterior_threshold))
 
