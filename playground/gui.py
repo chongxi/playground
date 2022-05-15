@@ -220,6 +220,7 @@ class play_raster_GUI(QWidget):
         self.log.info('BMI decoder R2-score (cross-validation enabled): {}'.format(score))
         self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
         self.log.info('BMI posterior threshold: {}'.format(self.bmi.posterior_threshold))
+        self.log.info('BMI position update buffer length: {}'.format(self.bmi.pos_buffer_len))
 
         # select task first
         if hasattr(self, 'jov'):
