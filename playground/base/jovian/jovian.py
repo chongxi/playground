@@ -241,7 +241,9 @@ class Jovian(EventEmitter):
         ## Set the real-time posterior placehodler
         dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N))
         self.perm_idx = np.random.permutation(dumb_X.shape[1])
-        _, post_2d = self.bmi.dec.predict_rt(dumb_X)
+        _, post_2d = self.bmi.dec.predict_rt(dumb_X, 
+                                             two_steps=self.bmi.two_steps, 
+                                             mean_firing_rate=self.bmi.mean_firing_rate)
         self.current_post_2d = torch.empty(post_2d.shape)
         self.current_post_2d.share_memory_()
         self.log.info('The decoder binsize:{}, the B_bins:{}'.format(self.bmi.binner.bin_size, self.bmi.binner.B))

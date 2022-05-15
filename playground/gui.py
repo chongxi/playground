@@ -221,6 +221,9 @@ class play_raster_GUI(QWidget):
         self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
         self.log.info('BMI posterior threshold: {}'.format(self.bmi.posterior_threshold))
         self.log.info('BMI position update buffer length: {}'.format(self.bmi.pos_buffer_len))
+        self.log.info('BMI two step: {}'.format(self.bmi.two_steps))
+        self.log.info('BMI meaning firing rate for firing rate modulation: {}'.format(self.bmi.mean_firing_rate))
+
 
         # select task first
         if hasattr(self, 'jov'):

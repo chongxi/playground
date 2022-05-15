@@ -15,6 +15,7 @@ from spiketag.analysis.decoder import NaiveBayes
 
 bin_size, B_bins, t_smooth = 100e-3, 8, 3
 pos_buffer_len = int(t_smooth / bin_size)
+two_steps_decoding = False
 
 def normalize_pos(pos, scale):
     pos = (pos - np.mean(pos,axis=0))
@@ -35,6 +36,7 @@ def run(bmi_update_rule, posterior_threshold, bmi_mode):
         bmi.bmi_update_rule = bmi_update_rule
         bmi.posterior_threshold = posterior_threshold
         bmi.pos_buffer_len = pos_buffer_len # position buffer length for moving average
+        bmi.two_steps = two_steps_decoding
         bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
     else:
         bmi = None
@@ -55,6 +57,7 @@ def build_decoder(bmi, spktag_file, pos_file):
                            training_range = [0.00, 0.50],
                            testing_range  = [0.50, 1.00])
     bmi.set_decoder(dec, dec_file='dec')
+    bmi.mean_firing_rate = np.mean(dec.train_X[:, dec.neuron_idx])  # average firing rate of all cells over all time bins
     return score
 
     # For test: Using Brian's data to test system
