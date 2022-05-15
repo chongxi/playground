@@ -217,7 +217,7 @@ class Jovian(EventEmitter):
                 except:
                     self.log.info('jovian recv process error')
 
-    def set_bmi(self, bmi, pos_buffer_len=10):
+    def set_bmi(self, bmi, pos_buffer_len=30):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
         bmi.binner.emit('decode', X) ==> jov

@@ -13,7 +13,8 @@ import pandas as pd
 from spiketag.analysis import *
 from spiketag.analysis.decoder import NaiveBayes
 
-bin_size, B_bins, t_smooth = 100e-3, 8, 2
+bin_size, B_bins, t_smooth = 100e-3, 8, 3
+pos_buffer_len = int(t_smooth / bin_size)
 
 def normalize_pos(pos, scale):
     pos = (pos - np.mean(pos,axis=0))
@@ -33,6 +34,7 @@ def run(bmi_update_rule, posterior_threshold, bmi_mode):
         bmi = BMI(fetfile='./fet.bin')
         bmi.bmi_update_rule = bmi_update_rule
         bmi.posterior_threshold = posterior_threshold
+        bmi.pos_buffer_len = pos_buffer_len # position buffer length for moving average
         bmi.set_binner(bin_size=bin_size, B_bins=B_bins)
     else:
         bmi = None
@@ -50,8 +52,8 @@ def build_decoder(bmi, spktag_file, pos_file):
     pc.load_spkdf(spktag_file)
     # dec, score = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=1)  # previous versions
     dec, score = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=t_smooth, first_unit_is_noise=True, peak_rate=0.5, 
-                           training_range = [0.0, 0.5],
-                           testing_range  = [0.5, 1.0])
+                           training_range = [0.00, 0.50],
+                           testing_range  = [0.50, 1.00])
     bmi.set_decoder(dec, dec_file='dec')
     return score
 

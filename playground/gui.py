@@ -223,7 +223,7 @@ class play_raster_GUI(QWidget):
 
         # select task first
         if hasattr(self, 'jov'):
-            self.jov.set_bmi(self.bmi)
+            self.jov.set_bmi(self.bmi, pos_buffer_len=self.bmi.pos_buffer_len)
         else:
             print('please select task first')
 
