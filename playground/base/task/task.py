@@ -251,6 +251,14 @@ class Task(object):
                                   target_item=cue_name)
             yield
 
+    def go_center(self, prefix='console', cue_name=None):
+        while True:
+            self.jov.teleport(prefix=prefix,
+                              target_pos=[0, 0, 5],
+                              head_direction=self.jov.bmi_hd[0],
+                              target_item=cue_name)
+            yield
+
 
 #------------------------------------------------------------------------------
 # one cue task
@@ -479,7 +487,8 @@ class JEDI(Task):
         self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
         self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)),  
                                               (32,self.vibrate('_dcue_000'))  ])
-        self.animation['_dcue_001'] = deque([ (2, self.bmi_control('model','_dcue_001')) ])
+        self.animation['_dcue_001'] = deque([ (2, self.bmi_control('model','_dcue_001'))])
+        self.animation['console']   = deque([ (2, self.go_center('console')) ])
         self.BMI_enable = True
         self.log.info('BMI control enabled')
         self.state = '1cue'

@@ -27,7 +27,6 @@ def normalize_pos(pos, scale):
     # pos = (pos - np.mean(pos,axis=0))
     return pos
 
-
 def run(bmi_update_rule, posterior_threshold, bmi_mode):
     playground_log = create_logger()
     app = QApplication(sys.argv)
@@ -43,7 +42,6 @@ def run(bmi_update_rule, posterior_threshold, bmi_mode):
     gui = play_raster_GUI(logger=playground_log, bmi=bmi)
     gui.show()
     sys.exit(app.exec_())
-
 
 def build_decoder(bmi, spktag_file, pos_file):
     # For Lab
