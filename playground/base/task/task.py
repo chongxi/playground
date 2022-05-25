@@ -260,6 +260,7 @@ class Task(object):
             yield
 
 
+
 #------------------------------------------------------------------------------
 # one cue task
 #------------------------------------------------------------------------------
@@ -294,6 +295,50 @@ class one_cue_task(Task):
         self.transition_enable.behave = False
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
+
+#------------------------------------------------------------------------------
+# Y Maze
+#------------------------------------------------------------------------------
+class YMaze(Task):
+
+    def __init__(self, jov):
+
+        fsm = {
+                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+              }
+
+        super(YMaze, self).__init__(fsm, jov)
+
+        @self.ani.connect
+        def on_animation_finish(animation_name):
+            if animation_name == 'bury':
+                self.reset()
+
+        self.goal_locations = np.array([[-25, +35], 
+                                        [+25, +35]])
+        self.start_location = np.array([0, -35])
+
+    #---------------------------------------------------------------------------------------------------
+    # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
+    #---------------------------------------------------------------------------------------------------
+    def reset(self):
+        super(YMaze, self).reset()
+        self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
+        self._coord_goal   = self.goal_locations[int(np.random.rand(1).round()[0])] # randomly choose one of them
+        self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
+        # teleport animal back to trial start location
+        self.jov.teleport(prefix='console',
+                          target_pos=[self.start_location[0], self.start_location[1], 5],
+                          head_direction=self.jov.bmi_hd[0],
+                          target_item=None)
+        self.state = '1cue'
+
+
+    def goal_cue_touched(self, args):
+        self.log.info(args)
+        self.jov.reward(self.reward_time)
+        self.transition_enable.behave = False
+        self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
 
 #------------------------------------------------------------------------------
