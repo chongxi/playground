@@ -287,13 +287,13 @@ class logger():
                                   float_pattern).astype('float').unstack().to_numpy().ravel()
         if read_out_params.shape[0] == 3:
             _bmi_params = {'cell_count': int(read_out_params[0]), 
-                          'bin_window': int(read_out_params[1]),
-                          'decoding_window': read_out_params[2]}
+                           'bin_window': read_out_params[1],
+                           'decoding_window': read_out_params[2]}
         elif read_out_params.shape[0] == 4:
             _bmi_params = {'dec_cell_count': int(read_out_params[0]), 
-                          'cell_count': int(read_out_params[1]),
-                          'bin_window': read_out_params[1],
-                          'decoding_window': read_out_params[2]}
+                           'cell_count': int(read_out_params[1]),
+                           'bin_window': read_out_params[1],
+                           'decoding_window': read_out_params[2]}
         return _bmi_params
 
     @property
