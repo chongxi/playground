@@ -283,9 +283,18 @@ class logger():
         '''
         The number of cell count, bin window length and decoding window length
         '''
-        cell_count, bin_len, dec_len = self.select(func='build_decoder', msg='params').msg.str.extractall(
-                                                      float_pattern).astype('float').unstack().to_numpy().ravel()
-        return int(cell_count), bin_len, dec_len
+        read_out_params = self.select(func='build_decoder', msg='params').msg.str.extractall(
+                                  float_pattern).astype('float').unstack().to_numpy().ravel()
+        if read_out_params.shape[0] == 3:
+            _bmi_params = {'cell_count': int(read_out_params[0]), 
+                          'bin_window': int(read_out_params[1]),
+                          'decoding_window': read_out_params[2]}
+        elif read_out_params.shape[0] == 4:
+            _bmi_params = {'dec_cell_count': int(read_out_params[0]), 
+                          'cell_count': int(read_out_params[1]),
+                          'bin_window': read_out_params[1],
+                          'decoding_window': read_out_params[2]}
+        return _bmi_params
 
     @property
     def task_params(self):
@@ -416,7 +425,11 @@ class logger():
         bmi_pos_df.columns = ['x', 'y', 'ball_vel', 'vel_thres']
 
         # find the ephys_time of the bmi output bin (the time that bin ends)
-        self.cell_count, self.bin_len, self.dec_len = self.bmi_params
+        bmi_params = self.bmi_params
+        self.cell_count = bmi_params['cell_count']
+        self.dec_cell_count = bmi_params['dec_cell_count']
+        self.bin_len = bmi_params['bin_window']
+        self.dec_len = bmi_params['decoding_window']
         bmi_output_ephys_time = (bin_index + 1) * self.bin_len
         bmi_pos_df.insert(0, column='ephys_time', value=bmi_output_ephys_time)
 
