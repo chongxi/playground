@@ -1,3 +1,5 @@
+pyqt5==5.9.2
+pyserial==3.5
 pip==9.0.1
 bumpversion==0.5.3
 wheel==0.30.0

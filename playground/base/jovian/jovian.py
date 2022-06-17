@@ -14,7 +14,7 @@ ENABLE_PROFILER = False
 
 # Lab
 host_ip = '10.102.20.23'
-pynq_ip = '10.102.20.75'
+pynq_ip = '10.102.20.93'
 
 # Test
 # host_ip = '10.102.20.34'
