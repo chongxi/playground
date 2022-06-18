@@ -292,8 +292,8 @@ class logger():
         elif read_out_params.shape[0] == 4:
             _bmi_params = {'dec_cell_count': int(read_out_params[0]), 
                            'cell_count': int(read_out_params[1]),
-                           'bin_window': read_out_params[1],
-                           'decoding_window': read_out_params[2]}
+                           'bin_window': read_out_params[2],
+                           'decoding_window': read_out_params[3]}
         return _bmi_params
 
     @property
