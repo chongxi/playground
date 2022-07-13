@@ -143,6 +143,8 @@ class logger():
         self.df = self.log_sessions[self.session_id]
         print('session {} loaded into the dataframe'.format(self._session_id))
 
+    def total_sedonds(self, df):
+        return (pd.to_datetime(df.time.iloc[-1]) - pd.to_datetime(df.time.iloc[0])).total_seconds()
 
     def get_log_sessions(self):
         log = self.df
