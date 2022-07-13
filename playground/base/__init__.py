@@ -253,6 +253,7 @@ class logger():
         jov_dict = self.get_jov()
         ts, pos, cue_pos = jov_dict['jov_ts'], jov_dict['jov_pos'], jov_dict['jov_cue_pos']
         pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=v_cutoff, maze_range=self.maze_range)
+        pc.cue_ts  = ts
         pc.cue_pos = cue_pos
         pc(dt)
         return pc
