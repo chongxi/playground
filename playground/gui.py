@@ -40,6 +40,11 @@ class play_raster_GUI(QWidget):
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
 
+        #Shinsuke added.
+        self.rw_cnt_timer = QtCore.QTimer(self)
+        self.rw_cnt_timer.timeout.connect(self.rw_cnt_timer_update)
+        
+
         '''
         Setting bmi for jov, jov will emit `bmi_decode` event to the `task`
         '''
@@ -122,16 +127,16 @@ class play_raster_GUI(QWidget):
         self.reward_time.setValue(10)
         self.reward_time.valueChanged.connect(self.reward_time_changed)
 
-        self.touch_radius_label = QLabel('Reward Radius: 18')
+        self.touch_radius_label = QLabel('Reward Radius: 10')
         self.touch_radius = QSlider(Qt.Horizontal, self)
-        self.touch_radius.setValue(20)
+        self.touch_radius.setValue(10)
         self.touch_radius.valueChanged.connect(self.touch_radius_changed)
 
         ParaLayout.addWidget(self.reward_time_label,   0,0,1,1)
         ParaLayout.addWidget(self.reward_time,         0,1,1,1)
         ParaLayout.addWidget(self.touch_radius_label,  0,2,1,1)
         ParaLayout.addWidget(self.touch_radius,        0,3,1,1)
-
+        '''
         #5 BMI Parameter
         self.hd_window_label = QLabel('HD Window: 1s')
         self.hd_window = QSlider(Qt.Horizontal, self)
@@ -140,7 +145,7 @@ class play_raster_GUI(QWidget):
         self.hd_window.setSingleStep(1)
         self.hd_window.setValue(2) # 2/2 = 1 second
         self.hd_window.valueChanged.connect(self.hd_window_changed)
-
+        '''
         self.bmi_teleport_radius_label = QLabel('speed thres')
         self.bmi_teleport_radius = QSlider(Qt.Horizontal, self)
         self.bmi_teleport_radius.setMinimum(0)
@@ -148,11 +153,36 @@ class play_raster_GUI(QWidget):
         self.bmi_teleport_radius.setSingleStep(1)        
         self.bmi_teleport_radius.setValue(self.init_speed_thres)
         self.bmi_teleport_radius.valueChanged.connect(self.bmi_teleport_radius_changed)
-
+        '''
         ParaLayout.addWidget(self.hd_window_label,   0,4,1,1)
         ParaLayout.addWidget(self.hd_window,         0,5,1,1)
         ParaLayout.addWidget(self.bmi_teleport_radius_label,  0,6,1,1)
         ParaLayout.addWidget(self.bmi_teleport_radius,        0,7,1,1)
+        '''
+
+        ParaLayout.addWidget(self.bmi_teleport_radius_label,  0,4,1,1)
+        ParaLayout.addWidget(self.bmi_teleport_radius,        0,5,1,1)
+
+#shinsuke added
+        self.rw_cnt_Btn=QPushButton('RD: 0',self)
+        self.rw_cnt_Btn.setStyleSheet("background-color: darkgrey")
+        self.rw_cnt_Btn.clicked.connect(self.rw_counter)
+        ParaLayout.addWidget(self.rw_cnt_Btn,        0,6,1,1)
+
+        self.airpuff_toggle_Btn=QPushButton('air_off',self)
+        self.airpuff_toggle_Btn.setStyleSheet("background-color: darkgrey")
+        self.airpuff_toggle_Btn.setCheckable(True)
+        self.airpuff_toggle_Btn.toggled.connect(self.airpuff_toggle)
+        ParaLayout.addWidget(self.airpuff_toggle_Btn,        0,7,1,1)
+        #self.airpuff_toggle_Btn.setShortcut('a')
+
+        self.toggle_sweet_Btn=QPushButton('water',self)
+        self.toggle_sweet_Btn.setStyleSheet("background-color: darkgrey")
+        self.toggle_sweet_Btn.setCheckable(True)
+        self.toggle_sweet_Btn.toggled.connect(self.sweet_toggle)
+        ParaLayout.addWidget(self.toggle_sweet_Btn,        0,8,1,1)
+        #self.toggle_sweet_Btn.setShortcut('s')
+
 
         #6. Raster View
         if self.bmi is not None:
@@ -262,6 +292,9 @@ class play_raster_GUI(QWidget):
             # 2. Init log and connect jov to maze navigation view, set counter cnt to 0
             self.jov.log = self.log
             self.jov.cnt.fill_(0)
+            #shinsuke added
+            self.jov.rw_cnt.fill_(0)
+
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.jov.maze_border = self.maze_border
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
@@ -400,7 +433,8 @@ class play_raster_GUI(QWidget):
             self.nav_view.current_pos = self.jov.current_pos.numpy()
             self.nav_view.current_hd  = self.jov.current_hd.numpy() 
             self.nav_view.cue_update()
-        
+            #shinsuke added. 
+            self.rw_cnt_timer_update()
             try:
                 self.nav_view.posterior = self.jov.current_post_2d.numpy()
             except:
@@ -438,3 +472,40 @@ class play_raster_GUI(QWidget):
 
     def ras_view_update(self):
         self.ras_view.update_fromfile('./fet.bin', last_N=8000)
+
+#shinsuke added
+    def sweet_toggle(self, checked):
+        if self._task_selected:
+            if checked:
+                self.toggle_sweet_Btn.setText('sweet')
+                self.toggle_sweet_Btn.setStyleSheet("background-color: green")
+                self.jov.sw_switch(on_off='on')            
+            else:
+                self.toggle_sweet_Btn.setText('water')
+                self.toggle_sweet_Btn.setStyleSheet("background-color: darkgrey")
+                self.jov.sw_switch(on_off='off')            
+        else:
+            self.log.warn('select Task First')
+
+    def airpuff_toggle(self, checked):
+        if self._task_selected:
+            if checked:
+                self.airpuff_toggle_Btn.setText('air_on')
+                self.airpuff_toggle_Btn.setStyleSheet("background-color: green")
+                self.jov.air_puff(on_off='on')
+            else:
+                self.airpuff_toggle_Btn.setText('air_off')
+                self.airpuff_toggle_Btn.setStyleSheet("background-color: darkgrey")
+                self.jov.air_puff(on_off='off')
+        else:
+            self.log.warn('select Task First')
+
+          
+    def rw_counter(self,checked):
+        if self._task_selected:
+            self.jov.rw_cnt.fill_(0)
+            self.rw_cnt_Btn.setText('RD: 0')
+
+    def rw_cnt_timer_update(self):
+        rw_cnt=self.jov.rw_cnt.numpy() 
+        self.rw_cnt_Btn.setText('RD: {}'.format(int(rw_cnt[0])))
