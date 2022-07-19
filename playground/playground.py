@@ -52,15 +52,19 @@ def build_decoder(bmi, spktag_file, pos_file):
     pc.load_spkdf(spktag_file)
     # check and store the cross-validation score
     _, score = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=t_smooth, 
-                           first_unit_is_noise=True, peak_rate=1, firing_rate_modulation=True, verbose=True,
-                           training_range = [0.00, 0.50],
-                           testing_range  = [0.50, 1.00])
+                           first_unit_is_noise=True,  min_bit=0.1, min_peak_rate=0.8, 
+                           firing_rate_modulation=True, verbose=True,
+                           training_range = [0.00, 0.60],
+                           testing_range  = [0.60, 1.00],
+                           low_speed_cutoff = {'training': True, 'testing': True})
 
     # use the full recorded data (meaning no cross-validaton) for BMI 
-    dec, _ = pc.to_dec(t_step=bin_size, t_window=bin_size * B_bins, t_smooth=t_smooth,
-                           first_unit_is_noise=True, peak_rate=1, firing_rate_modulation=True, verbose=False,
+    dec, _ = pc.to_dec(t_step=bin_size, t_window=bin_size*B_bins, t_smooth=t_smooth, 
+                           first_unit_is_noise=True,  min_bit=0.1, min_peak_rate=0.8, 
+                           firing_rate_modulation=True, verbose=True,
                            training_range = [0.00, 1.00],
-                           testing_range  = [0.00, 1.00])
+                           testing_range  = [0.00, 1.00],
+                           low_speed_cutoff = {'training': True, 'testing': True})
 
     bmi.set_decoder(dec, dec_file='dec')
     bmi.mean_firing_rate = np.mean(dec.train_X[:, dec.neuron_idx])  # average firing rate of all cells over all time bins
