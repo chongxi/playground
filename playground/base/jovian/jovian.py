@@ -149,7 +149,9 @@ class Jovian(EventEmitter):
         self.bmi_teleport_radius.share_memory_()
         self.bmi_teleport_radius.fill_(0)    
 
-         
+        #rw counter added by shinsuke
+        self.rw_cnt=torch.empty(1,)
+        self.rw_cnt.share_memory_()
 
     def reset(self):
         [conn.shutdown(2) for conn in self.socks]
@@ -422,7 +424,21 @@ class Jovian(EventEmitter):
     def toggle_motion(self):
         cmd = "console.toggle_motion()\n"
         self.output.send(cmd.encode())
+    
+    #shinsuke added.
+    def toggle_blanking(self):
+        cmd = "console.toggle_blanking()\n"
+        self.output.send(cmd.encode())
+ 
 
+
+    def toggle_motion_and_blanking(self):
+        cmd="console.toggle_motion_and_blanking()\n"
+        self.output.send(cmd.encode())
+
+    def set_alpha(self,target_item, alpha):
+        cmd="model.set_alpha('{}',{})\n".format(target_item,alpha)
+        self.output.send(cmd.encode())
 
     def teleport(self, prefix, target_pos, head_direction=None, target_item=None):
         '''
@@ -464,8 +480,30 @@ class Jovian(EventEmitter):
 
     def reward(self, time):
         self.log.info('reward {}'.format(time))
+        t_rw_cnt=self.rw_cnt.numpy()
+        self.rw_cnt.fill_(t_rw_cnt[0]+1)
         try:
             cmd = 'reward, {}'.format(time)
             self.pynq.send(cmd.encode())
         except:
             self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
+
+
+    #Shinsuke added
+    def sw_switch(self, on_off):
+        self.log.info('sweet_{}'.format(on_off))
+        try:
+            cmd = 'rw_switch, {}'.format(on_off)
+            self.pynq.send(cmd.encode())
+        except:
+            self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
+
+    def air_puff(self, on_off):
+        self.log.info('air_puff_{}'.format(on_off))
+        try:
+            cmd = 'air_puff, {}'.format(on_off)
+            self.pynq.send(cmd.encode())
+        except:
+            self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
+
+
