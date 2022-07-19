@@ -434,6 +434,7 @@ class logger():
         self.bin_len = bmi_params['bin_window']
         self.dec_len = bmi_params['decoding_window']
         bmi_output_ephys_time = (bin_index + 1) * self.bin_len
+        bmi_pos_df = bmi_pos_df.iloc[:bmi_output_ephys_time.shape[0]]
         bmi_pos_df.insert(0, column='ephys_time', value=bmi_output_ephys_time)
 
         # find jov output in the jov_df that just before bmi output index in bmi_pos_df
