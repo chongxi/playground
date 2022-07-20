@@ -250,7 +250,7 @@ class logger():
             else:
                 return ts, pos, None
 
-    def to_pc(self, session_id=0, dt=0.1, bin_size=2.5, v_cutoff=5):
+    def to_pc(self, session_id=0, dt=0.1, bin_size=4, v_cutoff=4):
         from spiketag.analysis import place_field
         jov_dict = self.get_jov()
         ts, pos, cue_pos = jov_dict['jov_ts'], jov_dict['jov_pos'], jov_dict['jov_cue_pos']
