@@ -257,7 +257,7 @@ class play_raster_GUI(QWidget):
                                                                                                                  0],
                                                                                                              self.bmi.dec.t_step,
                                                                                                              self.bmi.dec.t_window))
-        self.log.info('BMI decoder training input size {}'.format(
+        self.log.info('BMI decoder training data size {}'.format(
             self.bmi.dec.train_X.shape))
         self.log.info(
             'BMI decoder R2-score (cross-validation enabled): {}'.format(score))
