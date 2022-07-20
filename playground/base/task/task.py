@@ -176,6 +176,42 @@ class Task(object):
             self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  0], target_item=cue_name)
             yield            
 
+    def s_vibrate(self, cue_name):
+        ''' usage:
+            self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
+        '''
+        for z in range(30):
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  5], target_item=cue_name)
+            yield
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  0], target_item=cue_name)
+            yield            
+
+    def ss_vibrate(self, cue_name):
+        ''' usage:
+            self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
+        '''
+        for z in range(5):
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  5], target_item=cue_name)
+            yield
+            pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  0], target_item=cue_name)
+            yield            
+
+    def guiding(self, cue_name, s_pos,g_pos):
+        ''' usage:
+            self.animation['_dcue_000'] = deque([ (3, self.guiding('_dcue_000', self._coord_goal)) ])
+        ''' 
+        div=70
+        init_d=15
+        for i in range(init_d,div,2):
+            pos=(g_pos-s_pos)*i/div+s_pos
+            self.jov.teleport(prefix='model', target_pos=[pos[0],  pos[1],  5], target_item=cue_name)
+            yield
+
+
     def wander(self, cue_name, direction='x'):
         for i in range(20000):
             pos = self.jov._to_maze_coord(self.jov.shared_cue_dict[cue_name])
@@ -304,19 +340,40 @@ class YMaze(Task):
     def __init__(self, jov):
 
         fsm = {
-                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                #'1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
+                '1cue': { 'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward'], 'touch@_dcue_001': ['1cue', self.wrong_choise, 'wrong cue'] } 
               }
 
         super(YMaze, self).__init__(fsm, jov)
 
         @self.ani.connect
         def on_animation_finish(animation_name):
+            #w_pos_x=0.7*self._coord_goal[0]+0.3*self.start_location[0] 
+            #w_pos_y=-0.7*self._coord_goal[1]+0.3*self.start_location[1] 
+
+            w_pos_x=self.goal_locations[(self.side+1)%2][0] 
+            w_pos_y=self.goal_locations[(self.side+1)%2][1] 
             if animation_name == 'bury':
                 self.reset()
+            if animation_name == 's_vibrate':
+                self.jov.toggle_blanking()
+                self.jov.teleport(prefix='model', target_pos=(w_pos_x,w_pos_y,5), target_item='_dcue_001')
+                self.log.info('blanking_finished')
+            if animation_name == 'ss_vibrate':
+                self.jov.toggle_motion()
+                self.log.info('no_motion_finished')
+            if animation_name == 'parachute':
+               self.jov.teleport(prefix='model', target_pos=(w_pos_x,w_pos_y,5), target_item='_dcue_001')
+              
+        #self.goal_locations = np.array([[+85, -65], 
+        #                                [+85, +65]])
+        #self.start_location = np.array([-85, 0])
+        self.goal_locations = np.array([[+30, -40], 
+                                        [-40, +30]])
+        self.start_location = np.array([40, 40])
+        self.jov.set_alpha('_dcue_001',0) 
 
-        self.goal_locations = np.array([[-25, +35], 
-                                        [+25, +35]])
-        self.start_location = np.array([0, -35])
+        
 
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
@@ -324,7 +381,8 @@ class YMaze(Task):
     def reset(self):
         super(YMaze, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = self.goal_locations[int(np.random.rand(1).round()[0])] # randomly choose one of them
+        self.side=int(np.random.rand(1).round()[0])
+        self._coord_goal   = self.goal_locations[self.side] # randomly choose one of them
         self.animation['_dcue_000'] = deque([ (4, self.parachute('_dcue_000', self._coord_goal)), (30, self.vibrate('_dcue_000')) ])
         # teleport animal back to trial start location
         self.jov.teleport(prefix='console',
@@ -333,14 +391,25 @@ class YMaze(Task):
                           target_item=None)
         self.state = '1cue'
 
-
     def goal_cue_touched(self, args):
         self.log.info(args)
         self.jov.reward(self.reward_time)
         self.transition_enable.behave = False
+        self.jov.teleport(prefix='model', target_pos=(1000,1000,1000), target_item='_dcue_001')
         self.animation['_dcue_000'] = deque([ (4, self.bury('_dcue_000')) ])
 
+    def wrong_choise(self,args):
+        self.log.info(args)
+        self.jov.teleport(prefix='model', target_pos=(1000,1000,1000), target_item='_dcue_001')
+        self.jov.toggle_motion_and_blanking()
+        self.animation['_dcue_000']=deque([(30,self.s_vibrate('_dcue_000')),  (30,self.ss_vibrate('_dcue_000')) ,(30, self.vibrate('_dcue_000'))])
+        self.jov.teleport(prefix='console',
+                          target_pos=[self.start_location[0], self.start_location[1], 5],
+                          head_direction=self.jov.bmi_hd[0],
+                          target_item=None)
+        self.log.info('no_motion_blanking_start')
 
+        #self.jov.teleport(prefix='model', target_pos=(-1*self._coord_goal[0],self._coord_goal[1],5), target_item='_dcue_001')
 #------------------------------------------------------------------------------
 # one cue moving task
 #------------------------------------------------------------------------------
