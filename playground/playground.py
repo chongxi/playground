@@ -5,9 +5,7 @@ import sys
 import time
 from PyQt5.QtWidgets import QApplication
 from .gui import play_raster_GUI
-from .base import create_logger, Fpga, logger
 from spiketag.realtime import BMI
-from spiketag.base import probe
 import numpy as np
 import torch
 import pandas as pd
@@ -27,7 +25,6 @@ def normalize_pos(pos, scale):
     return pos
 
 def run(bmi_update_rule, posterior_threshold, bmi_mode):
-    playground_log = create_logger()
     app = QApplication(sys.argv)
     if bmi_mode:
         bmi = BMI(fetfile='./fet.bin')
@@ -36,7 +33,7 @@ def run(bmi_update_rule, posterior_threshold, bmi_mode):
         bmi.two_steps = two_steps_decoding
     else:
         bmi = None
-    gui = play_raster_GUI(logger=playground_log, bmi=bmi)
+    gui = play_raster_GUI(bmi=bmi)
     gui.show()
     sys.exit(app.exec_())
 

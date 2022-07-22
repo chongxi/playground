@@ -9,9 +9,7 @@ import time
 from datetime import datetime
 
 #---------new module---------
-from .base import Jovian
-from .base import Fpga
-from .base import task
+from .base import Jovian, create_logger, task
 from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI, JUMPER, RING, YMaze
 from .view import maze_view
 from .utils import Timer
@@ -32,11 +30,10 @@ class play_raster_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
-    def __init__(self, logger, bmi=None):
+    def __init__(self, bmi=None):
         # super(play_GUI, self).__init__()
         QWidget.__init__(self)
-        self.log = logger
-        self.current_group=0
+        self.log = create_logger()
 
         self.nav_view_timer = QtCore.QTimer(self)
         self.nav_view_timer.timeout.connect(self.nav_view_update)
