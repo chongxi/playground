@@ -16,7 +16,8 @@ from .base.task import one_cue_task, two_cue_task, one_cue_moving_task, JEDI, JU
 from .view import maze_view
 from .utils import Timer
 from spiketag.view import probe_view, scatter_3d_view, raster_view
-
+import torch.multiprocessing as torch_mp
+# import multiprocess as mp
 import os 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path += '/base/maze/current/'
@@ -44,7 +45,8 @@ class play_raster_GUI(QWidget):
         self.rw_cnt_timer = QtCore.QTimer(self)
         self.rw_cnt_timer.timeout.connect(self.rw_cnt_timer_update)
         
-
+        # important for multiprocessing
+        # mp.set_start_method('spawn')
         '''
         Setting bmi for jov, jov will emit `bmi_decode` event to the `task`
         '''
@@ -270,7 +272,6 @@ class play_raster_GUI(QWidget):
         self.log.info('BMI meaning firing rate for firing rate modulation: {}'.format(
             self.bmi.mean_firing_rate))
 
-
         # select task first
         if hasattr(self, 'jov'):
             self.jov.set_bmi(self.bmi, pos_buffer_len=self.bmi.pos_buffer_len)
@@ -293,6 +294,9 @@ class play_raster_GUI(QWidget):
 
     def selectTask(self, task_name):
         '''
+        This function initiate Jovian and put jov object into both maze_view (nav_view) and task
+
+
         order from 1-5 is important, wrong order will cause crash.
         '''
         if self._maze_loaded:
@@ -311,6 +315,7 @@ class play_raster_GUI(QWidget):
             #shinsuke added
             self.jov.rw_cnt.fill_(0)
 
+            # ! jov is part of the maze navigation view
             self.nav_view.connect(self.jov)  # shared cue_pos, shared tranformation
             self.jov.maze_border = self.maze_border
             self.toggle_motion_Btn.clicked.connect(self.jov.toggle_motion)
@@ -320,16 +325,19 @@ class play_raster_GUI(QWidget):
 
             # 3. Init Task
             try:
+                # ! jov is part of the task 
                 self.task = globals()[self.task_name](self.jov)  # initialte task and pass jov into the task
                 self.log.info('task: {}'.format(self.task_name))
 
-                # 4. Task parameter
-                ## reward time
+                #     # 4. Task parameter
+                #     ## reward time
                 self.reward_time.setValue(self.task.reward_time*10) # define reward_time in each task
                 self.reward_time_label.setText('Reward Time: {}'.format(str(self.task.reward_time)))
-                ## reward radius
-                self.jov.touch_radius.fill_(self.touch_radius.value())
-                self.log.info('task reward time: {}, task touch radius: {}'.format(self.task.reward_time, self.jov.touch_radius))
+                #     ## reward radius
+
+                self.touch_radius.setValue(self.task.touch_radius)
+                self.log.info('task reward time: {}, task touch radius: {}'.format(
+                    self.task.reward_time, self.task.touch_radius))
                 self.log.info('Task Ready')
                 self._task_selected = True
 
@@ -466,14 +474,18 @@ class play_raster_GUI(QWidget):
         else:
             self.fpga_process_stop()
 
-
     def fpga_process_start(self):
+        # torch_mp.set_start_method('spawn', force=True)
         self.log.info('---------------------------------')
         self.log.info('fpga_process_start')
         self.log.info('---------------------------------')
         self.fpgaBtn.setText('BMI Stream ON')
         self.fpgaBtn.setStyleSheet("background-color: green")
-        self.bmi.start(gui_queue=False)
+        if hasattr(self.bmi.dec, 'model'):
+            self.bmi.start(gui_queue=False, model=self.bmi.dec.model)  # self.bmi.dec.model
+            # self.bmi.model = self.bmi.dec.model
+        else:
+            self.bmi.start(gui_queue=False)
         self.ras_view_timer.start(self.update_interval)
 
     def fpga_process_stop(self):

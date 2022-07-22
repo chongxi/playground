@@ -13,11 +13,11 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.23'
+# host_ip = '10.102.20.23'
 pynq_ip = '10.102.20.93'
 
 # Test
-# host_ip = '10.102.20.34'
+host_ip = '10.102.20.34'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
@@ -57,7 +57,7 @@ def boundray_check(pos, bx=[-50.0, 50.0], by=[-50.0, 50.0]):
 
 class Jovian(EventEmitter):
     '''
-    Jovian is the abstraction of Remote Jovian software, it does following job:
+    Jovian is the abstraction of Remote virtual reality engine, it does following job:
     0.  jov = Jovian()                                      # instance
     1.  jov.readline().parse()                              # read from mouseover
     2.  jov.start(); jov.stop()                             # start reading process in an other CPU
@@ -67,6 +67,11 @@ class Jovian(EventEmitter):
     Jovian is a natrual event emit, it generate two `events`:
     1. touch      (according to input and trigger condition, it touches something)
     2. teleport   (based on the task fsm, something teleports)
+
+    Jovian object communicate with other sub-process via shared memory, which is defined in `shared_mem_init` function, 
+    and used by maze_view and task:
+    1. maze_view.connect(self.jov) 
+    2. task = globals()[self.task_name](self.jov)
     '''
     def __init__(self):
         super(Jovian, self).__init__()
@@ -113,17 +118,23 @@ class Jovian(EventEmitter):
 
 
     def shared_mem_init(self):
+        '''
+        once a shared variable is initialized, it must be filled here first and then can be accessed by other processs
+        '''
         # trigger task using frame counter
         self.cnt = torch.empty(1,)
         self.cnt.share_memory_()
         self.cnt.fill_(0)
+
         # current position of animal
         self.current_pos = torch.empty(3,)
         self.current_pos.share_memory_()
+        self.current_pos.fill_(0)
 
         # the influence radius of the animal
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
+        self.touch_radius.fill_(10)
 
         # bmi position (decoded position of the animal)
         self.bmi_pos = torch.empty(2,)
@@ -134,12 +145,15 @@ class Jovian(EventEmitter):
         self.hd_window = torch.empty(1,)  # time window(seconds) used to calculate head direction
         self.hd_window.share_memory_()
         self.hd_window.fill_(0)
+
         self.ball_vel = torch.empty(1,)
         self.ball_vel.share_memory_()
         self.ball_vel.fill_(0)
+        
         self.bmi_hd = torch.empty(1,)       # calculated hd sent to Jovian for VR rendering
         self.bmi_hd.share_memory_()
         self.bmi_hd.fill_(0)         
+        
         self.current_hd = torch.empty(1,)   # calculated hd (same as bmi_hd) sent to Mazeview for local playground rendering
         self.current_hd.share_memory_()
         self.current_hd.fill_(0)
@@ -149,9 +163,10 @@ class Jovian(EventEmitter):
         self.bmi_teleport_radius.share_memory_()
         self.bmi_teleport_radius.fill_(0)    
 
-        #rw counter added by shinsuke
+        # rw counter added by shinsuke
         self.rw_cnt=torch.empty(1,)
         self.rw_cnt.share_memory_()
+        self.rw_cnt.fill_(0)
 
     def reset(self):
         [conn.shutdown(2) for conn in self.socks]
@@ -243,16 +258,18 @@ class Jovian(EventEmitter):
         ## Set the real-time posterior placehodler
         dumb_X = np.zeros((self.bmi.binner.B, self.bmi.binner.N))
         self.perm_idx = np.random.permutation(dumb_X.shape[1])
-        _, post_2d = self.bmi.dec.predict_rt(dumb_X, 
-                                             two_steps=self.bmi.two_steps, 
-                                             mean_firing_rate=self.bmi.mean_firing_rate)
+        if hasattr(self.bmi.dec, 'model'):
+            print(self.bmi.dec.model)
+            self.bmi.dec.model.share_memory();
+            post_2d = np.zeros((64,64))
+        else:
+            _, post_2d = self.bmi.dec.predict_rt(dumb_X)
         self.current_post_2d = torch.empty(post_2d.shape)
         self.current_post_2d.share_memory_()
         self.log.info('The decoder binsize:{}, the B_bins:{}'.format(self.bmi.binner.bin_size, self.bmi.binner.B))
         self.log.info('The decoder input (spike count bin) shape:{}'.format(dumb_X.shape))
         self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
         self.log.info('The bmi position update rule: {}'.format(self.bmi.bmi_update_rule))
-
         self.speed_fifo = FIFO(depth=39)
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 
@@ -276,15 +293,28 @@ class Jovian(EventEmitter):
                 # ----------------------------------
                 # if X.sum(axis=0)>2:
                 # _X = X[:, self.perm_idx]
-                y, post_2d = self.bmi.dec.predict_rt(X)
-                post_2d /= post_2d.sum()
-                max_posterior = post_2d.max()
-                
-                ### save scv and posterior to file ###
+
+                ### save scv to file ###
                 f_scv = open('./scv.bin', 'ab+')
                 f_scv.write(X.tobytes())
                 f_scv.close()
+
+                if hasattr(self.bmi.dec, 'model'):
+                    self.log.info(f'use the bmi model:{X.shape},{X.dtype}')
+                    neuron_idx = self.bmi.dec.neuron_idx
+                    y = self.bmi.dec.model.predict_rt(X, neuron_idx=neuron_idx, cuda=False, mode='eval', bn_momentum=0.9);
+                    self.bmi.model_output[:] = torch.from_numpy(y)
+                    self.log.info(f'bmi model output:{y}')
+                    post_2d = self.bmi.dec.pc.real_pos_2_soft_pos(self.bmi.model_output.numpy(), kernel_size=7)
+                else:
+                    self.log.info(f'cannot find bmi model:{X.shape}')
+                    y, post_2d = self.bmi.dec.predict_rt(X)
+                    self.log.info(f'post_2d:{post_2d.shape}')
+
+                post_2d /= post_2d.sum()
+                max_posterior = post_2d.max()
                 
+                ### save posterior to file ###
                 f_post = open('./post_2d.bin', 'ab+')
                 f_post.write(post_2d.tobytes())
                 f_post.close()

@@ -63,10 +63,23 @@ def build_decoder(bmi, dec_file):
     #                        testing_range  = [0.00, 1.00],
     #                        low_speed_cutoff = {'training': True, 'testing': True})
     dec = torch.load(dec_file)
-    bmi.set_decoder(dec)
     bmi.set_binner(bin_size=dec.t_step, B_bins=dec.B_bins) # ! set binner to get real time scv correctly
+    bmi.set_decoder(dec)
     bmi.pos_buffer_len = dec.smooth_factor # ! position buffer length for moving average
     bmi.mean_firing_rate = np.mean(dec.train_X[:, dec.neuron_idx])  # average firing rate of all cells over all time bins
+    
+    # @bmi.binner.connect
+    # def on_decode(X):
+    #     print(X.shape)
+    #     print(type(X))
+    #     print(X.dtype)
+    #     f_scv = open('./scv.bin', 'ab+')
+    #     f_scv.write(X.tobytes())
+    #     f_scv.close()
+    #     y = bmi.dec.model.predict_rt(
+    #         X, bmi.dec.neuron_idx, cuda=False, mode='eval', bn_momentum=0.9)
+    #     print(y)
+    
     return dec._score
 
     # For test: Using Brian's data to test system

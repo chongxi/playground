@@ -74,6 +74,7 @@ class Task(object):
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
 
         self.reward_time = 1.0
+        self.touch_radius = 10
         self.BMI_enable = False
 
         # initial reset only after jov process start 
@@ -577,6 +578,7 @@ class JEDI(Task):
 
         self.BMI_enable = True
         self.reward_time = 0.01
+        self.touch_radius = 20
 
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
@@ -625,6 +627,8 @@ class JUMPER(Task):
         super(JUMPER, self).__init__(fsm, jov)
 
         self.BMI_enable = True
+        self.reward_time = 0.01
+        self.touch_radius = 20
 
         #------------------------------------------------------------------------------
         # core of JUMPER: teleport itself when bmi_decode event happens
