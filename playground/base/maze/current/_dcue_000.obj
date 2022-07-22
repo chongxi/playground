@@ -1,4 +1,4 @@
-# Blender v2.81 (sub 16) OBJ File: 'current_square_maze_1mx1m_obj_colour_cue.blend'
+# Blender v2.81 (sub 16) OBJ File: 'current_square_maze_1mx1m_obj.blend'
 # www.blender.org
 mtllib _dcue_000.mtl
 o _dcue_000_Plane.256
@@ -250,7 +250,7 @@ f 54//35 17//35 69//35
 f 48//53 17//53 73//53
 f 18//37 41//37 53//37
 f 49//54 18//54 74//54
-usemtl cue
+usemtl Material_001_002
 f 36//55 62//55 26//55
 f 2//56 34//56 66//56
 f 3//57 28//57 58//57
