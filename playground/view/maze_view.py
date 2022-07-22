@@ -313,6 +313,16 @@ class maze_view(scene.SceneCanvas):
             self.view.camera.view_changed()
 
     @property
+    def real_pos(self):
+        return (self.pos-self.origin[:2])/self.scale_factor
+
+    def maze_2_real_pos(self, pos):
+        return (pos-self.origin[:2])/self.scale_factor
+
+    def real_2_maze_pos(self, pos):
+        return (pos*self.scale_factor)+self.origin[:2]
+
+    @property
     def current_hd(self):
         return self._current_hd
 
