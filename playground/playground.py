@@ -4,7 +4,7 @@
 import sys
 import time
 from PyQt5.QtWidgets import QApplication
-from .gui import play_raster_GUI
+from .gui import NAV_GUI
 from spiketag.realtime import BMI
 import numpy as np
 import torch
@@ -24,7 +24,7 @@ def normalize_pos(pos, scale):
     # pos = (pos - np.mean(pos,axis=0))
     return pos
 
-def run(bmi_update_rule, posterior_threshold, bmi_mode):
+def run_experiment(bmi_update_rule, posterior_threshold, bmi_mode):
     app = QApplication(sys.argv)
     if bmi_mode:
         bmi = BMI(fetfile='./fet.bin')
@@ -33,7 +33,7 @@ def run(bmi_update_rule, posterior_threshold, bmi_mode):
         bmi.two_steps = two_steps_decoding
     else:
         bmi = None
-    gui = play_raster_GUI(bmi=bmi)
+    gui = NAV_GUI(bmi=bmi)
     gui.show()
     sys.exit(app.exec_())
 
@@ -95,4 +95,4 @@ def build_decoder(bmi, dec_file):
     # bmi.set_decoder(dec, dec_file='dec')
 
 if __name__ == '__main__':
-    run()
+    run_experiment()

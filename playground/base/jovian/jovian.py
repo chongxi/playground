@@ -269,7 +269,6 @@ class Jovian(EventEmitter):
         self.log.info('The decoder binsize:{}, the B_bins:{}'.format(self.bmi.binner.bin_size, self.bmi.binner.B))
         self.log.info('The decoder input (spike count bin) shape:{}'.format(dumb_X.shape))
         self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
-        self.log.info('The bmi position update rule: {}'.format(self.bmi.bmi_update_rule))
         self.speed_fifo = FIFO(depth=39)
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 

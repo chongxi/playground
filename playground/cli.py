@@ -16,7 +16,7 @@ import playground
 def main(bmi_update_rule, posterior_threshold, bmi_mode):
     """Console script for playground."""
     print(f'bmi_mode:{bmi_mode}')
-    playground.run(bmi_update_rule, posterior_threshold, bmi_mode=bmi_mode)
+    playground.run_experiment(bmi_update_rule, posterior_threshold, bmi_mode=bmi_mode)
     return 0
 
 

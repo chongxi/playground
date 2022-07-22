@@ -26,12 +26,11 @@ dir_path += '/base/maze/current/'
 # raster: raster
 ###################################################################################################################################################
 
-class play_raster_GUI(QWidget):
+class NAV_GUI(QWidget):
     """
     GUI for experiment: control file, task parameter; navigation visualization, 
     """
     def __init__(self, bmi=None):
-        # super(play_GUI, self).__init__()
         QWidget.__init__(self)
         self.log = create_logger()
 
@@ -47,14 +46,11 @@ class play_raster_GUI(QWidget):
         '''
         Setting bmi for jov, jov will emit `bmi_decode` event to the `task`
         '''
-        if bmi is not None:
-            self.bmi = bmi
-            self.ras_view_timer = QtCore.QTimer(self)
-            self.ras_view_timer.timeout.connect(self.ras_view_update)
-            self.update_interval = 60
-        else:
-            self.bmi = None
-            
+        self.bmi = bmi
+        self.ras_view_timer = QtCore.QTimer(self)
+        self.ras_view_timer.timeout.connect(self.ras_view_update)
+        self.update_interval = 60
+
         self.init_speed_thres = 1500
         self.init_UI()
     #------------------------------------------------------------------------------
@@ -251,23 +247,27 @@ class play_raster_GUI(QWidget):
         # self.log.info('select position {}'.format(pos_file))
         from playground import build_decoder
         score = build_decoder(self.bmi, dec_file)
+
         self.log.info('BMI decoder params: {} decoding cells out of {} cells, {} t_step, {} t_window'.format(self.bmi.dec.neuron_idx.shape[0],
-                                                                                                             self.bmi.dec.fields.shape[
-                                                                                                                 0],
-                                                                                                             self.bmi.dec.t_step,
-                                                                                                             self.bmi.dec.t_window))
+                                                                                                            self.bmi.dec.fields.shape[
+                                                                                                                0],
+                                                                                                            self.bmi.dec.t_step,
+                                                                                                            self.bmi.dec.t_window))
         self.log.info('BMI decoder training data size {}'.format(
-            self.bmi.dec.train_X.shape))
+                self.bmi.dec.train_X.shape))
         self.log.info(
-            'BMI decoder R2-score (cross-validation enabled): {}'.format(score))
-        self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
-        self.log.info('BMI posterior threshold: {}'.format(
-            self.bmi.posterior_threshold))
-        self.log.info('BMI position update buffer length: {}'.format(
-            self.bmi.pos_buffer_len))
-        self.log.info('BMI two step: {}'.format(self.bmi.two_steps))
-        self.log.info('BMI meaning firing rate for firing rate modulation: {}'.format(
-            self.bmi.mean_firing_rate))
+                'BMI decoder R2-score (cross-validation enabled): {}'.format(score))
+        try:
+            self.log.info('BMI updating rule: {}'.format(self.bmi.bmi_update_rule))
+            self.log.info('BMI posterior threshold: {}'.format(
+                self.bmi.posterior_threshold))
+            self.log.info('BMI position update buffer length: {}'.format(
+                self.bmi.pos_buffer_len))
+            self.log.info('BMI two step: {}'.format(self.bmi.two_steps))
+            self.log.info('BMI meaning firing rate for firing rate modulation: {}'.format(
+                self.bmi.mean_firing_rate))
+        except:
+            self.log.info('BMI updating rule, posterior threshold, buffer length, two step, mean firing rate not set')
 
         # select task first
         if hasattr(self, 'jov'):
