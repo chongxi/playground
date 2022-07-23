@@ -234,6 +234,16 @@ class Jovian(EventEmitter):
                 except:
                     self.log.info('jovian recv process error')
 
+    @property
+    def current_cue_pos(self):
+        _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
+        _cue_pos_0 = self.shared_cue_dict[_cue_name_0]
+        _cue_pos_0[:2] = (_cue_pos_0[:2]-self.maze_origin[:2])/self.maze_scale
+        _cue_pos_1 = self.shared_cue_dict[_cue_name_1]
+        _cue_pos_1[:2] = (_cue_pos_1[:2]-self.maze_origin[:2])/self.maze_scale
+        cue_pos = np.concatenate((_cue_pos_0, _cue_pos_1))
+        return cue_pos
+
     def set_bmi(self, bmi, pos_buffer_len=30):
         '''
         This set BMI, Its binner and decoder event for JOV to act on. The event flow:
@@ -261,7 +271,7 @@ class Jovian(EventEmitter):
         if hasattr(self.bmi.dec, 'model'):
             print(self.bmi.dec.model)
             self.bmi.dec.model.share_memory();
-            post_2d = np.zeros((64,64))
+            post_2d = np.random.randn(*self.bmi.dec.pc.O.shape)
         else:
             _, post_2d = self.bmi.dec.predict_rt(dumb_X)
         self.current_post_2d = torch.empty(post_2d.shape)
@@ -270,6 +280,7 @@ class Jovian(EventEmitter):
         self.log.info('The decoder input (spike count bin) shape:{}'.format(dumb_X.shape))
         self.log.info('The decoder output (posterior) shape: {}'.format(self.current_post_2d.shape))
         self.speed_fifo = FIFO(depth=39)
+        
         # self.bmi.dec.drop_neuron(np.array([7,9]))
 
         @self.bmi.binner.connect
@@ -317,7 +328,12 @@ class Jovian(EventEmitter):
                 f_post = open('./post_2d.bin', 'ab+')
                 f_post.write(post_2d.tobytes())
                 f_post.close()
-                
+
+                ### save cue_pos to file ###
+                f_cue1_pos = open('./cue_pos.bin', 'ab+')
+                f_cue1_pos.write(self.current_cue_pos.tobytes())
+                f_cue1_pos.close()
+
                 ### Key: filter out criterion ###
                 if X.sum()>2:
                     self.current_post_2d[:] = torch.tensor(post_2d) * 1.0

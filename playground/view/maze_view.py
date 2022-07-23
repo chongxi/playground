@@ -492,6 +492,10 @@ class maze_view(scene.SceneCanvas):
         self.jov._to_maze_coord = self._to_maze_coord
         self.jov._to_jovian_coord = self._to_jovian_coord
         self.is_jovian_connected = True
+        self.jov.maze_origin = self.origin
+        self.jov.maze_scale = self.scale_factor
+        self.jov.log.info('jov acquire maze_origin as: %s' % str(self.jov.maze_origin))
+        self.jov.log.info('jov acquire maze_scale as: %s' % str(self.jov.maze_scale))
 
         # @self.jov.connect
         # def on_cue(cue_id, func, args):
