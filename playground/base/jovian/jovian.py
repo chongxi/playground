@@ -334,6 +334,12 @@ class Jovian(EventEmitter):
                 f_cue_pos.write(self.current_cue_pos.tobytes())
                 f_cue_pos.close()
 
+                ### save animal_pos to file ###
+                animal_pos = (self.current_pos.numpy()[:2]-self.maze_origin[:2])/self.maze_scale
+                f_animal_pos = open('./animal_pos.bin', 'ab+')
+                f_animal_pos.write(animal_pos.tobytes())
+                f_animal_pos.close()
+
                 ### Key: filter out criterion ###
                 if X.sum()>2:
                     self.current_post_2d[:] = torch.tensor(post_2d) * 1.0
