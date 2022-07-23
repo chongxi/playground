@@ -289,7 +289,7 @@ class Jovian(EventEmitter):
             This event is triggered every time a new bin is filled (based on BMI output timestamp)
             '''
             # print(self.binner.nbins, self.binner.count_vec.shape, X.shape, np.sum(X))
-            with Timer('decoding', verbose=False):
+            with Timer('decoding', verbose=False): # use verbose to see the decoding time, rouphly 16 ms for 500 units
                 # ----------------------------------
                 # 1. Ring decoder for the head direction
                 # ----------------------------------
@@ -330,9 +330,9 @@ class Jovian(EventEmitter):
                 f_post.close()
 
                 ### save cue_pos to file ###
-                f_cue1_pos = open('./cue_pos.bin', 'ab+')
-                f_cue1_pos.write(self.current_cue_pos.tobytes())
-                f_cue1_pos.close()
+                f_cue_pos = open('./cue_pos.bin', 'ab+')
+                f_cue_pos.write(self.current_cue_pos.tobytes())
+                f_cue_pos.close()
 
                 ### Key: filter out criterion ###
                 if X.sum()>2:
@@ -388,6 +388,11 @@ class Jovian(EventEmitter):
                             
                     # # set shared variable
                     # _teleport_pos = rotate(_teleport_pos, theta=0)
+                                    ### save cue_pos to file ###
+                    f_bmi_pos = open('./bmi_pos.bin', 'ab+')
+                    current_bmi_pos = _teleport_pos.astype(np.float32)
+                    f_bmi_pos.write(current_bmi_pos.tobytes())
+                    f_bmi_pos.close()
                     self.bmi_pos[:] = torch.tensor(_teleport_pos)
 
                     # self.bmi_hd_buf = np.vstack((self.bmi_hd_buf[1:, :], _teleport_pos))
@@ -399,7 +404,6 @@ class Jovian(EventEmitter):
                             # self.current_hd[:] = torch.tensor(hd)  # sent to Mazeview
                         # self.emit('bmi_update', pos=self.teleport_pos)
                         # self.log.info('\n')
-
                     self.log.info('BMI output(x,y,speed,ball_thres): {0:.2f}, {1:.2f}, {2:.2f}, {3:.2f}'.format(_teleport_pos[0],
                                                                                                                 _teleport_pos[1], 
                                                                                                                 speed, 
