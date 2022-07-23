@@ -38,13 +38,13 @@ def smooth(x, window_len=60):
     '''
     moving weighted average
     '''
-    tau = 0.0005
-    y = np.empty_like(x)
-    # box = np.exp(tau*np.arange(window_len))
+    if x.ndim == 1:
+        x = x.reshape(-1,1)
+    y = np.zeros((x.shape[0]-window_len+1, x.shape[1])) # window_len is the smooth_factor
     box = np.ones((window_len,))
     box = box/float(box.sum())
     for i in range(y.shape[1]):
-        y[:,i] = np.convolve(x[:,i], box, mode='same')
+        y[:,i] = np.convolve(x[:,i], box, mode='valid')
     return y
 
 #------------------------------------------------------------------------------
@@ -52,12 +52,15 @@ def smooth(x, window_len=60):
 #------------------------------------------------------------------------------
 def randomwalk2D(n, init_pos=[0,0], x_range=[-50, 50], y_range=[-50, 50], max_speed=10, smooth_factor=5, dt=100e-3):
     # run once to compile the code
-    pos, theta, speed = _randomwalk2D(n, init_pos, x_range, y_range, max_speed, dt)
-    pos = smooth(pos, smooth_factor)
+    pos, theta, speed = _randomwalk2D(
+        n, init_pos, x_range, y_range, max_speed, dt, smooth_factor) # return pos: (n+smooth_factor-1,2)
+    pos = smooth(pos, smooth_factor)                                 # return pos: (n,2) smoothed position
+    theta = smooth(theta, smooth_factor)                             # return theta: (n,1) smoothed theta
+    speed = smooth(speed, smooth_factor)                             # return speed: (n,1) smoothed speed
     return pos, theta, speed
 
 @jit(cache=True)
-def _randomwalk2D(n, init_pos=[0,0], x_range=[-50, 50], y_range=[-50, 50], max_speed=10, dt=100e-3):
+def _randomwalk2D(n, init_pos=[0, 0], x_range=[-50, 50], y_range=[-50, 50], max_speed=10, dt=100e-3, smooth_factor=5):
     '''
     Input:
     n: number of points
@@ -70,9 +73,12 @@ def _randomwalk2D(n, init_pos=[0,0], x_range=[-50, 50], y_range=[-50, 50], max_s
     speed: (n,) absolute speed at each (x, y)
     '''
     # by default, dt is 100ms and time_scale is 1
-    # the larger the dt is, the smaller the time_scale is
-    # slower time_scale will make both the speed and the angle_shift at each step smaller
-    time_scale = 100e-3/dt 
+    # the larger the dt is, the larger the time_scale is
+    # larger time_scale will make both the speed and the angle_shift at each step larger
+    # offset the boundary effect when using with smooth (np.convolve function)
+    n = n + smooth_factor -1
+
+    time_scale = dt/100e-3
     angle_shift = 15 * time_scale
     x = np.zeros(n,)
     y = np.zeros(n,)
