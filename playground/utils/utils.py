@@ -7,6 +7,7 @@ from functools import partial
 from scipy.interpolate import interp1d
 from numba import jit, njit
 from spiketag.analysis import smooth
+from IPython import get_ipython
 
 ENABLE_PROFILER = False
 
@@ -209,27 +210,27 @@ def line_plane_intersection(rayDirection, rayPoint, planeNormal, planePoint, eps
 #------------------------------------------------------------------------------
 # 2d mouse event to 3d coordinate
 #------------------------------------------------------------------------------
-def pos2d_to_pos3d(pos, cam):
-    """Convert mouse event pos:(x, y) into x, y, z translations"""
-    """dist is the distance between (x,y) and (cx, cy) of cam"""
-    center = get_center_of_view(cam)
-    dist = pos - center
-    dist[1] *= -1
-    rae = np.array([cam.azimuth, cam.elevation]) * np.pi / 180
-    saz, sel = np.sin(rae)
-    caz, cel = np.cos(rae)
-    dx = (+ dist[0] * (1 * caz)
-          + dist[1] * (- 1 * sel * saz))
-    dy = (+ dist[0] * (1 * saz)
-          + dist[1] * (+ 1 * sel * caz))
-    dz = (+ dist[1] * 1 * cel)
+# def pos2d_to_pos3d(pos, cam):
+#     """Convert mouse event pos:(x, y) into x, y, z translations"""
+#     """dist is the distance between (x,y) and (cx, cy) of cam"""
+#     center = get_center_of_view(cam)
+#     dist = pos - center
+#     dist[1] *= -1
+#     rae = np.array([cam.azimuth, cam.elevation]) * np.pi / 180
+#     saz, sel = np.sin(rae)
+#     caz, cel = np.cos(rae)
+#     dx = (+ dist[0] * (1 * caz)
+#           + dist[1] * (- 1 * sel * saz))
+#     dy = (+ dist[0] * (1 * saz)
+#           + dist[1] * (+ 1 * sel * caz))
+#     dz = (+ dist[1] * 1 * cel)
 
-    # Black magic part 2: take up-vector and flipping into account
-    ff = cam._flip_factors
-    up, forward, right = cam._get_dim_vectors()
-    dx, dy, dz = right * dx + forward * dy + up * dz
-    dx, dy, dz = ff[0] * dx, ff[1] * dy, ff[2] * dz
-    return dx, dy, dz
+#     # Black magic part 2: take up-vector and flipping into account
+#     ff = cam._flip_factors
+#     up, forward, right = cam._get_dim_vectors()
+#     dx, dy, dz = right * dx + forward * dy + up * dz
+#     dx, dy, dz = ff[0] * dx, ff[1] * dy, ff[2] * dz
+#     return dx, dy, dz
 
 
 #------------------------------------------------------------------------------
