@@ -65,7 +65,6 @@ class maze_view(scene.SceneCanvas):
         self.cues_height = {}
         self._selected_cue = None
 
-
         ### 3. replay
         self.replay_current_pos = scene.visuals.Markers(parent=self.view.scene)
         self.replay_current_pos.set_data(np.array([0,0,0]).reshape(-1,3))
@@ -85,6 +84,10 @@ class maze_view(scene.SceneCanvas):
         # self._timer.start(0.8)
         self.global_i = 0
 
+        ### random walk timer, update each 100 ms
+        self._random_walk_timer = app.Timer()
+        self._random_walk_timer.connect(self.on_random_walk_timer)
+        self._random_walk_step = 0
 
         ### 4. background and fields
         self.image_background = scene.visuals.Image(parent=self.view.scene, method='subdivide')
@@ -97,6 +100,25 @@ class maze_view(scene.SceneCanvas):
         ### first person view
         self.fpv = False
 
+    def random_walk(self, n_steps=10000, init_pos=[0, 0], max_speed=10, dt=0.1, smooth_factor=5):
+        if self.current_pos is not None:
+            init_pos = self.maze_2_real_pos(self.current_pos)
+        self.random_walk_pos, self.random_walk_hd, v = randomwalk2D(n_steps, init_pos,
+                                                                    x_range=self.x_range_real,
+                                                                    y_range=self.y_range_real,
+                                                                    max_speed=max_speed,
+                                                                    smooth_factor=smooth_factor,
+                                                                    dt=dt)
+        self._random_walk_timer.start(dt)
+
+    def on_random_walk_timer(self, event):
+        if self._random_walk_step >= len(self.random_walk_pos):
+            self._random_walk_timer.stop()
+            self._random_walk_step = 0
+        else:
+            self.current_pos = self.real_2_maze_pos(self.random_walk_pos[self._random_walk_step])
+            self.current_hd  = self.random_walk_hd[self._random_walk_step]%360 + 90
+            self._random_walk_step += 1
 
     def load_all(self):
         base_folder = os.path.dirname(maze.__file__)
@@ -127,6 +149,8 @@ class maze_view(scene.SceneCanvas):
         self.origin    = -np.array(self.maze.coord['Origin']).astype(np.float32) * self.scale_factor
         self.origin_hd = np.arctan2(-self.origin[1], self.origin[0])/np.pi*180
         self.border  = np.array(self.maze.coord['border']).astype(np.float32)
+        self.x_range_real = self.border[[0,2]]
+        self.y_range_real = self.border[[1,3]]
         self.x_range = (self.origin[0]+self.border[0]*self.scale_factor, self.origin[0]+self.border[2]*self.scale_factor)
         self.y_range = (self.origin[1]+self.border[1]*self.scale_factor, self.origin[1]+self.border[3]*self.scale_factor)
         self._arrow_len = (self.x_range[1]-self.x_range[0])/10
@@ -331,15 +355,14 @@ class maze_view(scene.SceneCanvas):
         self._current_hd = hd_in # absolute value from rotation encoder
         try:
             _current_hd_calibrated = hd_in - 90 # point ahead (0 towards the upper board, 90 towards the right board)
-            arrow_delta = np.array([np.cos(_current_hd_calibrated/360*np.pi*2), 
-                                    np.sin(_current_hd_calibrated/360*np.pi*2)]).ravel()
+            self.arrow_delta = np.array([np.cos(_current_hd_calibrated/360*np.pi*2), 
+                                         np.sin(_current_hd_calibrated/360*np.pi*2)]).ravel()
             arrow = np.vstack(( self.current_pos[:2], 
-                                self.current_pos[:2] + self._arrow_len * arrow_delta ))
+                                self.current_pos[:2] + self._arrow_len * self.arrow_delta ))
             assert(arrow.shape==(2,2)) # first row is current_pos, arrow_delta point into the head direction
             self.arrow.set_data(arrow)
         except:
             pass
-
 
     @property
     def arrow_len(self):

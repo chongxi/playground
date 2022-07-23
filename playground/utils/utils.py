@@ -5,7 +5,8 @@ import re
 from collections import defaultdict
 from functools import partial
 from scipy.interpolate import interp1d
-
+from numba import jit, njit
+from spiketag.analysis import smooth
 
 ENABLE_PROFILER = False
 
@@ -30,6 +31,86 @@ def segment_trial_gaps(array):
                 segments.append([array[i]])
     return segments
 
+#------------------------------------------------------------------------------
+# smooth a 2d trajectory
+#------------------------------------------------------------------------------
+def smooth(x, window_len=60):
+    '''
+    moving weighted average
+    '''
+    tau = 0.0005
+    y = np.empty_like(x)
+    # box = np.exp(tau*np.arange(window_len))
+    box = np.ones((window_len,))
+    box = box/float(box.sum())
+    for i in range(y.shape[1]):
+        y[:,i] = np.convolve(x[:,i], box, mode='same')
+    return y
+
+#------------------------------------------------------------------------------
+# simulate a random walk in 2D manner
+#------------------------------------------------------------------------------
+def randomwalk2D(n, init_pos=[0,0], x_range=[-50, 50], y_range=[-50, 50], max_speed=10, smooth_factor=5, dt=100e-3):
+    # run once to compile the code
+    pos, theta, speed = _randomwalk2D(n, init_pos, x_range, y_range, max_speed, dt)
+    pos = smooth(pos, smooth_factor)
+    return pos, theta, speed
+
+@jit(cache=True)
+def _randomwalk2D(n, init_pos=[0,0], x_range=[-50, 50], y_range=[-50, 50], max_speed=10, dt=100e-3):
+    '''
+    Input:
+    n: number of points
+    x_range: range of x
+    y_range: range of y
+
+    Output:
+    pos: (n,2) array of positions
+    theta: (n,) head directions (angle)
+    speed: (n,) absolute speed at each (x, y)
+    '''
+    # by default, dt is 100ms and time_scale is 1
+    # the larger the dt is, the smaller the time_scale is
+    # slower time_scale will make both the speed and the angle_shift at each step smaller
+    time_scale = 100e-3/dt 
+    angle_shift = 15 * time_scale
+    x = np.zeros(n,)
+    y = np.zeros(n,)
+    speed = np.zeros(n,)
+    theta = np.zeros(n,)
+    x[0] = init_pos[0]
+    y[0] = init_pos[1]
+
+    for i in range(1, n):
+        speed[i] += speed[i-1] + np.random.randn(1) * 2
+        if speed[i] <= 0:
+            speed[i] = 0
+        if speed[i] > max_speed:
+            speed[i] = max_speed
+
+        theta[i] += theta[i-1] + np.random.normal(0, 2) * angle_shift
+        delta_x = speed[i] * np.cos(theta[i]/360*np.pi*2) * time_scale
+        delta_y = speed[i] * np.sin(theta[i]/360*np.pi*2) * time_scale
+        x[i] = x[i-1] + delta_x
+        y[i] = y[i-1] + delta_y
+        
+        # check if out of range, if so, add larger variance to angle
+        if x[i] <= x_range[0] or x[i] >= x_range[1] or y[i] <= y_range[0] or y[i] >= y_range[1]:
+            angle_shift *= 2
+        else:
+            angle_shift = 15 * time_scale
+
+        if x[i] <= x_range[0]:
+            x[i] = x_range[0]
+        if x[i] >= x_range[1]:
+            x[i] = x_range[1]
+        if y[i] <= y_range[0]:
+            y[i] = y_range[0]
+        if y[i] >= y_range[1]:
+            y[i] = y_range[1]
+            
+    pos = np.stack((x, y)).T
+    return pos, theta, speed
 
 #------------------------------------------------------------------------------
 # Compare the content of two list/array in a orderless manner
