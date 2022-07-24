@@ -340,6 +340,13 @@ class Jovian(EventEmitter):
                 f_animal_pos.write(animal_pos.tobytes())
                 f_animal_pos.close()
 
+                ### save animal_hdv to file ###
+                animal_hdv = np.concatenate((self.current_hd.numpy(), 
+                                             self.ball_vel.numpy()/14e-3/100))
+                f_animal_hdv = open('./animal_hdv.bin', 'ab+')
+                f_animal_hdv.write(animal_hdv.tobytes())
+                f_animal_hdv.close()
+
                 ### Key: filter out criterion ###
                 if X.sum()>2:
                     self.current_post_2d[:] = torch.tensor(post_2d) * 1.0
