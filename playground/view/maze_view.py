@@ -95,10 +95,34 @@ class maze_view(scene.SceneCanvas):
         self.image = scene.visuals.Image(parent=self.view.scene, method='subdivide', cmap='hot', clim=[0.025, 0.3])
         self.image.transform = STTransform()
 
+        ### 5. distance check
+        self.goal_distances = f'Distances: 0, 0, 0'
+        self.goal_distances_text = scene.visuals.Text(parent=self.scene)
+        self.goal_distances_text.text = self.goal_distances
+        self.goal_distances_text.pos = np.array([130, 30])
+        self.goal_distances_text.color = (1, 1, 1, 0.7)
+        self.goal_distances_text.font_size = 10
+        self._goal_distance_timer = app.Timer()
+        self._goal_distance_timer.connect(self.check_goal_distance)
+        self._goal_distance_timer.start(0.1)
+
         # self.set_range()
         # self.freeze()
         ### first person view
         self.fpv = False
+
+    def check_goal_distance(self, event):
+        if self.current_pos is not None:
+            try:
+                animal_pos = self.maze_2_real_pos(self.current_pos[:2])
+                cue0_pos = self.cues['_dcue_000'].pos[:2]
+                cue1_pos = self.cues['_dcue_001'].pos[:2]
+                self.goal_distances = (np.linalg.norm(animal_pos-cue0_pos),
+                                    np.linalg.norm(animal_pos-cue1_pos),
+                                    np.linalg.norm(cue0_pos-cue1_pos))
+                self.goal_distances_text.text = f'Distances: {self.goal_distances[0]:.1f}, {self.goal_distances[1]:.1f}, {self.goal_distances[2]:.1f}'
+            except:
+                pass
 
     def random_walk(self, n_steps=10000, init_pos=[0, 0], max_speed=10, dt=0.1, smooth_factor=5):
         if self.current_pos is not None:
