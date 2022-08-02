@@ -315,6 +315,7 @@ class one_cue_task(Task):
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
                 self.reset()
+        self.jov.RD_switch('L')
 
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
@@ -373,6 +374,7 @@ class YMaze(Task):
                                         [-40, +30]])
         self.start_location = np.array([40, 40])
         self.jov.set_alpha('_dcue_001',0) 
+        self.jov.RD_switch('L')
 
         
 
@@ -428,6 +430,7 @@ class one_cue_moving_task(Task):
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
                 self.reset()
+        self.jov.RD_switch('L')
 
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
@@ -467,6 +470,7 @@ class two_cue_task(Task):
                 pass
             elif animation_name == 'bury':
                 self.reset()
+        self.jov.RD_switch('L')
 
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
@@ -527,7 +531,8 @@ class RING(Task):
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
                 self.reset()
-
+        self.jov.RD_switch('L')
+        
     def _bmi_control(self, prefix='console', cue_name=None):
         ''' usage:
             self.animation['_dcue_001'] = deque([ (3, self.parachute('_dcue_001', self._coord_guide)), (30, self.vibrate('_dcue_001')) ])
@@ -579,6 +584,7 @@ class JEDI(Task):
         self.BMI_enable = True
         self.reward_time = 0.01
         self.touch_radius = 20
+        self.onset = 0.3
 
         #------------------------------------------------------------------------------
         # core of JEDI: teleport cue(`_dcue_001`) when bmi_decode event happens
@@ -594,6 +600,7 @@ class JEDI(Task):
             if animation_name == 'bury':
                 self.reset()
 
+        self.jov.RD_switch('S')
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
     #---------------------------------------------------------------------------------------------------
@@ -610,7 +617,8 @@ class JEDI(Task):
         self.state = '1cue'
 
     def goal_cue_touched(self, args):
-        self.jov.reward(self.reward_time)
+        self.refractory = np.random.randint(low=0, high=20, size=(1,))[0]/10
+        self.jov.JEDI_reward(self.reward_time, self.onset, self.refractory)
 
 
 #------------------------------------------------------------------------------
@@ -641,7 +649,8 @@ class JUMPER(Task):
         def on_animation_finish(animation_name):
             if animation_name == 'bury':
                 self.reset()
-
+        
+        self.jov.RD_switch('L')
     #---------------------------------------------------------------------------------------------------
     # Every task cycle finished, you need to reset (regenerate cue based on current coordination etc..)
     #---------------------------------------------------------------------------------------------------

@@ -13,11 +13,11 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-# host_ip = '10.102.20.23'
+host_ip = '10.102.20.23'
 pynq_ip = '10.102.20.93'
 
 # Test
-host_ip = '10.102.20.34'
+#host_ip = '10.102.20.34'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
@@ -564,6 +564,24 @@ class Jovian(EventEmitter):
         self.log.info('air_puff_{}'.format(on_off))
         try:
             cmd = 'air_puff, {}'.format(on_off)
+            self.pynq.send(cmd.encode())
+        except:
+            self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
+
+    def RD_switch(self, S_L):
+        self.log.info('RD_{}'.format(S_L))
+        try:
+            cmd = 'RD_switch, {}'.format(S_L)
+            self.pynq.send(cmd.encode())
+        except:
+            self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
+
+    def JEDI_reward(self, time, onset, refractory):
+        self.log.info('JEDI_reward {} {} {}'.format(time, onset, refractory))
+        t_rw_cnt=self.rw_cnt.numpy()
+        self.rw_cnt.fill_(t_rw_cnt[0]+1)
+        try:
+            cmd = 'JEDI_reward,{} {} {}'.format(time, onset, refractory)
             self.pynq.send(cmd.encode())
         except:
             self.log.info('fail to send reward command - pynq connected: {}'.format(self.pynq_connected))
