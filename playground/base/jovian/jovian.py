@@ -1,3 +1,4 @@
+from re import I
 import sys
 import socket
 import numpy as np
@@ -7,6 +8,7 @@ from spiketag.utils import Timer
 from spiketag.utils import EventEmitter
 from spiketag.analysis.core import get_hd
 from spiketag.utils import FIFO
+from spiketag.fpga.memory_api import read_mem_16
 from ..rotenc import Rotenc
 
 
@@ -79,7 +81,11 @@ class Jovian(EventEmitter):
         self.buf_init()
         self.shared_mem_init()
         self.rotenc_init()
+        self.sync_init()
 
+    def sync_init(self):
+        self.sync_status = 0
+        self.sync_count = 0
 
     def socket_init(self):
         ### mouseover server connection
@@ -213,26 +219,20 @@ class Jovian(EventEmitter):
         '''
         while True:
             with Timer('', verbose=ENABLE_PROFILER):
-                try:
-                    self._t, self._coord, self._ball_vel = self.readline().parse()
-                    _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
-                    if type(self._coord) is list:
-                        self.current_pos[:]  = torch.tensor(self._coord)
-                        self.current_hd[:]   = self.rot.direction
-                        self.ball_vel[:]     = self._ball_vel
-                        self.log.info('{}, {}, {}, {}'.format(self._t, self.current_pos.numpy(), 
-                                                                self.current_hd.numpy(), 
-                                                                self._ball_vel))
-                        self.log.info('cue_pos:, {},{}'.format(self.shared_cue_dict[_cue_name_0],
-                                                                self.shared_cue_dict[_cue_name_1]))
-                        self.task_routine()
-                    else:
-                        self.log.warn('{}, {}'.format(self._t, self._coord))
+               # try:
+                self._t, self._coord, self._ball_vel = self.readline().parse()
+
+                if type(self._coord) is list:
+                    self.sync_routine()
+                    self.read_routine()
+                    self.task_routine()
+                else:
+                    self.log.warn('{}, {}'.format(self._t, self._coord))
 
                 # except Exception as e:
                     # self.log.warn(f'jovian recv process error:{e}')
-                except:
-                    self.log.info('jovian recv process error')
+                # except:
+                    # self.log.info('jovian recv process error')
 
     @property
     def current_cue_pos(self):
@@ -243,6 +243,60 @@ class Jovian(EventEmitter):
         _cue_pos_1[:2] = (_cue_pos_1[:2]-self.maze_origin[:2])/self.maze_scale
         cue_pos = np.concatenate((_cue_pos_0, _cue_pos_1))
         return cue_pos
+
+    def read_routine(self):
+        '''
+        read current_pos, current_hd, ball_vel, current_cue_pos into shared memory
+        and put them into log
+        '''
+        self.current_pos[:]  = torch.tensor(self._coord)
+        self.current_hd[:]   = self.rot.direction
+        self.ball_vel[:]     = self._ball_vel
+        self._cue_name_0, self._cue_name_1 = list(self.shared_cue_dict.keys())
+        self.log.info('ani_pos: {}, [{:.2f}, {:.2f}, {:.2f}], {}, {}'.format(self._t, 
+                                                                             self.current_pos.numpy()[0],
+                                                                             self.current_pos.numpy()[1],
+                                                                             self.current_pos.numpy()[2], 
+                                                                             self.current_hd.numpy(), 
+                                                                             self.ball_vel.numpy()))
+        self.log.info('cue_pos: [{0:.2f},{1:.2f},{2:.2f}],[{3:.2f}, {4:.2f}, {5:.2f}]'.format(self.shared_cue_dict[self._cue_name_0][0],
+                                                                                              self.shared_cue_dict[self._cue_name_0][1],
+                                                                                              self.shared_cue_dict[self._cue_name_0][2],
+                                                                                              self.shared_cue_dict[self._cue_name_1][0],
+                                                                                              self.shared_cue_dict[self._cue_name_1][1],
+                                                                                              self.shared_cue_dict[self._cue_name_1][2], 
+                                                                                             ))
+
+    def sync_routine(self):
+        '''
+        sync routine: read FPGA-NSP state from `bmi.fpga.mem_16[0]`
+        - 0: SPI is not running and sync pulse is low
+        - 1: SPI is running and sync pulse is low
+        - 2: SPI is not running and sync pulse is high (impossible state)
+        - 3: SPI is running and sync pulse is high
+
+        # ! sync_pulse width is 100ms so this sync_routine should be called at least 10Hz
+
+        self.sync_state: keep track of the FPGA-NSP state
+        self.sync_count: keep track of the sync pulse count
+
+        log.info('SY') and self.sync_count increasement 
+        should only be triggered when the FPGA-NSP state changes from 1 to 3
+        '''
+        new_sync_status = read_mem_16(0)
+
+        x = np.array([new_sync_status], dtype=np.int16)
+        f_sync = open('./sync.bin', 'ab+')
+        f_sync.write(x.tobytes())
+        f_sync.close()
+
+        # the first pulse state transition (0->3)
+        # the second and later pulse state transition (1->3)
+        if new_sync_status == 3 and self.sync_status <= 1: # capture the rising edge
+            self.sync_count += 1
+            self.log.info(f'sync_status: high, sync_count: {self.sync_count}')
+
+        self.sync_status = new_sync_status
 
     def set_bmi(self, bmi, pos_buffer_len=30):
         '''
@@ -424,8 +478,6 @@ class Jovian(EventEmitter):
                 except Exception as e:
                     self.log.warn('BMI error: {}'.format(e))
                     pass
-
-
                     
 
     def set_trigger(self, shared_cue_dict):
