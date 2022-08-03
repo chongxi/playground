@@ -30,7 +30,7 @@ def create_logger():
 
 
 class logger():
-    def __init__(self, filename):
+    def __init__(self, filename, sync=True):
         """Load playground log file and extract BMI/Jovian/Sync data.
 
         Args:
@@ -80,7 +80,7 @@ class logger():
                     func.append('sync')
                     msg.append('last message is synced')
 
-        print(f'Creating major data frame log.df and severl sub-dataframes', end='...')
+        print(f'Creating major data frame log.df and severl sub-dataframes ...')
         self.df = pd.DataFrame(
             {'time': time,
              'process': process,
@@ -89,43 +89,52 @@ class logger():
              'msg': msg
             })
 
-        self.cue_df = self.select(func='_jovian', msg='cue_pos')
-        self.cue_idx = self.cue_df.index  # index of cue position data in the log dataframe (report by _jovian process in playground)
-        self.jov_df = self.select(func='_jovian').drop(self.cue_df.index)
-        self.jov_idx = self.jov_df.index  # index of jovian animal position data in the log dataframe (report by _jovian process in playground)
         self.reward_df = self.select(func='touched', msg='reward')
         self.touch_df = self.select(func='', msg='touch:')
-        print('Done')
 
-        if len(SY) == 0:
-            print('Critical warning: no SYNC signal found')
-            self.sync_time = None
+        if len(self.select(func='read_routine')) == 0:
+            self.cue_df = self.select(func='_jovian', msg='cue_pos')
+            self.cue_idx = self.cue_df.index  # index of cue position data in the log dataframe (report by `_jovian process` in playground)
+            self.jov_df = self.select(func='_jovian').drop(self.cue_df.index)
+            self.jov_idx = self.jov_df.index  # index of jovian animal position data in the log dataframe (report by _jovian process in playground)
+            print('parse version 2 (>= 0802_2022) log file, get cue_df, jov_df, reward_df, touch_df')
         else:
-            print('Find SYNC, syncing the data', end='...')
-            self.sync_time = int(SY[0].split(',')[0])
-            self.sync_idx = self.select(func='sync').index - 1 # index of jov timestamps that is exactly same as SY
-            self.sync_df = self.df.loc[self.sync_idx]
-            self.jov_idx = self.jov_idx[self.jov_idx >= self.sync_idx[0]]  # only use jovian data after the sync time
-            self.jov_df = self.jov_df.loc[self.jov_idx]
-            self.cue_idx = self.cue_idx[self.cue_idx > self.jov_idx[0]]    # only use cue data after the first jovian data
-            self.cue_df = self.cue_df.loc[self.cue_idx]
-            self.reward_df = self.reward_df[self.reward_df.index > self.jov_idx[0]]
-            self.touch_df = self.touch_df[self.touch_df.index > self.jov_idx[0]]
+            self.cue_df = self.select(func='read_routine', msg='cue_pos')
+            self.cue_idx = self.cue_df.index  # index of cue position data in the log dataframe (report by `read_routine` in playground)
+            self.jov_df = self.select(func='read_routine', msg='ani_pos')
+            self.jov_idx = self.jov_df.index  # index of jovian animal position data in the log dataframe (report by _jovian process in playground)
+            print('parse version 1 (< 0802_2022) log file, get cue_df, jov_df, reward_df, touch_df')   
+
+        if sync:
+            if len(SY) == 0:
+                print('Critical warning: no SYNC signal found')
+                self.sync_time = None
+            else:
+                print('Find SYNC, syncing the data', end='...')
+                self.sync_time = int(SY[0].split(',')[0].replace('ani_pos: ', ''))
+                self.sync_idx = self.select(func='sync').index - 1 # index of jov timestamps that is exactly same as SY
+                self.sync_df = self.df.loc[self.sync_idx]
+                self.jov_idx = self.jov_idx[self.jov_idx >= self.sync_idx[0]]  # only use jovian data after the sync time
+                self.jov_df = self.jov_df.loc[self.jov_idx]
+                self.cue_idx = self.cue_idx[self.cue_idx > self.jov_idx[0]]    # only use cue data after the first jovian data
+                self.cue_df = self.cue_df.loc[self.cue_idx]
+                self.reward_df = self.reward_df[self.reward_df.index > self.jov_idx[0]]
+                self.touch_df = self.touch_df[self.touch_df.index > self.jov_idx[0]]
+                print('Done')
+
+            print(f'Finalizing all sub-dataframes', end='...')
+            self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
+            self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
+            self.cue_pos_df = self.cue_df.msg.str.extractall(float_pattern).unstack().astype('float')
+            self.cue_pos_df.columns = ['cue1_x', 'cue1_y', 'cue1_z', 'cue2_x', 'cue2_y', 'cue2_z']
+
+            self.dfs = {'jov_df': self.jov_df,
+                        'jov_pos_df': self.jov_pos_df,
+                        'cue_df': self.cue_df,
+                        'reward_df': self.reward_df,
+                        'touch_df': self.touch_df}
             print('Done')
-
-        print(f'Finalizing all sub-dataframes', end='...')
-        self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
-        self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
-        self.cue_pos_df = self.cue_df.msg.str.extractall(float_pattern).unstack().astype('float')
-        self.cue_pos_df.columns = ['cue1_x', 'cue1_y', 'cue1_z', 'cue2_x', 'cue2_y', 'cue2_z']
-
-        self.dfs = {'jov_df': self.jov_df,
-                    'jov_pos_df': self.jov_pos_df,
-                    'cue_df': self.cue_df,
-                    'reward_df': self.reward_df,
-                    'touch_df': self.touch_df}
-        print('Done')
-        print('Please check log.df, log.jov_pos_df, log.cue_df, log.reward_df, log.touch_df')
+            print('Please check log.df, log.jov_pos_df, log.cue_df, log.reward_df, log.touch_df')
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
