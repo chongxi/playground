@@ -86,6 +86,7 @@ class Jovian(EventEmitter):
     def sync_init(self):
         self.sync_status = 0
         self.sync_count = 0
+        self.sync_start = False
 
     def socket_init(self):
         ### mouseover server connection
@@ -292,7 +293,11 @@ class Jovian(EventEmitter):
 
         # the first pulse state transition (0->3)
         # the second and later pulse state transition (1->3)
-        if new_sync_status == 3 and self.sync_status <= 1: # capture the rising edge
+        if new_sync_status == 3 and self.sync_status == 0: # capture the rising edge
+            self.sync_start = True
+            self.sync_count = 1
+            self.log.info(f'sync_status: start, sync_count: {self.sync_count}')
+        if new_sync_status == 3 and self.sync_status == 1 and self.sync_start:
             self.sync_count += 1
             self.log.info(f'sync_status: high, sync_count: {self.sync_count}')
 
