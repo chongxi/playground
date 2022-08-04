@@ -1,8 +1,8 @@
 ## filename is the obj file output from blender maze (file->export->obj: y forward, -z up, selection only)
 
 
-filename = "1dcue_000.obj"
-ofilename = '_dcue_000.obj' 
+filename = "complex_maze3 2.obj"
+ofilename = 'maze_2d.obj' 
 
 f = open(filename)
 ofile = open(ofilename, "w")
