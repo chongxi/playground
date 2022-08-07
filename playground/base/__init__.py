@@ -172,6 +172,14 @@ class logger():
         return self._sync_seq
 
     @property
+    def IRI(self):
+        '''
+        Inter-reward interval (seconds)
+        '''
+        self._IRI = self.get_log_time(self.reward_df, diff=True, sort=False)
+        return self._IRI
+
+    @property
     def jov_loop_delay(self):
         '''
         the time spent on each jovian loop: a single call of `_jovian_process` function:
