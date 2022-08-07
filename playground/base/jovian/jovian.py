@@ -379,6 +379,11 @@ class Jovian(EventEmitter):
                 post_2d /= post_2d.sum()
                 max_posterior = post_2d.max()
                 
+                ### save decoded position to file ###
+                f_dec_pos = open('./dec_pos.bin', 'ab+')
+                f_dec_pos.write(y.tobytes())
+                f_dec_pos.close()
+
                 ### save posterior to file ###
                 # f_post = open('./post_2d.bin', 'ab+')
                 # f_post.write(post_2d.tobytes())
