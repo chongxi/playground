@@ -29,7 +29,7 @@ class Rotenc(object):
     def _rotenc_process(self):
         while self.is_connected:
             self.direction.fill_(float(self.ser.readline().decode("utf-8")))
-            print(self.direction)
+            # print(self.direction)
 
     def start(self):
         self.rotenc_process = Process(target=self._rotenc_process)

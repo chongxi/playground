@@ -511,6 +511,8 @@ class maze_view(scene.SceneCanvas):
         self.jov = jov
         mgr = multiprocessing.Manager()
         self.shared_cue_dict = mgr.dict()
+        for cue_name in self.cues.keys():
+            self.shared_cue_dict[cue_name] = None
         self.jov.set_trigger(self.shared_cue_dict)
         self.jov.shared_cue_height = self.cues_height
         self.jov._to_maze_coord = self._to_maze_coord

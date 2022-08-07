@@ -5,6 +5,7 @@ import numpy as np
 import torch as torch
 from torch.multiprocessing import Process, Pipe
 from spiketag.utils import Timer
+from time import time
 from spiketag.utils import EventEmitter
 from spiketag.analysis.core import get_hd
 from spiketag.utils import FIFO
@@ -122,6 +123,8 @@ class Jovian(EventEmitter):
         self.buf = None        # the buf generator
         self.buffer = ''       # the content
         self.buffering = False # the buffering state
+        self.loop_number = 0
+        self.jovian_time = 0
 
 
     def shared_mem_init(self):
@@ -212,35 +215,28 @@ class Jovian(EventEmitter):
         else:
             return self.buf.__next__()
 
-
     def _jovian_process(self):
         '''jovian reading process that use 
            a multiprocessing pipe + a jovian instance 
            as input parameters
         '''
         while True:
-            with Timer('', verbose=ENABLE_PROFILER):
-               # try:
-                self._t, self._coord, self._ball_vel = self.readline().parse()
-
-                if type(self._coord) is list:
-                    self.sync_routine()
-                    self.read_routine()
-                    self.task_routine()
-                else:
-                    self.log.warn('{}, {}'.format(self._t, self._coord))
-
-                # except Exception as e:
-                    # self.log.warn(f'jovian recv process error:{e}')
-                # except:
-                    # self.log.info('jovian recv process error')
+            tic = time()
+            self.sync_routine()
+            self.read_routine()
+            self.task_routine()
+            toc = time()
+            secs = (toc - tic)
+            # self.jovian_time += secs
+            tictoc = secs * 1000
+            self.log.info(f'loop {self.loop_number} takes: {tictoc:.2f} ms') # current jovian time: {self.jovian_time:.4f} s
+            self.loop_number += 1
 
     @property
     def current_cue_pos(self):
-        _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
-        _cue_pos_0 = self.shared_cue_dict[_cue_name_0]
+        _cue_pos_0 = self.shared_cue_dict[self._cue_name_0]
         _cue_pos_0[:2] = (_cue_pos_0[:2]-self.maze_origin[:2])/self.maze_scale
-        _cue_pos_1 = self.shared_cue_dict[_cue_name_1]
+        _cue_pos_1 = self.shared_cue_dict[self._cue_name_1]
         _cue_pos_1[:2] = (_cue_pos_1[:2]-self.maze_origin[:2])/self.maze_scale
         cue_pos = np.concatenate((_cue_pos_0, _cue_pos_1))
         return cue_pos
@@ -250,16 +246,17 @@ class Jovian(EventEmitter):
         read current_pos, current_hd, ball_vel, current_cue_pos into shared memory
         and put them into log
         '''
+        self._t, self._coord, self._ball_vel = self.readline().parse()
         self.current_pos[:]  = torch.tensor(self._coord)
         self.current_hd[:]   = self.rot.direction
         self.ball_vel[:]     = self._ball_vel
-        self._cue_name_0, self._cue_name_1 = list(self.shared_cue_dict.keys())
-        self.log.info('ani_pos: {}, [{:.2f}, {:.2f}, {:.2f}], {}, {}'.format(self._t, 
-                                                                             self.current_pos.numpy()[0],
-                                                                             self.current_pos.numpy()[1],
-                                                                             self.current_pos.numpy()[2], 
-                                                                             self.current_hd.numpy(), 
-                                                                             self.ball_vel.numpy()))
+        self.log.info('ani_pos: {}, [{:.2f}, {:.2f}, {:.2f}], {:.2f}, {:.1f}'.format(self._t, 
+                                                                                     self.current_pos[0],
+                                                                                     self.current_pos[1],
+                                                                                     self.current_pos[2], 
+                                                                                     self.current_hd[0], 
+                                                                                     self.ball_vel[0]))
+
         self.log.info('cue_pos: [{0:.2f},{1:.2f},{2:.2f}],[{3:.2f}, {4:.2f}, {5:.2f}]'.format(self.shared_cue_dict[self._cue_name_0][0],
                                                                                               self.shared_cue_dict[self._cue_name_0][1],
                                                                                               self.shared_cue_dict[self._cue_name_0][2],
@@ -286,10 +283,10 @@ class Jovian(EventEmitter):
         '''
         new_sync_status = read_mem_16(0)
 
-        x = np.array([new_sync_status], dtype=np.int16)
-        f_sync = open('./sync.bin', 'ab+')
-        f_sync.write(x.tobytes())
-        f_sync.close()
+        # x = np.array([new_sync_status], dtype=np.int16)
+        # f_sync = open('./sync.bin', 'ab+')
+        # f_sync.write(x.tobytes())
+        # f_sync.close()
 
         # the first pulse state transition (0->3)
         # the second and later pulse state transition (1->3)
@@ -300,7 +297,6 @@ class Jovian(EventEmitter):
         if new_sync_status == 3 and self.sync_status == 1 and self.sync_start:
             self.sync_count += 1
             self.log.info(f'sync_status: high, sync_count: {self.sync_count}')
-
         self.sync_status = new_sync_status
 
     def set_bmi(self, bmi, pos_buffer_len=30):
@@ -384,9 +380,9 @@ class Jovian(EventEmitter):
                 max_posterior = post_2d.max()
                 
                 ### save posterior to file ###
-                f_post = open('./post_2d.bin', 'ab+')
-                f_post.write(post_2d.tobytes())
-                f_post.close()
+                # f_post = open('./post_2d.bin', 'ab+')
+                # f_post.write(post_2d.tobytes())
+                # f_post.close()
 
                 ### save cue_pos to file ###
                 f_cue_pos = open('./cue_pos.bin', 'ab+')
@@ -491,8 +487,10 @@ class Jovian(EventEmitter):
                                ...}
         '''
         self.shared_cue_dict = shared_cue_dict
+        self._cue_name_0, self._cue_name_1 = list(self.shared_cue_dict.keys())
         self.log.info('-----------------------------------------------------------------------------------------')
         self.log.info('jovian and maze_view is connected, they starts to share cues position and transformations')
+        self.log.info(f'cue names: {list(self.shared_cue_dict.keys())}')
         self.log.info('-----------------------------------------------------------------------------------------')
 
 

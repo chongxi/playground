@@ -17,6 +17,13 @@ _center = np.array([-1309.21, -1258.16])  # by default, will be replaced if ther
 _scale  = 100.  # fixed for Jovian 
 float_pattern = r'([-+]?\d*\.?\d+|[-+]?\d+)' # regexp for float number
 
+# sync_seq is the timing (seconds) of the ephys sync output, each sync pulse is 100 ms long 
+# sync pulse is logged as 'sync_counter' add one by each sync pulse
+sync_seq = np.array([0,    1,    3,    64,   105,  181,  266,  284,  382,  469,  531,
+	                 545,  551,  614,  712,  726,  810,  830,  846,  893,  983,  1024,
+	                 1113, 1196, 1214, 1242, 1257, 1285, 1379, 1477, 1537, 1567, 1634,
+	                 1697, 1718, 1744, 1749, 1811, 1862, 1917, 1995, 2047])
+
 def create_logger():
     multiprocessing.log_to_stderr()
     logger = multiprocessing.get_logger()
@@ -106,14 +113,16 @@ class logger():
             print('parse version 1 (< 0802_2022) log file, get cue_df, jov_df, reward_df, touch_df')   
 
         if sync:
-            if len(SY) == 0:
-                print('Critical warning: no SYNC signal found')
-                self.sync_time = None
-            else:
+            # if len(SY) == 0:
+            #     print('Critical warning: no SYNC signal found')
+            #     self.sync_time = None
+            # else:
+            # if len(SY) > 0:
+            #     self.sync_time = int(SY[0].split(',')[0].replace('ani_pos: ', ''))
+            if self.select(func='sync').shape[0] > 0:
                 print('Find SYNC, syncing the data', end='...')
-                self.sync_time = int(SY[0].split(',')[0].replace('ani_pos: ', ''))
-                self.sync_idx = self.select(func='sync').index - 1 # index of jov timestamps that is exactly same as SY
-                self.sync_df = self.df.loc[self.sync_idx]
+                self.sync_df = self.select(func='sync') # self.df.loc[self.sync_idx]
+                self.sync_idx = self.sync_df.index - 1 # index of jov timestamps that is exactly same as SY
                 self.jov_idx = self.jov_idx[self.jov_idx >= self.sync_idx[0]]  # only use jovian data after the sync time
                 self.jov_df = self.jov_df.loc[self.jov_idx]
                 self.cue_idx = self.cue_idx[self.cue_idx > self.jov_idx[0]]    # only use cue data after the first jovian data
@@ -122,25 +131,56 @@ class logger():
                 self.touch_df = self.touch_df[self.touch_df.index > self.jov_idx[0]]
                 print('Done')
 
-            print(f'Finalizing all sub-dataframes', end='...')
-            self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
-            self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
-            self.cue_pos_df = self.cue_df.msg.str.extractall(float_pattern).unstack().astype('float')
-            self.cue_pos_df.columns = ['cue1_x', 'cue1_y', 'cue1_z', 'cue2_x', 'cue2_y', 'cue2_z']
+                print(f'Finalizing all sub-dataframes', end='...')
+                self.jov_pos_df = self.jov_df.msg.str.extractall(float_pattern).unstack().astype('float')
+                self.jov_pos_df.columns = ['jov_time', 'jov_x', 'jov_y', 'jov_z', 'jov_hd', 'jov_ball_vel']
+                self.cue_pos_df = self.cue_df.msg.str.extractall(float_pattern).unstack().astype('float')
+                self.cue_pos_df.columns = ['cue1_x', 'cue1_y', 'cue1_z', 'cue2_x', 'cue2_y', 'cue2_z']
 
-            self.dfs = {'jov_df': self.jov_df,
-                        'jov_pos_df': self.jov_pos_df,
-                        'cue_df': self.cue_df,
-                        'reward_df': self.reward_df,
-                        'touch_df': self.touch_df}
-            print('Done')
-            print('Please check log.df, log.jov_pos_df, log.cue_df, log.reward_df, log.touch_df')
+                self.dfs = {'jov_df': self.jov_df,
+                            'jov_pos_df': self.jov_pos_df,
+                            'cue_df': self.cue_df,
+                            'reward_df': self.reward_df,
+                            'touch_df': self.touch_df}
+                print('Done')
+                print('Please check log.df, log.jov_pos_df, log.cue_df, log.reward_df, log.touch_df')
 
         self.log_sessions = self.get_log_sessions()
         self.n_sessions   = len(self.log_sessions)
         self.trial_index = None
         # print('{} sessions found'.format(self.n_sessions))
 
+    def get_log_time(self, df, diff=False, sort=False):
+        log_time = pd.to_datetime(df.time)
+        log_time = np.array([(log_time.iloc[i] - log_time.iloc[0]).total_seconds()
+                                    for i in range(len(log_time))])
+        if diff:
+            log_time_diff = np.diff(log_time)
+            if sort:
+                return np.sort(log_time_diff)
+            else:
+                return log_time_diff
+        else:
+            return log_time
+
+    @property
+    def sync_seq(self):
+        '''
+        received sync_seq (seconds) corresponding to the the ephys time
+        '''
+        self._sync_seq = self.get_log_time(self.sync_df).round().astype(int)
+        return self._sync_seq
+
+    @property
+    def jov_loop_delay(self):
+        '''
+        the time spent on each jovian loop: a single call of `_jovian_process` function:
+        each loop contains three major functions:
+        - sync_routine() : read the sync signal from the ephys to the log
+        - read_routine() : read the vr signal (ani_pos, cue_pos etc) to the log
+        - task_routine() : use the real-time vr signal to guide the task state transition
+        '''
+        return self.select(func='jovian', msg='ms', numpy=True)[:,1]
 
     @property
     def session_id(self):
@@ -330,10 +370,15 @@ class logger():
         jov_pos = pos/_scale + self.maze_center
         return np.round(jov_pos, 2) + 0.01
 
-    def select(self, func='', msg=''):
+    def select(self, func='', msg='', numpy=False):
         df = self.df[self.df.func.str.contains(func)]
         df = df[df.msg.str.contains(msg)]
-        return df
+
+        if numpy:
+            arr = df.msg.str.extractall(float_pattern).astype('float').unstack().to_numpy()
+            return arr
+        else:
+            return df
 
     def extractall(self, expr=r'([-+]?\d*\.?\d+|[-+]?\d+)', dtype='float', level='INFO', proc='', func='', msg=''):
         '''
