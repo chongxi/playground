@@ -537,14 +537,16 @@ class NAV_GUI(QWidget):
 
     def transparent_toggle(self, checked):
         if self._task_selected:
-            if checked:
-                self.toggle_transparent_Btn.setText('transparent')
-                self.toggle_transparent_Btn.setStyleSheet("background-color: green")
-                self.jov.set_alpha('_dcue_001',0)            
-            else:
-                self.toggle_transparent_Btn.setText('visible')
-                self.toggle_transparent_Btn.setStyleSheet("background-color: darkgrey")
-                self.jov.set_alpha('_dcue_001',1)            
+            _selected_cue=self.nav_view._selected_cue
+            if _selected_cue != None:
+                if checked: 
+                    self.toggle_transparent_Btn.setText('transparent')
+                    self.toggle_transparent_Btn.setStyleSheet("background-color: green")
+                    self.jov.set_alpha(_selected_cue, 0)
+                else:
+                    self.toggle_transparent_Btn.setText('visible')
+                    self.toggle_transparent_Btn.setStyleSheet("background-color: darkgrey")
+                    self.jov.set_alpha(_selected_cue, 1)            
         else:
             self.log.warn('select Task First')
 

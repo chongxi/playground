@@ -220,38 +220,41 @@ class Task(object):
             pos = pos[:2].astype(float)
             radius = np.linalg.norm(pos)
             print(radius)
-            if radius > 95:  # if direction=='x':
+            #if radius > 95:  # if direction=='x':
+            if radius > 45:  # if direction=='x':
                 print('outer loop')
                 _x = pos[0]
-                while _x>=-95:
-                    _x -= 5
+                #while _x>=-95:
+                while _x>=-45:
+                    _x -= 2
                     self.jov.teleport(prefix='model', target_pos=[_x,  pos[1],  0], target_item=cue_name)
                     yield
-                while _x<=95:
-                    _x += 5
+                #while _x<=95:
+                while _x<=45:
+                    _x += 2
                     self.jov.teleport(prefix='model', target_pos=[_x,  pos[1],  0], target_item=cue_name)
                     yield
             else: # direction=='circular':
                 print('inner loop')
                 _x, _y  = pos
                 _delta = 0.0
-                print(pos)
+                #print(pos)
                 theta = np.arctan(_y/_x)
-                print(theta)
+                #print(theta)
                 _delta = np.pi/64
                 while True:
-                    # theta  += _delta
-                    # self.target_x, self.target_y = radius*np.cos(theta),  radius*np.sin(theta)
-                    # self.head_v = np.arccos((self.target_y-self.last_y)/(self.target_x-self.last_x))*180/np.pi
-                    # self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
-                    # self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0])
-                    # self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0], head_direction=90-theta*180/np.pi)
+                    theta  += _delta
+                    self.target_x, self.target_y = radius*np.cos(theta),  radius*np.sin(theta)
+                    #self.head_v = np.arccos((self.target_y-self.last_y)/(self.target_x-self.last_x))*180/np.pi
+                    self.jov.teleport(prefix='model', target_pos=[radius*np.cos(theta),  radius*np.sin(theta),  0], target_item=cue_name)
+                    #self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0])
+                    #self.jov.teleport(prefix='console', target_pos=[self.target_x, self.target_y,  0], head_direction=90-theta*180/np.pi)
 
                     # test rotation
-                    hd = self.jov.cnt[0]%360 - 180
-                    print(hd)
+                    #hd = self.jov.cnt[0]%360 - 180
+                    #print(hd)
                     # self.jov.info('head direction {}\n'.format(hd))
-                    self.jov.teleport(prefix='console', target_pos=[10, 20,  0], head_direction=hd)
+                    #self.jov.teleport(prefix='console', target_pos=[10, 20,  0], head_direction=hd)
                     yield
 
 
@@ -635,7 +638,7 @@ class JUMPER(Task):
         super(JUMPER, self).__init__(fsm, jov)
 
         self.BMI_enable = True
-        self.reward_time = 0.01
+        self.reward_time = 1
         self.touch_radius = 20
 
         #------------------------------------------------------------------------------

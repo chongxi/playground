@@ -16,7 +16,7 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.23'
+host_ip = '10.102.20.39'
 pynq_ip = '10.102.20.93'
 
 # Test
@@ -328,7 +328,7 @@ class Jovian(EventEmitter):
             self.bmi.dec.model.share_memory();
             post_2d = np.random.randn(*self.bmi.dec.pc.O.shape)
         else:
-            _, post_2d = self.bmi.dec.predict_rt(dumb_X)
+            _, post_2d = self.bmi.dec.model.predict_rt(dumb_X, neuron_idx=self.bmi.dec.neuron_idx)
         self.current_post_2d = torch.empty(post_2d.shape)
         self.current_post_2d.share_memory_()
         self.log.info('The decoder binsize:{}, the B_bins:{}'.format(self.bmi.binner.bin_size, self.bmi.binner.B))
@@ -366,8 +366,7 @@ class Jovian(EventEmitter):
 
                 if hasattr(self.bmi.dec, 'model'):
                     self.log.info(f'use the bmi model:{X.shape},{X.dtype}')
-                    neuron_idx = self.bmi.dec.neuron_idx
-                    y = self.bmi.dec.model.predict_rt(X, neuron_idx=neuron_idx, cuda=False, mode='eval', bn_momentum=0.9);
+                    y = self.bmi.dec.predict_rt(X, cuda=False, mode='eval', bn_momentum=0.9);
                     self.bmi.model_output[:] = torch.from_numpy(y)
                     self.log.info(f'bmi model output:{y}')
                     post_2d = self.bmi.dec.pc.real_pos_2_soft_pos(self.bmi.model_output.numpy(), kernel_size=7)
