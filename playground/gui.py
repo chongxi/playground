@@ -546,7 +546,7 @@ class NAV_GUI(QWidget):
                 else:
                     self.toggle_transparent_Btn.setText('visible')
                     self.toggle_transparent_Btn.setStyleSheet("background-color: darkgrey")
-                    self.jov.set_alpha(_selected_cue, 1)            
+                    self.jov.set_alpha(_selected_cue, 0.7)            
         else:
             self.log.warn('select Task First')
 

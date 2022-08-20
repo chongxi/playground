@@ -16,7 +16,7 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.39'
+host_ip = '10.102.20.23'
 pynq_ip = '10.102.20.93'
 
 # Test
@@ -24,7 +24,7 @@ pynq_ip = '10.102.20.93'
 # pynq_ip = '127.0.0.1'
 # verbose = True
 
-is_close = lambda pos, cue_pos, radius: (pos-cue_pos).norm()/100 < radius
+is_close = lambda pos, cue_pos, radius: (pos[:2]-cue_pos[:2]).norm()/100 < radius
 
 
 class Jovian_Stream(str):
@@ -550,14 +550,14 @@ class Jovian(EventEmitter):
     def toggle_blanking(self):
         cmd = "console.toggle_blanking()\n"
         self.output.send(cmd.encode())
- 
-
 
     def toggle_motion_and_blanking(self):
         cmd="console.toggle_motion_and_blanking()\n"
         self.output.send(cmd.encode())
 
     def set_alpha(self,target_item, alpha):
+        if alpha > 0.7:
+            alpha = 0.7
         cmd="model.set_alpha('{}',{})\n".format(target_item,alpha)
         self.output.send(cmd.encode())
 
