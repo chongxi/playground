@@ -234,7 +234,6 @@ class maze_view(scene.SceneCanvas):
                 _cue_default_offset = self.cues[target_item]._xy_center*self.cues[target_item]._scale_factor
                 self.cues[target_item]._transform.translate = self._to_jovian_coord(target_pos).astype(np.float32) - _cue_default_offset
 
-
     def cue_update(self):
         with Timer('cue_update', verbose = False):
             for cue_name, cue_pos in self.shared_cue_dict.items():
@@ -242,7 +241,7 @@ class maze_view(scene.SceneCanvas):
                 _cue = self.cues[cue_name]
                 # [1,1,-1] because of mirror image of projection
                 _cue._transform.translate = np.array([1,1,-1])*cue_pos - _cue._xy_center*_cue._scale_factor
-
+                _cue._pos = cue_pos # update the pos of the cue for `check_goal_distance`
 
     def set_file(self, file):
         self.unfreeze()

@@ -16,8 +16,8 @@ from ..rotenc import Rotenc
 ENABLE_PROFILER = False
 
 # Lab
-host_ip = '10.102.20.23'
-pynq_ip = '10.102.20.93'
+host_ip = '10.102.20.38'
+pynq_ip = '10.102.20.126'
 
 # Test
 #host_ip = '10.102.20.34'
@@ -144,7 +144,7 @@ class Jovian(EventEmitter):
         # the influence radius of the animal
         self.touch_radius = torch.empty(1,)
         self.touch_radius.share_memory_()
-        self.touch_radius.fill_(10)
+        self.touch_radius.fill_(15)
 
         # bmi position (decoded position of the animal)
         self.bmi_pos = torch.empty(2,)
@@ -514,6 +514,7 @@ class Jovian(EventEmitter):
 
     def check_touch_agent_to_cue(self):
         for _cue_name in self.shared_cue_dict.keys():
+            # self.log.info(f'touch with touch_radius: {self.touch_radius}')
             if is_close(self.current_pos, torch.tensor(self.shared_cue_dict[_cue_name]), self.touch_radius):
                 self.emit('touch', args=( _cue_name, self.shared_cue_dict[_cue_name] ))
 
@@ -522,6 +523,7 @@ class Jovian(EventEmitter):
         _cue_name_0, _cue_name_1 = list(self.shared_cue_dict.keys())
         if is_close(torch.tensor(self.shared_cue_dict[_cue_name_0]), 
                           torch.tensor(self.shared_cue_dict[_cue_name_1]), self.touch_radius):
+            # self.log.info(f'touch with touch_radius: {self.touch_radius}')
             self.emit('touch', args=( _cue_name_0 + '->' + _cue_name_1, self.shared_cue_dict[_cue_name_0] ))
 
     def start(self):
@@ -588,7 +590,7 @@ class Jovian(EventEmitter):
                 self.output.send(cmd.encode())
                 bottom = z - self.shared_cue_height[target_item]
                 self.shared_cue_dict[target_item] = self._to_jovian_coord(np.array([x,y,bottom], dtype=np.float32))
-
+                # shared_cue_dict is used in `maze_view.cue_update`
 
     def move_to(self, x, y, z=5, hd=0, hd_offset=0): 
         '''

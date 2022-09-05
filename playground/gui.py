@@ -122,9 +122,9 @@ class NAV_GUI(QWidget):
         self.reward_time.setValue(10)
         self.reward_time.valueChanged.connect(self.reward_time_changed)
 
-        self.touch_radius_label = QLabel('Reward Radius: 10')
+        self.touch_radius_label = QLabel('Reward Radius: 15')
         self.touch_radius = QSlider(Qt.Horizontal, self)
-        self.touch_radius.setValue(10)
+        self.touch_radius.setValue(15)
         self.touch_radius.valueChanged.connect(self.touch_radius_changed)
 
         ParaLayout.addWidget(self.reward_time_label,   0,0,1,1)

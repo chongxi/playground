@@ -74,7 +74,7 @@ class Task(object):
         self.animation = {}  # {"_dcue_000": deque([ (4, parachute), (60, vibrate) ]), "_dcue_111": deque([ (2, animation111) ])}
 
         self.reward_time = 1.0
-        self.touch_radius = 10
+        self.touch_radius = 15
         self.BMI_enable = False
 
         # initial reset only after jov process start 
@@ -594,17 +594,20 @@ class JEDI(Task):
         once bury animation finished, task will reset() and a new trial start (trasition_enable becomes True)
         '''
 
-        fsm = {
-                '1cue': { 'touch@_dcue_000->_dcue_001': ['1cue', self.goal_cue_touched, 'reward'] } 
+        fsm_sanity_check = {
+                '1cue': {'touch@_dcue_000': ['1cue', self.goal_cue_touched, 'reward']} 
               }
 
-        super(JEDI, self).__init__(fsm, jov)
+        super(JEDI, self).__init__(fsm_sanity_check, jov)
 
         self.BMI_enable = True
         self.reward_time = 0.01
         self.total_reward = 0
+        self.trial_sanity_check = 0 # for sanity check
+        self.trial_to_start_BMI = 20
+        self.sanity_check_status = True
         self.reward_threshold = self.reward_time * 2000 # 0.5 milli-liter
-        self.touch_radius = 20
+        self.touch_radius = 15
         self.onset = 0.3
         self.max_cnt = 3750 * 3 # 3 min
         # self.max_cnt = 200
@@ -633,11 +636,19 @@ class JEDI(Task):
         super(JEDI, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
         self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
-        self.animation['_dcue_000'] = deque([ (3, self.parachute('_dcue_000', self._coord_goal)),  
+        self.animation['_dcue_000'] = deque([ (1, self.parachute_fast('_dcue_000', self._coord_goal)),  
                                               (32,self.vibrate('_dcue_000'))  ])
-        self.animation['_dcue_001'] = deque([ (2, self.bmi_control('model','_dcue_001'))])
-        self.animation['console']   = deque([ (2, self.go_center('console')) ])
-        self.jov.set_alpha('_dcue_001', 0.7)
+                                              
+        if self.trial_sanity_check > self.trial_to_start_BMI:
+            self.animation['_dcue_001'] = deque([ (2, self.bmi_control('model','_dcue_001')) ])
+            self.animation['console']   = deque([ (2, self.go_center('console')) ])
+            self.jov.set_alpha('_dcue_001', 0.5)
+            self.sanity_check_status = False
+            self.fsm = {
+                        '1cue': {'touch@_dcue_000->_dcue_001': ['1cue', self.goal_cue_touched, 'reward']}
+                       }
+            self.jov.rw_cnt.fill_(0)
+
         self.jov.set_alpha('_dcue_000', 0.7)
         self.BMI_enable = True
         self.log.info('BMI control enabled')
@@ -645,14 +656,24 @@ class JEDI(Task):
         self.total_reward = 0
 
     def goal_cue_touched(self, args):
-        self.refractory = np.random.randint(low=0, high=20, size=(1,))[0]/10
-        self.jov.JEDI_reward(self.reward_time, self.onset, self.refractory)
-        self.total_reward = self.total_reward + self.reward_time
-        # success trial
-        if self.total_reward > self.reward_threshold:
+
+        if self.sanity_check_status is True:
+            self.log.info(args)
+            self.jov.reward(1)
+            self.trial_sanity_check += 1
+            self.log.info('Sanity check trial: {}'.format(self.trial_sanity_check))
             self.reset()
-            self.log.info('JEDI success')
             self.jov.cnt.fill_(0)
+
+        elif self.sanity_check_status is False:
+            self.refractory = np.random.randint(low=0, high=20, size=(1,))[0]/10
+            self.jov.JEDI_reward(self.reward_time, self.onset, self.refractory)
+            self.total_reward = self.total_reward + self.reward_time
+            # success trial
+            if self.total_reward > self.reward_threshold:
+                self.reset()
+                self.log.info('JEDI get more than 0.5 mL at a single location')
+                self.jov.cnt.fill_(0)
 
 
 #------------------------------------------------------------------------------
@@ -670,8 +691,12 @@ class JUMPER(Task):
 
         self.BMI_enable = True
         self.reward_time = 1
-        self.touch_radius = 20
+        self.reward_total = 0
+        self.trial_to_start_BMI = 20
+        self.touch_radius = 15
         self.max_cnt = 3750 * 1  # 1 min
+        self.sanity_check_status = True
+        self._coord_goal_prev = np.array([0, 0])
 
         #------------------------------------------------------------------------------
         # core of JUMPER: teleport itself when bmi_decode event happens
@@ -703,10 +728,15 @@ class JUMPER(Task):
     def reset(self):
         super(JUMPER, self).reset()
         self._corrd_animal = self.jov._to_maze_coord(self.current_pos)[:2]
-        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal) 
+        self._coord_goal   = _cue_generate_2d_maze(self.jov.maze_border, self._corrd_animal, self._coord_goal_prev)
+        self._coord_goal_prev = self._coord_goal
         self.animation['_dcue_000'] = deque([ (1, self.parachute_fast('_dcue_000', self._coord_goal)), 
                                               (32, self.vibrate('_dcue_000')) ])
-        self.animation['console'] = deque([ (3, self.bmi_control('console')) ])
+        if self.reward_total > self.trial_to_start_BMI:
+            self.animation['console'] = deque([ (3, self.bmi_control('console')) ])
+            self.sanity_check_status = False
+        if self.sanity_check_status:
+            self.jov.rw_cnt.fill_(0)
         self.BMI_enable = True
         self.jov.set_alpha('_dcue_000', 0.7)
         self.log.info('BMI control enabled')
@@ -715,6 +745,8 @@ class JUMPER(Task):
     def goal_cue_touched(self, args):
         self.log.info(args)
         self.jov.reward(self.reward_time)
+        self.reward_total += 1
+        self.log.info('JUMPER total reward: {}'.format(self.reward_total))
         self.transition_enable.behave = False
         self.BMI_enable = False
         self.log.info('BMI control disabled')
