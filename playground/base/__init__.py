@@ -220,25 +220,52 @@ class logger():
         Returns:
             (ts, pos, hd, ball_vel, cue_pos, reward_time): tuple of numpy arrays
         """
-        jov = self.jov_pos_df.to_numpy()
+        jov = self.jov_pos_df.to_numpy().copy()
         t = jov[:, 0]
         self._jov_ts = (t - t[0])/1e3
         self._jov_pos = self.convert_jov_pos(jov[:, 1:3])
         self._jov_hd = jov[:, -2]
         self._jov_ball_vel = jov[:, -1]
-        self._jov_reward_time = self.jov_pos_df.iloc[self.jov_pos_df.index.searchsorted(self.reward_df.index)-1].jov_time.to_numpy()
+        self._jov_reward_index = self.jov_pos_df.index.searchsorted(self.reward_df.index) - 1
+        self._jov_reward_time = self.jov_pos_df.iloc[self._jov_reward_index].jov_time.to_numpy()
         self._jov_reward_time = (self._jov_reward_time - t[0])/1e3
-        cue_pos = self.cue_pos_df.to_numpy()
+
+        cue_pos = self.cue_pos_df.to_numpy().copy()
         cue_pos[:, 0:2] = self.convert_jov_pos(cue_pos[:, :2])
         cue_pos[:, 3:5] = self.convert_jov_pos(cue_pos[:, 3:5])
         self._jov_cue_pos = cue_pos
+
+        mins, secs = self.get_jov_duration() # save total seconds in self._jov_duration
+
         jov_dict =  {'jov_ts': self._jov_ts, 
                      'jov_pos': self._jov_pos, 
                      'jov_hd': self._jov_hd,
-                     'jov_ball_vell': self._jov_ball_vel, 
+                     'jov_ball_vel': self._jov_ball_vel, 
                      'jov_cue_pos': self._jov_cue_pos, 
-                     'jov_reward_time': self._jov_reward_time}
+                     'jov_reward_index': self._jov_reward_index,
+                     'jov_reward_time': self._jov_reward_time,
+                     'jov_duration': self._jov_duration}
         return jov_dict
+
+    def get_jov_duration(self):
+        """
+        get the duration of each jovian loop
+        """
+        df = self.jov_df
+        # get the first and last time of log.jov_df in log.jov_df.time
+        first_time = df.time.iloc[0]
+        last_time = df.time.iloc[-1]
+        # convert string to date_time type and calculate the duration
+        first_time = pd.to_datetime(first_time)
+        last_time = pd.to_datetime(last_time)
+        duration = last_time - first_time
+        # convert duration to minutes and seconds
+        duration = duration.total_seconds()
+        self._jov_duration = duration
+        mins, secs = divmod(duration, 60)
+        # secs only keep 2 decimal places
+        secs = round(secs, 1)
+        return mins, secs
 
     def to_trajectory(self, session_id=0, target='', interpolate=True, to_zero_center_coord=True, ball_movement=False):
         """
@@ -310,10 +337,12 @@ class logger():
     def to_pc(self, session_id=0, dt=0.1, bin_size=4, v_cutoff=4):
         from spiketag.analysis import place_field
         jov_dict = self.get_jov()
-        ts, pos, cue_pos = jov_dict['jov_ts'], jov_dict['jov_pos'], jov_dict['jov_cue_pos']
+        ts, pos, cue_pos, hd, ball_v = jov_dict['jov_ts'], jov_dict['jov_pos'], jov_dict['jov_cue_pos'], jov_dict['jov_hd'], jov_dict['jov_ball_vel']
         pc = place_field(ts=ts, pos=pos, bin_size=bin_size, v_cutoff=v_cutoff, maze_range=self.maze_range)
         pc.cue_ts  = ts
         pc.cue_pos = cue_pos
+        pc.hd = hd
+        pc.ball_v = ball_v
         pc(dt)
         return pc
 
