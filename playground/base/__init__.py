@@ -35,6 +35,37 @@ def create_logger():
     logger.addHandler(fh)
     return logger
 
+def extract_trials(jov_data):
+    '''
+    extract trials from jovian data 
+
+    Usage:
+        log = logger('process.log')
+        jov_data = log.get_jov()
+        trials = extract_trials(jov_data)
+
+        @interact(trial_idx=(0, len(trials) - 1))
+        def plot_trial(trial_idx=0):
+            plot_trajectory_with_speed(trials[trial_idx])
+    '''
+    trials = []
+    reward_indices = jov_data['jov_reward_index']
+    n_trials = len(reward_indices) - 1
+
+    for i in range(n_trials):
+        start_idx = reward_indices[i] + 1
+        end_idx = reward_indices[i + 1]
+
+        trial_data = {'jov_ts': jov_data['jov_ts'][start_idx:end_idx],
+                      'jov_pos': jov_data['jov_pos'][start_idx:end_idx],
+                      'jov_hd': jov_data['jov_hd'][start_idx:end_idx],
+                      'jov_ball_vel': jov_data['jov_ball_vel'][start_idx:end_idx],
+                      'jov_cue_pos': jov_data['jov_cue_pos'][start_idx:end_idx]}
+
+        if trial_data['jov_ts'].shape[0]>0: # don't append empty trials
+            trials.append(trial_data)
+
+    return trials
 
 class logger():
     def __init__(self, filename, sync=True):
