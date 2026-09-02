@@ -10,24 +10,25 @@ permissions:
   contents: read
 
 jobs:
-  download-wheel:
+  download-render-deps:
     runs-on: ubuntu-24.04
     steps:
-      - name: Download official MuJoCo CPython 3.13 Linux wheel
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download MuJoCo rendering dependencies
         shell: bash
         run: |
           set -euo pipefail
-          FILE='mujoco-3.12.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl'
-          URL='https://files.pythonhosted.org/packages/d2/3d/04d24602d8d73f6eb108be06a04a3e6c8198a83f17de97ae0fc766980ac8/mujoco-3.12.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl'
-          curl --fail --location --retry 4 --retry-all-errors --output "$FILE" "$URL"
-          test -s "$FILE"
-          sha256sum "$FILE" | tee SHA256SUMS.txt
-      - name: Upload wheel artifact
+          mkdir wheels
+          python -m pip download --only-binary=:all: --dest wheels PyOpenGL==3.1.10 glfw==2.10.0
+          sha256sum wheels/* | tee SHA256SUMS.txt
+      - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: mujoco-3.12.0-cp313-linux-wheel
+          name: mujoco-render-deps-cp313
           path: |
-            mujoco-3.12.0-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+            wheels/*
             SHA256SUMS.txt
           compression-level: 0
           retention-days: 1
